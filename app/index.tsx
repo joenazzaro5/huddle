@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert } from 'react-native'
+import { useEffect, useState } from 'react'
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Alert, ActivityIndicator } from 'react-native'
 import { useRouter } from 'expo-router'
 import { supabase } from '../lib/supabase'
 
@@ -8,13 +8,22 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [checking, setChecking] = useState(true)
 
   useEffect(() => {
+    // Check for existing session first
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) router.replace('/home')
+      if (session) {
+        router.replace('/home')
+      } else {
+        setChecking(false)
+      }
     })
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session) router.replace('/home')
+      if (event === 'SIGNED_IN' && session) {
+        router.replace('/home')
+      }
     })
     return () => subscription.unsubscribe()
   }, [])
@@ -25,6 +34,19 @@ export default function LoginScreen() {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     setLoading(false)
     if (error) Alert.alert('Error', error.message)
+  }
+
+  // Show loading spinner while checking session
+  if (checking) {
+    return (
+      <View style={styles.checkingContainer}>
+        <View style={styles.logoWrap}>
+          <Text style={styles.logoText}>C</Text>
+        </View>
+        <Text style={styles.wordmark}>Cue</Text>
+        <ActivityIndicator color="#1D9E75" size="small" style={{ marginTop: 24 }} />
+      </View>
+    )
   }
 
   return (
@@ -57,7 +79,10 @@ export default function LoginScreen() {
           onPress={handleLogin}
           disabled={loading}
         >
-          <Text style={styles.buttonText}>{loading ? 'Signing in...' : 'Sign in'}</Text>
+          {loading
+            ? <ActivityIndicator color="#fff" size="small" />
+            : <Text style={styles.buttonText}>Sign in</Text>
+          }
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
@@ -65,6 +90,9 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
+  checkingContainer: { flex: 1, backgroundColor: '#0a1f14', alignItems: 'center', justifyContent: 'center' },
+  logoWrap: { width: 72, height: 72, borderRadius: 20, backgroundColor: '#1D9E75', alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
+  wordmark: { fontSize: 44, fontWeight: '900', color: '#fff', letterSpacing: -2 },
   container: { flex: 1, backgroundColor: '#0a1f14' },
   inner: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   logo: { width: 72, height: 72, borderRadius: 20, backgroundColor: '#1D9E75', alignItems: 'center', justifyContent: 'center', marginBottom: 16 },

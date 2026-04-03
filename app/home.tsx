@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Linking } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
+import { AppHeader } from '../lib/header'
 import { supabase } from '../lib/supabase'
 import { generatePracticePlan } from '../lib/ai'
 
@@ -132,7 +133,7 @@ export default function HomeScreen() {
   }
 
   const nextEvent = events[0]
-  const tc = team?.color ?? '#1D9E75'
+  const tc = team?.color ?? '#1a3a5c'
   const pending = Math.max(0, playerCount - rsvpYes - rsvpNo)
 
   if (loading) {
@@ -361,7 +362,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F7F7F5' },
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F7F7F5' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 10, backgroundColor: '#fff', borderBottomWidth: 0.5, borderBottomColor: '#f0f0f0' },
+  header: { height: 50, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, backgroundColor: '#fff', borderBottomWidth: 0.5, borderBottomColor: '#f0f0f0' },
   headerTeam: { flexDirection: 'row', alignItems: 'center', gap: 7, flex: 1 },
   teamDot: { width: 10, height: 10, borderRadius: 5 },
   headerTeamName: { fontSize: 12, fontWeight: '700', color: '#1a1a1a', maxWidth: 110 },
@@ -369,7 +370,7 @@ const styles = StyleSheet.create({
   headerCenter: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   headerBall: { fontSize: 12, opacity: 0.5 },
   wordmark: { fontSize: 22, fontWeight: '900', letterSpacing: -0.5 },
-  roleChip: { paddingHorizontal: 11, paddingVertical: 5, borderRadius: 20, flex: 1, alignItems: 'flex-end' },
+  roleChip: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
   roleText: { fontSize: 12, fontWeight: '700' },
   teamPicker: { backgroundColor: '#fff', borderBottomWidth: 0.5, borderBottomColor: '#eee', padding: 16 },
   teamPickerTitle: { fontSize: 11, fontWeight: '700', color: '#aaa', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 },

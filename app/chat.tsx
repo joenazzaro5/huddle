@@ -1,10 +1,8 @@
 import { useEffect, useState, useRef } from 'react'
-import {
-  View, Text, ScrollView, StyleSheet, TextInput,
-  TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator, Alert
-} from 'react-native'
+import { View, Text, ScrollView, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { supabase } from '../lib/supabase'
+import { AppHeader } from '../lib/header'
 
 export default function ChatScreen() {
   const [team, setTeam] = useState<any>(null)
@@ -20,9 +18,7 @@ export default function ChatScreen() {
 
   useEffect(() => {
     loadData()
-    return () => {
-      if (pollInterval.current) clearInterval(pollInterval.current)
-    }
+    return () => { if (pollInterval.current) clearInterval(pollInterval.current) }
   }, [])
 
   const loadData = async () => {
@@ -96,7 +92,6 @@ export default function ChatScreen() {
     })
 
     if (error) {
-      console.log('Send error:', error.message)
       Alert.alert('Error', error.message)
       setNewMessage(body)
     } else {
@@ -105,41 +100,23 @@ export default function ChatScreen() {
     setSending(false)
   }
 
-  const formatTime = (dateStr: string) => {
-    return new Date(dateStr).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-  }
+  const formatTime = (dateStr: string) =>
+    new Date(dateStr).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
 
-  const teamColor = team?.color ?? '#1D9E75'
+  const tc = team?.color ?? '#1a3a5c'
 
-  if (loading) {
-    return (
-      <View style={styles.loading}>
-        <ActivityIndicator color={teamColor} size="large" />
-      </View>
-    )
-  }
+  if (loading) return <View style={styles.loading}><ActivityIndicator color={tc} size="large" /></View>
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <Text style={[styles.wordmark, { color: teamColor }]}>Cue</Text>
-        <View>
-          <Text style={styles.headerTitle}>{team?.name}</Text>
-          <Text style={styles.headerSub}>Team chat</Text>
-        </View>
+      <AppHeader teamColor={tc} teamName={team?.name} />
+
+      <View style={styles.chatHeader}>
+        <Text style={styles.chatTitle}>{team?.name} · Team chat</Text>
       </View>
 
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={0}
-      >
-        <ScrollView
-          ref={scrollRef}
-          style={styles.messages}
-          contentContainerStyle={styles.messagesContent}
-          showsVerticalScrollIndicator={false}
-        >
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView ref={scrollRef} style={styles.messages} contentContainerStyle={styles.messagesContent} showsVerticalScrollIndicator={false}>
           {messages.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>💬</Text>
@@ -149,29 +126,19 @@ export default function ChatScreen() {
           ) : (
             messages.map((msg) => {
               const isMe = msg.user_id === currentUser?.id
-              const isSystem = msg.type === 'system'
-
-              if (isSystem) {
+              if (msg.type === 'system') {
                 return (
                   <View key={msg.id} style={styles.systemMsg}>
                     <Text style={styles.systemMsgText}>{msg.body}</Text>
                   </View>
                 )
               }
-
               return (
                 <View key={msg.id} style={[styles.msgWrap, isMe && styles.msgWrapMe]}>
-                  <View style={[
-                    styles.bubble,
-                    isMe ? [styles.bubbleMe, { backgroundColor: teamColor }] : styles.bubbleOther
-                  ]}>
-                    <Text style={[styles.bubbleText, isMe && styles.bubbleTextMe]}>
-                      {msg.body}
-                    </Text>
+                  <View style={[styles.bubble, isMe ? [styles.bubbleMe, { backgroundColor: tc }] : styles.bubbleOther]}>
+                    <Text style={[styles.bubbleText, isMe && styles.bubbleTextMe]}>{msg.body}</Text>
                   </View>
-                  <Text style={[styles.msgTime, isMe && styles.msgTimeMe]}>
-                    {formatTime(msg.created_at)}
-                  </Text>
+                  <Text style={[styles.msgTime, isMe && styles.msgTimeMe]}>{formatTime(msg.created_at)}</Text>
                 </View>
               )
             })
@@ -189,14 +156,11 @@ export default function ChatScreen() {
             maxLength={1000}
           />
           <TouchableOpacity
-            style={[styles.sendBtn, { backgroundColor: newMessage.trim() ? teamColor : '#E0E0E0' }]}
+            style={[styles.sendBtn, { backgroundColor: newMessage.trim() ? tc : '#E0E0E0' }]}
             onPress={sendMessage}
             disabled={!newMessage.trim() || sending}
           >
-            {sending
-              ? <ActivityIndicator color="#fff" size="small" />
-              : <Text style={styles.sendIcon}>↑</Text>
-            }
+            {sending ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.sendIcon}>↑</Text>}
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -206,11 +170,9 @@ export default function ChatScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F7F7F5' },
-  loading: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F7F7F5' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 14, backgroundColor: '#fff', borderBottomWidth: 0.5, borderBottomColor: '#f0f0f0' },
-  wordmark: { fontSize: 24, fontWeight: '800', letterSpacing: -0.5 },
-  headerTitle: { fontSize: 14, fontWeight: '700', color: '#1a1a1a', textAlign: 'right' },
-  headerSub: { fontSize: 12, color: '#888', textAlign: 'right' },
+  loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  chatHeader: { paddingHorizontal: 16, paddingVertical: 10, backgroundColor: '#fff', borderBottomWidth: 0.5, borderBottomColor: '#eee' },
+  chatTitle: { fontSize: 13, fontWeight: '600', color: '#888' },
   messages: { flex: 1 },
   messagesContent: { padding: 16, gap: 4 },
   emptyState: { alignItems: 'center', paddingVertical: 60 },
@@ -218,7 +180,7 @@ const styles = StyleSheet.create({
   emptyTitle: { fontSize: 18, fontWeight: '700', color: '#1a1a1a', marginBottom: 6 },
   emptySub: { fontSize: 14, color: '#888' },
   systemMsg: { alignItems: 'center', paddingVertical: 6 },
-  systemMsgText: { fontSize: 12, color: '#aaa', textAlign: 'center' },
+  systemMsgText: { fontSize: 12, color: '#aaa' },
   msgWrap: { alignItems: 'flex-start', marginBottom: 8 },
   msgWrapMe: { alignItems: 'flex-end' },
   bubble: { maxWidth: '78%', borderRadius: 18, padding: 12 },

@@ -3,6 +3,7 @@ import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, ActivityIn
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { supabase } from '../lib/supabase'
 import { useRouter } from 'expo-router'
+import { AppHeader } from '../lib/header'
 
 export default function AccountScreen() {
   const router = useRouter()
@@ -18,11 +19,7 @@ export default function AccountScreen() {
     if (!user) return
     setUser(user)
 
-    const { data: profileData } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', user.id)
-      .single()
+    const { data: profileData } = await supabase.from('users').select('*').eq('id', user.id).single()
     setProfile(profileData)
 
     const { data: membership } = await supabase
@@ -33,99 +30,60 @@ export default function AccountScreen() {
       .limit(1)
       .single()
     if (membership?.team) setTeam(membership.team)
-
     setLoading(false)
   }
 
   const handleSignOut = async () => {
-    Alert.alert('Sign out', 'Are you sure you want to sign out?', [
+    Alert.alert('Sign out', 'Are you sure?', [
       { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Sign out', style: 'destructive',
-        onPress: async () => {
-          await supabase.auth.signOut()
-          router.replace('/')
-        }
-      }
+      { text: 'Sign out', style: 'destructive', onPress: async () => { await supabase.auth.signOut(); router.replace('/') } }
     ])
   }
 
-  const teamColor = team?.color ?? '#1D9E75'
+  const tc = team?.color ?? '#1a3a5c'
 
-  if (loading) {
-    return (
-      <View style={styles.loading}>
-        <ActivityIndicator color={teamColor} size="large" />
-      </View>
-    )
-  }
+  if (loading) return <View style={styles.loading}><ActivityIndicator color={tc} size="large" /></View>
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <Text style={[styles.wordmark, { color: teamColor }]}>Cue</Text>
-        <Text style={styles.headerTitle}>Account</Text>
-      </View>
+      <AppHeader teamColor={tc} teamName={team?.name} />
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-
-        {/* Avatar + name */}
+      <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.profileCard}>
-          <View style={[styles.avatar, { backgroundColor: teamColor }]}>
-            <Text style={styles.avatarText}>
-              {(profile?.display_name ?? user?.email ?? 'C')[0].toUpperCase()}
-            </Text>
+          <View style={[styles.avatar, { backgroundColor: tc }]}>
+            <Text style={styles.avatarText}>{(profile?.display_name ?? user?.email ?? 'C')[0].toUpperCase()}</Text>
           </View>
           <Text style={styles.displayName}>{profile?.display_name ?? 'Coach'}</Text>
           <Text style={styles.email}>{user?.email}</Text>
-          <View style={[styles.roleBadge, { backgroundColor: teamColor + '20' }]}>
-            <Text style={[styles.roleText, { color: teamColor }]}>
+          <View style={[styles.roleBadge, { backgroundColor: tc + '20' }]}>
+            <Text style={[styles.roleText, { color: tc }]}>
               {profile?.coach_level ? `${profile.coach_level.charAt(0).toUpperCase() + profile.coach_level.slice(1)} Coach` : 'Coach'}
             </Text>
           </View>
         </View>
 
-        {/* Team info */}
         {team && (
           <View style={styles.card}>
             <Text style={styles.cardLabel}>Your team</Text>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoKey}>Team</Text>
-              <Text style={styles.infoVal}>{team.name}</Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoKey}>Age group</Text>
-              <Text style={styles.infoVal}>{team.age_group}</Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoKey}>Gender</Text>
-              <Text style={styles.infoVal}>{team.gender}</Text>
-            </View>
+            <View style={styles.infoRow}><Text style={styles.infoKey}>Team</Text><Text style={styles.infoVal}>{team.name}</Text></View>
+            <View style={styles.infoRow}><Text style={styles.infoKey}>Age group</Text><Text style={styles.infoVal}>{team.age_group}</Text></View>
+            <View style={styles.infoRow}><Text style={styles.infoKey}>Gender</Text><Text style={styles.infoVal}>{team.gender}</Text></View>
             <View style={[styles.infoRow, { borderBottomWidth: 0 }]}>
               <Text style={styles.infoKey}>Invite code</Text>
-              <Text style={[styles.infoVal, { color: teamColor, fontWeight: '700' }]}>{team.invite_code}</Text>
+              <Text style={[styles.infoVal, { color: tc, fontWeight: '700' }]}>{team.invite_code}</Text>
             </View>
           </View>
         )}
 
-        {/* App info */}
         <View style={styles.card}>
           <Text style={styles.cardLabel}>App</Text>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoKey}>Version</Text>
-            <Text style={styles.infoVal}>0.1.0 (dev)</Text>
-          </View>
-          <View style={[styles.infoRow, { borderBottomWidth: 0 }]}>
-            <Text style={styles.infoKey}>Build</Text>
-            <Text style={styles.infoVal}>Expo Go</Text>
-          </View>
+          <View style={styles.infoRow}><Text style={styles.infoKey}>Version</Text><Text style={styles.infoVal}>0.1.0 (dev)</Text></View>
+          <View style={[styles.infoRow, { borderBottomWidth: 0 }]}><Text style={styles.infoKey}>Build</Text><Text style={styles.infoVal}>Expo Go</Text></View>
         </View>
 
-        {/* Sign out */}
         <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>
           <Text style={styles.signOutText}>Sign out</Text>
         </TouchableOpacity>
-
       </ScrollView>
     </SafeAreaView>
   )
@@ -133,10 +91,7 @@ export default function AccountScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F7F7F5' },
-  loading: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F7F7F5' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 14, backgroundColor: '#fff', borderBottomWidth: 0.5, borderBottomColor: '#f0f0f0' },
-  wordmark: { fontSize: 24, fontWeight: '800', letterSpacing: -0.5 },
-  headerTitle: { fontSize: 16, fontWeight: '700', color: '#1a1a1a' },
+  loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   content: { padding: 20 },
   profileCard: { backgroundColor: '#fff', borderRadius: 18, padding: 24, marginBottom: 14, alignItems: 'center', borderWidth: 0.5, borderColor: '#eee' },
   avatar: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
