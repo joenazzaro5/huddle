@@ -14,8 +14,16 @@ export default function ChatScreen() {
   const [sending, setSending] = useState(false)
   const [currentUser, setCurrentUser] = useState<any>(null)
   const scrollRef = useRef<ScrollView>(null)
+  const teamIdRef = useRef<string | null>(null)
+  const latestMessageRef = useRef<string | null>(null)
+  const pollInterval = useRef<any>(null)
 
-  useEffect(() => { loadData() }, [])
+  useEffect(() => {
+    loadData()
+    return () => {
+      if (pollInterval.current) clearInterval(pollInterval.current)
+    }
+  }, [])
 
   const loadData = async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -32,8 +40,9 @@ export default function ChatScreen() {
 
     if (membership?.team) {
       setTeam(membership.team)
+      teamIdRef.current = membership.team.id
       await loadMessages(membership.team.id)
-      subscribeToMessages(membership.team.id)
+      startPolling(membership.team.id)
     }
     setLoading(false)
   }
@@ -45,23 +54,32 @@ export default function ChatScreen() {
       .eq('team_id', teamId)
       .order('created_at', { ascending: true })
       .limit(50)
-    setMessages(data ?? [])
-    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: false }), 100)
+
+    if (data && data.length > 0) {
+      setMessages(data)
+      latestMessageRef.current = data[data.length - 1].id
+      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: false }), 100)
+    }
   }
 
-  const subscribeToMessages = (teamId: string) => {
-    supabase
-      .channel(`team:${teamId}:messages`)
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'messages',
-        filter: `team_id=eq.${teamId}`,
-      }, (payload) => {
-        setMessages(prev => [...prev, payload.new])
-        setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100)
-      })
-      .subscribe()
+  const startPolling = (teamId: string) => {
+    pollInterval.current = setInterval(async () => {
+      const { data } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('team_id', teamId)
+        .order('created_at', { ascending: true })
+        .limit(50)
+
+      if (data && data.length > 0) {
+        const latest = data[data.length - 1].id
+        if (latest !== latestMessageRef.current) {
+          latestMessageRef.current = latest
+          setMessages(data)
+          setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100)
+        }
+      }
+    }, 3000)
   }
 
   const sendMessage = async () => {
@@ -78,9 +96,11 @@ export default function ChatScreen() {
     })
 
     if (error) {
-      console.log('Send error:', error.message, error.code)
+      console.log('Send error:', error.message)
       Alert.alert('Error', error.message)
       setNewMessage(body)
+    } else {
+      if (teamIdRef.current) await loadMessages(teamIdRef.current)
     }
     setSending(false)
   }
