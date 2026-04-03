@@ -32,11 +32,15 @@ export default function Layout() {
       />
       <Tabs.Screen
         name="roster/index"
-        options={{ tabBarIcon: ({ focused }) => <TabIcon label="Roster" focused={focused} /> }}
+        options={{ tabBarIcon: ({ focused }) => <TabIcon label="Team" focused={focused} /> }}
       />
       <Tabs.Screen
         name="chat"
         options={{ tabBarIcon: ({ focused }) => <TabIcon label="Chat" focused={focused} /> }}
+      />
+      <Tabs.Screen
+        name="account"
+        options={{ tabBarIcon: ({ focused }) => <TabIcon label="Account" focused={focused} /> }}
       />
       <Tabs.Screen
         name="index"
@@ -58,7 +62,7 @@ const styles = StyleSheet.create({
   tabItem: {
     alignItems: 'center',
     gap: 5,
-    width: 70,
+    width: 58,
   },
   indicator: {
     width: 24,
@@ -66,7 +70,7 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   tabLabel: {
-    fontSize: 11,
+    fontSize: 10,
     letterSpacing: -0.2,
   },
 })
