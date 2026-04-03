@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { useRouter } from 'expo-router'
 import { supabase } from '../lib/supabase'
 import { generatePracticePlan } from '../lib/ai'
 
@@ -13,6 +14,7 @@ const FALLBACK_PLAN = [
 const PHASE_COLORS = ['#4CAF50', '#378ADD', '#FF6B35']
 
 export default function HomeScreen() {
+  const router = useRouter()
   const [team, setTeam] = useState<any>(null)
   const [events, setEvents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -73,6 +75,7 @@ export default function HomeScreen() {
   }
 
   const nextEvent = events[0]
+  const teamColor = team?.color ?? '#1D9E75'
 
   if (loading) {
     return (
@@ -85,16 +88,16 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Text style={[styles.wordmark, { color: team?.color ?? '#1D9E75' }]}>Cue</Text>
-        <View style={[styles.roleChip, { backgroundColor: (team?.color ?? '#1D9E75') + '20' }]}>
-          <Text style={[styles.roleText, { color: team?.color ?? '#1D9E75' }]}>Coach ↓</Text>
+        <Text style={[styles.wordmark, { color: teamColor }]}>Cue</Text>
+        <View style={[styles.roleChip, { backgroundColor: teamColor + '20' }]}>
+          <Text style={[styles.roleText, { color: teamColor }]}>Coach ↓</Text>
         </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
         {nextEvent && (
-          <View style={[styles.heroCard, { backgroundColor: team?.color ?? '#1D9E75' }]}>
+          <View style={[styles.heroCard, { backgroundColor: teamColor }]}>
             <Text style={styles.heroLabel}>Next up · {formatDate(nextEvent.starts_at)}</Text>
             <Text style={styles.heroTitle}>
               {nextEvent.type === 'practice' ? 'Practice' : `Game vs ${nextEvent.opponent}`}
@@ -106,7 +109,7 @@ export default function HomeScreen() {
 
         <View style={styles.card}>
           <View style={styles.aiHeader}>
-            <View style={[styles.aiIcon, { backgroundColor: team?.color ?? '#1D9E75' }]}>
+            <View style={[styles.aiIcon, { backgroundColor: teamColor }]}>
               <Text style={styles.aiIconText}>⚡</Text>
             </View>
             <View>
@@ -117,7 +120,7 @@ export default function HomeScreen() {
 
           <View style={styles.inputRow}>
             <TextInput
-              style={[styles.input, { borderColor: plan ? (team?.color ?? '#1D9E75') : '#E0E0E0' }]}
+              style={[styles.input, { borderColor: plan ? teamColor : '#E0E0E0' }]}
               placeholder="e.g. 60 min dribbling session for U10..."
               placeholderTextColor="#bbb"
               value={prompt}
@@ -125,7 +128,7 @@ export default function HomeScreen() {
               multiline
             />
             <TouchableOpacity
-              style={[styles.sendBtn, { backgroundColor: prompt.trim() ? (team?.color ?? '#1D9E75') : '#E0E0E0' }]}
+              style={[styles.sendBtn, { backgroundColor: prompt.trim() ? teamColor : '#E0E0E0' }]}
               onPress={handleGenerate}
               disabled={aiLoading || !prompt.trim()}
             >
@@ -143,9 +146,9 @@ export default function HomeScreen() {
                   <TouchableOpacity
                     key={i}
                     onPress={() => setPrompt(ex)}
-                    style={[styles.chip, { backgroundColor: (team?.color ?? '#1D9E75') + '15', borderColor: (team?.color ?? '#1D9E75') + '40' }]}
+                    style={[styles.chip, { backgroundColor: teamColor + '15', borderColor: teamColor + '40' }]}
                   >
-                    <Text style={[styles.chipText, { color: team?.color ?? '#1D9E75' }]}>{ex}</Text>
+                    <Text style={[styles.chipText, { color: teamColor }]}>{ex}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -161,7 +164,7 @@ export default function HomeScreen() {
           {plan && (
             <View style={{ marginTop: 14 }}>
               <View style={styles.planHeader}>
-                <Text style={[styles.planTitle, { color: team?.color ?? '#1D9E75' }]}>{plan.title}</Text>
+                <Text style={[styles.planTitle, { color: teamColor }]}>{plan.title}</Text>
                 {planSource === 'fallback' && (
                   <Text style={styles.fallbackBadge}>Offline plan</Text>
                 )}
@@ -188,21 +191,33 @@ export default function HomeScreen() {
               )}
 
               <TouchableOpacity
-                style={[styles.newPlanBtn, { borderColor: team?.color ?? '#1D9E75' }]}
+                style={[styles.newPlanBtn, { borderColor: teamColor }]}
                 onPress={() => { setPlan(null); setPrompt('') }}
               >
-                <Text style={[styles.newPlanText, { color: team?.color ?? '#1D9E75' }]}>Generate new plan</Text>
+                <Text style={[styles.newPlanText, { color: teamColor }]}>Generate new plan</Text>
               </TouchableOpacity>
             </View>
           )}
         </View>
 
         <View style={styles.card}>
+          <Text style={styles.cardLabel}>Your team</Text>
+          <Text style={styles.teamName}>{team?.name}</Text>
+          <Text style={styles.cardSub}>U10 · Girls · Invite code: {team?.invite_code}</Text>
+          <TouchableOpacity
+            style={[styles.rosterBtn, { borderColor: teamColor }]}
+            onPress={() => router.push('/roster')}
+          >
+            <Text style={[styles.rosterBtnText, { color: teamColor }]}>Manage roster →</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.card}>
           <Text style={styles.cardLabel}>Upcoming · {team?.name}</Text>
           {events.slice(0, 3).map((event, i) => (
             <View key={event.id} style={[styles.eventRow, i < Math.min(events.length, 3) - 1 && styles.eventBorder]}>
-              <View style={[styles.eventIcon, { backgroundColor: event.type === 'game' ? '#FF8C4220' : (team?.color ?? '#1D9E75') + '20' }]}>
-                <Text style={[styles.eventIconText, { color: event.type === 'game' ? '#FF8C42' : team?.color ?? '#1D9E75' }]}>
+              <View style={[styles.eventIcon, { backgroundColor: event.type === 'game' ? '#FF8C4220' : teamColor + '20' }]}>
+                <Text style={[styles.eventIconText, { color: event.type === 'game' ? '#FF8C42' : teamColor }]}>
                   {event.type === 'game' ? 'G' : event.focus?.[0] ?? 'P'}
                 </Text>
               </View>
@@ -238,6 +253,9 @@ const styles = StyleSheet.create({
   cardLabel: { fontSize: 11, fontWeight: '600', color: '#aaa', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 },
   cardTitle: { fontSize: 15, fontWeight: '800', color: '#1a1a1a' },
   cardSub: { fontSize: 12, color: '#888' },
+  teamName: { fontSize: 18, fontWeight: '800', color: '#1a1a1a', marginBottom: 2 },
+  rosterBtn: { marginTop: 12, borderRadius: 10, paddingVertical: 10, alignItems: 'center', borderWidth: 1.5 },
+  rosterBtnText: { fontSize: 13, fontWeight: '700' },
   aiHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 },
   aiIcon: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   aiIconText: { fontSize: 14 },
