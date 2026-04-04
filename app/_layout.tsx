@@ -2,7 +2,7 @@ import { Tabs } from 'expo-router'
 import { View, Text, StyleSheet } from 'react-native'
 
 function TabIcon({ label, focused }: { label: string; focused: boolean }) {
-  const color = '#1D9E75'
+  const color = '#1A56DB'
   return (
     <View style={styles.tabItem}>
       <View style={[styles.indicator, { backgroundColor: focused ? color : 'transparent' }]} />

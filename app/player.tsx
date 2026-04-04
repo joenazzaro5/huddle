@@ -81,9 +81,9 @@ export default function PlayerScreen() {
     setSaving(false)
   }
 
-  const tc = team?.color ?? '#1D9E75'
+  const tc = team?.color ?? '#1A56DB'
 
-  if (loading) return <View style={styles.loading}><ActivityIndicator color="#1D9E75" size="large" /></View>
+  if (loading) return <View style={styles.loading}><ActivityIndicator color="#1A56DB" size="large" /></View>
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>

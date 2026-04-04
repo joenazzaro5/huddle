@@ -11,7 +11,7 @@ const FALLBACK_PLAN = [
   { phase: 'Final Play', duration: '15 min', drill: '7v7 full game', desc: 'Full game. Let them play.' },
 ]
 
-const PHASE_COLORS = ['#4CAF50', '#378ADD', '#FF6B35']
+const PHASE_COLORS = ['#4CAF50', '#1A56DB', '#FF6B35']
 
 const DRILLS = [
   { id: '1', title: 'Cone dribbling', focus: 'Dribbling', duration: '10 min', level: 'Beginner', desc: 'Set up 6 cones in a line 2 yards apart. Players dribble through using both feet.' },
@@ -27,8 +27,8 @@ const DRILLS = [
 const FOCUSES = ['All', 'Dribbling', 'Passing', 'Shooting', 'Defending', 'Goalkeeping']
 
 const FOCUS_COLORS: Record<string, string> = {
-  Dribbling: '#1D9E75',
-  Passing: '#378ADD',
+  Dribbling: '#1A56DB',
+  Passing: '#1A56DB',
   Shooting: '#FF6B35',
   Defending: '#9C27B0',
   Goalkeeping: '#607D8B',
@@ -110,7 +110,7 @@ export default function PracticeScreen() {
     setAiLoading(false)
   }
 
-  const teamColor = team?.color ?? '#1a3a5c'
+  const teamColor = #1A56DB
   const filteredDrills = activeFilter === 'All' ? DRILLS : DRILLS.filter(d => d.focus === activeFilter)
 
   return (
@@ -195,7 +195,7 @@ export default function PracticeScreen() {
                 <Text style={styles.aiIconText}>⚡</Text>
               </View>
               <View>
-                <Text style={styles.cardTitle}>{plan ? 'Adjust plan' : 'Ask Cue AI'}</Text>
+                <Text style={styles.cardTitle}>{plan ? 'Adjust plan' : 'Ask Huddle AI'}</Text>
                 <Text style={styles.cardSub}>{team?.age_group ?? 'U10'} · Play-Practice-Play · 60 min</Text>
               </View>
             </View>

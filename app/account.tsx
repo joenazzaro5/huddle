@@ -40,7 +40,7 @@ export default function AccountScreen() {
     ])
   }
 
-  const tc = team?.color ?? '#1a3a5c'
+  const tc = '#1A56DB'
 
   if (loading) return <View style={styles.loading}><ActivityIndicator color={tc} size="large" /></View>
 

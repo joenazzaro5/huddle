@@ -103,7 +103,7 @@ export default function ChatScreen() {
   const formatTime = (dateStr: string) =>
     new Date(dateStr).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
 
-  const tc = team?.color ?? '#1a3a5c'
+  const tc = '#1A56DB'
 
   if (loading) return <View style={styles.loading}><ActivityIndicator color={tc} size="large" /></View>
 

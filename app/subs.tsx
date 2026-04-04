@@ -139,18 +139,18 @@ export default function SubsScreen() {
 
   const onPlayers = players.filter(p => p.isOn)
   const offPlayers = players.filter(p => !p.isOn)
-  const tc = team?.color ?? '#1D9E75'
+  const tc = team?.color ?? '#1A56DB'
   const totalMins = players.reduce((sum, p) => sum + p.minutes, 0)
   const fairShare = players.length > 0 ? totalMins / players.length : 0
 
   if (loading) {
-    return <View style={styles.loading}><ActivityIndicator color="#1D9E75" size="large" /></View>
+    return <View style={styles.loading}><ActivityIndicator color="#1A56DB" size="large" /></View>
   }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Text style={[styles.wordmark, { color: tc }]}>Cue</Text>
+        <Text style={[styles.wordmark, { color: tc }]}>Huddle</Text>
         <Text style={styles.headerTitle}>Substitutions</Text>
       </View>
 
@@ -302,5 +302,5 @@ const styles = StyleSheet.create({
   fairPlayTitle: { fontSize: 15, fontWeight: '800', color: '#1a1a1a', marginBottom: 4 },
   fairPlaySub: { fontSize: 13, color: '#888', marginBottom: 8 },
   fairPlayAlert: { fontSize: 13, color: '#E24B4A', marginBottom: 4 },
-  fairPlayGood: { fontSize: 13, color: '#1D9E75', fontWeight: '600' },
+  fairPlayGood: { fontSize: 13, color: '#1A56DB', fontWeight: '600' },
 })

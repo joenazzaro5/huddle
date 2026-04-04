@@ -6,7 +6,7 @@ import { AppHeader } from '../lib/header'
 import { supabase } from '../lib/supabase'
 import { generatePracticePlan } from '../lib/ai'
 
-const PHASE_COLORS = ['#4CAF50', '#378ADD', '#FF6B35']
+const PHASE_COLORS = ['#4CAF50', '#1A56DB', '#FF6B35']
 
 export default function HomeScreen() {
   const router = useRouter()
@@ -133,11 +133,11 @@ export default function HomeScreen() {
   }
 
   const nextEvent = events[0]
-  const tc = team?.color ?? '#1a3a5c'
+  const tc = '#1A56DB'
   const pending = Math.max(0, playerCount - rsvpYes - rsvpNo)
 
   if (loading) {
-    return <View style={styles.loading}><ActivityIndicator color="#1D9E75" size="large" /></View>
+    return <View style={styles.loading}><ActivityIndicator color="#1A56DB" size="large" /></View>
   }
 
   return (
@@ -157,10 +157,10 @@ export default function HomeScreen() {
           </View>
         </TouchableOpacity>
 
-        {/* Center: Cue wordmark with soccer ball accents */}
+        {/* Center: Huddle wordmark */}
         <View style={styles.headerCenter}>
           <Text style={styles.headerBall}>⚽</Text>
-          <Text style={[styles.wordmark, { color: tc }]}>Cue</Text>
+          <Text style={[styles.wordmark, { color: tc }]}>Huddle</Text>
           <Text style={styles.headerBall}>⚽</Text>
         </View>
 
@@ -367,7 +367,7 @@ const styles = StyleSheet.create({
   teamDot: { width: 10, height: 10, borderRadius: 5 },
   headerTeamName: { fontSize: 12, fontWeight: '700', color: '#1a1a1a', maxWidth: 110 },
   headerSwitch: { fontSize: 10, color: '#aaa', fontWeight: '500' },
-  headerCenter: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  headerCenter: { position: 'absolute', left: 0, right: 0, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4 },
   headerBall: { fontSize: 12, opacity: 0.5 },
   wordmark: { fontSize: 22, fontWeight: '900', letterSpacing: -0.5 },
   roleChip: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },

@@ -219,11 +219,11 @@ Slots: 0=GK, 1=LB, 2=CB, 3=RB, 4=MF, 5=LW, 6=RW`
 
   const onPlayers = players.filter(p => p.isOn).sort((a, b) => (a.fieldSlot ?? 0) - (b.fieldSlot ?? 0))
   const offPlayers = players.filter(p => !p.isOn)
-  const tc = team?.color ?? '#1a3a5c'
+  const tc = '#1A56DB'
   const totalMins = players.reduce((sum, p) => sum + p.minutes, 0)
   const fairShare = players.length > 0 ? totalMins / players.length : 0
 
-  if (loading) return <View style={styles.loading}><ActivityIndicator color="#1D9E75" size="large" /></View>
+  if (loading) return <View style={styles.loading}><ActivityIndicator color="#1A56DB" size="large" /></View>
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -287,7 +287,7 @@ Slots: 0=GK, 1=LB, 2=CB, 3=RB, 4=MF, 5=LW, 6=RW`
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
           {nextGame && (
-            <View style={[styles.gameCard, { backgroundColor: '#1a3a5c' }]}>
+            <View style={[styles.gameCard, { backgroundColor: '#1A56DB' }]}>
               <Text style={styles.gameCardLabel}>Next game</Text>
               <Text style={styles.gameCardTitle}>vs {nextGame.opponent}</Text>
               <Text style={styles.gameCardSub}>
@@ -339,7 +339,7 @@ Slots: 0=GK, 1=LB, 2=CB, 3=RB, 4=MF, 5=LW, 6=RW`
           ) : (
             <>
               {/* Timer */}
-              <View style={[styles.timerCard, { backgroundColor: '#1a3a5c' }]}>
+              <View style={[styles.timerCard, { backgroundColor: '#1A56DB' }]}>
                 <View style={styles.timerRow}>
                   <View>
                     <Text style={styles.timerLabel}>Half {period}</Text>

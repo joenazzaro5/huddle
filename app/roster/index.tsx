@@ -35,7 +35,7 @@ export default function RosterScreen() {
     setLoading(false)
   }
 
-  const teamColor = team?.color ?? '#1D9E75'
+  const teamColor = team?.color ?? '#1A56DB'
 
   if (loading) {
     return (
@@ -48,7 +48,7 @@ export default function RosterScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Text style={[styles.wordmark, { color: teamColor }]}>Cue</Text>
+        <Text style={[styles.wordmark, { color: teamColor }]}>Huddle</Text>
         <Text style={styles.headerTitle}>Team</Text>
       </View>
 
