@@ -26,6 +26,15 @@ const DRILLS = [
 
 const FOCUSES = ['All', 'Dribbling', 'Passing', 'Shooting', 'Defending', 'Goalkeeping']
 
+const FOCUS_PILLS = [
+  { label: 'Dribbling', color: '#1A56DB' },
+  { label: 'Passing', color: '#1A56DB' },
+  { label: 'Shooting', color: '#FF6B35' },
+  { label: 'Defending', color: '#9C27B0' },
+  { label: 'Fitness', color: '#4CAF50' },
+  { label: 'Set Pieces', color: '#607D8B' },
+]
+
 const FOCUS_COLORS: Record<string, string> = {
   Dribbling: '#1A56DB',
   Passing: '#1A56DB',
@@ -38,12 +47,14 @@ export default function PracticeScreen() {
   const [team, setTeam] = useState<any>(null)
   const [nextEvent, setNextEvent] = useState<any>(null)
   const [prompt, setPrompt] = useState('')
+  const [selectedFocuses, setSelectedFocuses] = useState<string[]>([])
   const [aiLoading, setAiLoading] = useState(false)
   const [plan, setPlan] = useState<any>(null)
   const [planLoading, setPlanLoading] = useState(false)
   const [activeFilter, setActiveFilter] = useState('All')
   const [activeTab, setActiveTab] = useState<'planner' | 'drills'>('planner')
   const [expandedDrill, setExpandedDrill] = useState<number | null>(null)
+  const [inputFocused, setInputFocused] = useState(false)
 
   useEffect(() => { loadTeam() }, [])
 
@@ -97,12 +108,30 @@ export default function PracticeScreen() {
     setPlanLoading(false)
   }
 
+  const toggleFocus = (label: string) => {
+    setSelectedFocuses(prev =>
+      prev.includes(label) ? prev.filter(f => f !== label) : [...prev, label]
+    )
+  }
+
+  const buildPrompt = () => {
+    const focusText = selectedFocuses.length > 0
+      ? selectedFocuses.join(' and ')
+      : null
+    const customText = prompt.trim()
+    if (focusText && customText) return `${focusText} focus — ${customText}`
+    if (focusText) return `${focusText} focus`
+    if (customText) return customText
+    return ''
+  }
+
   const handleGenerate = async () => {
-    if (!prompt.trim() || !team) return
+    const finalPrompt = buildPrompt()
+    if (!finalPrompt || !team) return
     setAiLoading(true)
     setPlan(null)
     try {
-      const result = await generatePracticePlan(prompt.trim(), team.name, team.age_group)
+      const result = await generatePracticePlan(finalPrompt, team.name, team.age_group)
       setPlan(result)
     } catch {
       setPlan({ title: 'Practice Plan', plan: FALLBACK_PLAN, coachTip: 'Keep energy high.' })
@@ -110,6 +139,7 @@ export default function PracticeScreen() {
     setAiLoading(false)
   }
 
+  const canGenerate = buildPrompt().length > 0
   const teamColor = '#1A56DB'
   const filteredDrills = activeFilter === 'All' ? DRILLS : DRILLS.filter(d => d.focus === activeFilter)
 
@@ -146,6 +176,70 @@ export default function PracticeScreen() {
             </View>
           )}
 
+          {/* AI prompt — always on top */}
+          <View style={styles.card}>
+            <View style={styles.aiHeader}>
+              <View style={styles.aiIcon}>
+                <Text style={styles.aiIconText}>⚡</Text>
+              </View>
+              <View>
+                <Text style={styles.cardTitle}>{plan ? 'Adjust your plan' : 'Build a practice plan'}</Text>
+                <Text style={styles.cardSub}>{team?.age_group ?? 'U10'} · Play-Practice-Play · 60 min</Text>
+              </View>
+            </View>
+
+            {/* Focus pills — multi select */}
+            <Text style={styles.pillsLabel}>Select one or more focuses</Text>
+            <View style={styles.pillsRow}>
+              {FOCUS_PILLS.map(fp => {
+                const isSelected = selectedFocuses.includes(fp.label)
+                return (
+                  <TouchableOpacity
+                    key={fp.label}
+                    onPress={() => toggleFocus(fp.label)}
+                    style={[
+                      styles.focusPill,
+                      { backgroundColor: isSelected ? fp.color : '#F3F4F6', borderColor: isSelected ? fp.color : '#E5E7EB' }
+                    ]}
+                  >
+                    <Text style={[styles.focusPillText, { color: isSelected ? '#fff' : '#555' }]}>{fp.label}</Text>
+                  </TouchableOpacity>
+                )
+              })}
+            </View>
+
+            {/* Text input */}
+            <View style={[styles.inputRow, { marginTop: 12 }]}>
+              <TextInput
+                style={[
+                  styles.input,
+                  { borderColor: inputFocused ? teamColor : '#E5E7EB' }
+                ]}
+                placeholder={plan ? 'Add any extra details or changes...' : 'Any extra details? (optional)'}
+                placeholderTextColor="#bbb"
+                value={prompt}
+                onChangeText={setPrompt}
+                onFocus={() => setInputFocused(true)}
+                onBlur={() => setInputFocused(false)}
+                multiline
+              />
+              <TouchableOpacity
+                style={[styles.sendBtn, { backgroundColor: canGenerate ? teamColor : '#E0E0E0' }]}
+                onPress={handleGenerate}
+                disabled={aiLoading || !canGenerate}
+              >
+                {aiLoading ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.sendIcon}>↑</Text>}
+              </TouchableOpacity>
+            </View>
+
+            {aiLoading && (
+              <View style={styles.loadingBox}>
+                <ActivityIndicator color={teamColor} size="small" />
+                <Text style={styles.loadingBoxText}>Building your Play-Practice-Play plan...</Text>
+              </View>
+            )}
+          </View>
+
           {/* Loading state */}
           {planLoading && (
             <View style={{ alignItems: 'center', paddingVertical: 20 }}>
@@ -154,7 +248,7 @@ export default function PracticeScreen() {
             </View>
           )}
 
-          {/* Current plan if exists */}
+          {/* Current plan below prompt */}
           {plan && !planLoading && (
             <View style={styles.card}>
               <Text style={styles.cardLabel}>Current plan</Text>
@@ -187,59 +281,6 @@ export default function PracticeScreen() {
               )}
             </View>
           )}
-
-          {/* AI prompt */}
-          <View style={styles.card}>
-            <View style={styles.aiHeader}>
-              <View style={[styles.aiIcon, { backgroundColor: teamColor }]}>
-                <Text style={styles.aiIconText}>⚡</Text>
-              </View>
-              <View>
-                <Text style={styles.cardTitle}>{plan ? 'Adjust plan' : 'Ask Huddle AI'}</Text>
-                <Text style={styles.cardSub}>{team?.age_group ?? 'U10'} · Play-Practice-Play · 60 min</Text>
-              </View>
-            </View>
-
-            <View style={styles.inputRow}>
-              <TextInput
-                style={[styles.input, { borderColor: plan ? teamColor : '#E0E0E0' }]}
-                placeholder={plan ? 'Describe what to change...' : 'Describe what you want to work on...'}
-                placeholderTextColor="#bbb"
-                value={prompt}
-                onChangeText={setPrompt}
-                multiline
-              />
-              <TouchableOpacity
-                style={[styles.sendBtn, { backgroundColor: prompt.trim() ? teamColor : '#E0E0E0' }]}
-                onPress={handleGenerate}
-                disabled={aiLoading || !prompt.trim()}
-              >
-                {aiLoading ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.sendIcon}>↑</Text>}
-              </TouchableOpacity>
-            </View>
-
-            {!plan && !aiLoading && (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 10 }}>
-                <View style={{ flexDirection: 'row', gap: 8 }}>
-                  {['Dribbling focus', 'Passing & movement', 'Shooting practice', 'Defending shape'].map((ex, i) => (
-                    <TouchableOpacity
-                      key={i}
-                      onPress={() => setPrompt(ex)}
-                      style={[styles.chip, { backgroundColor: teamColor + '15', borderColor: teamColor + '40' }]}
-                    >
-                      <Text style={[styles.chipText, { color: teamColor }]}>{ex}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </ScrollView>
-            )}
-
-            {aiLoading && (
-              <View style={styles.loadingBox}>
-                <Text style={styles.loadingBoxText}>Building your Play-Practice-Play plan...</Text>
-              </View>
-            )}
-          </View>
 
         </ScrollView>
       ) : (
@@ -311,15 +352,17 @@ const styles = StyleSheet.create({
   tipLabel: { fontSize: 11, fontWeight: '700', color: '#F57F17', marginBottom: 2 },
   tipText: { fontSize: 12, color: '#555', lineHeight: 17 },
   aiHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 },
-  aiIcon: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  aiIcon: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F3F4F6' },
   aiIconText: { fontSize: 14 },
+  pillsLabel: { fontSize: 11, fontWeight: '600', color: '#888', marginBottom: 8 },
+  pillsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  focusPill: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5 },
+  focusPillText: { fontSize: 13, fontWeight: '600' },
   inputRow: { flexDirection: 'row', gap: 10, alignItems: 'flex-end' },
   input: { flex: 1, backgroundColor: '#F7F7F5', borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, color: '#1a1a1a', borderWidth: 1.5, maxHeight: 80 },
   sendBtn: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
   sendIcon: { color: '#fff', fontSize: 18, fontWeight: '800' },
-  chip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1 },
-  chipText: { fontSize: 12, fontWeight: '600' },
-  loadingBox: { alignItems: 'center', paddingVertical: 16 },
+  loadingBox: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12 },
   loadingBoxText: { fontSize: 13, color: '#888' },
   filterChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5 },
   filterChipText: { fontSize: 13, fontWeight: '600' },
