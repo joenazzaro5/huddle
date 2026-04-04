@@ -110,7 +110,7 @@ export default function PracticeScreen() {
     setAiLoading(false)
   }
 
-  const teamColor = #1A56DB
+  const teamColor = '#1A56DB'
   const filteredDrills = activeFilter === 'All' ? DRILLS : DRILLS.filter(d => d.focus === activeFilter)
 
   return (
