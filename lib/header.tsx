@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native'
 
 type Props = {
   teamColor?: string
@@ -25,9 +25,20 @@ export function AppHeader({ teamColor = '#1A56DB', teamName, onTeamPress, showTe
       </View>
 
       <View style={styles.right}>
-        <View style={[styles.roleChip, { backgroundColor: teamColor + '20' }]}>
+        <TouchableOpacity
+          style={[styles.roleChip, { backgroundColor: teamColor + '20' }]}
+          onPress={() => {
+            Alert.alert('Switch role', 'You are viewing as Coach.', [
+              {
+                text: 'Switch to Parent view',
+                onPress: () => Alert.alert('Coming soon', 'Parent view coming soon — stay tuned!'),
+              },
+              { text: 'Stay as Coach', style: 'cancel' },
+            ])
+          }}
+        >
           <Text style={[styles.roleText, { color: teamColor }]}>Coach</Text>
-        </View>
+        </TouchableOpacity>
       </View>
     </View>
   )

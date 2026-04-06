@@ -24,7 +24,7 @@ const DRILLS = [
   { id: '8', title: 'GK shot stopping', focus: 'Goalkeeping', duration: '12 min', level: 'Beginner', desc: 'Reaction saves at close range. Keeper stays on feet and spreads wide.', videoId: null },
 ]
 
-const FOCUSES = ['All', 'Dribbling', 'Passing', 'Shooting', 'Defending', 'Goalkeeping']
+const FOCUSES = ['All', 'Favorites', 'Dribbling', 'Passing', 'Shooting', 'Defending', 'Goalkeeping']
 
 const FOCUS_PILLS = [
   { label: 'Dribbling', color: '#1A56DB' },
@@ -55,6 +55,7 @@ export default function PracticeScreen() {
   const [activeTab, setActiveTab] = useState<'planner' | 'drills'>('planner')
   const [expandedDrill, setExpandedDrill] = useState<number | null>(null)
   const [inputFocused, setInputFocused] = useState(false)
+  const [favoriteDrills, setFavoriteDrills] = useState<Set<string>>(new Set())
 
   useEffect(() => { loadTeam() }, [])
 
@@ -141,7 +142,11 @@ export default function PracticeScreen() {
 
   const canGenerate = buildPrompt().length > 0
   const teamColor = '#1A56DB'
-  const filteredDrills = activeFilter === 'All' ? DRILLS : DRILLS.filter(d => d.focus === activeFilter)
+  const filteredDrills = activeFilter === 'All'
+    ? DRILLS
+    : activeFilter === 'Favorites'
+    ? DRILLS.filter(d => favoriteDrills.has(d.id))
+    : DRILLS.filter(d => d.focus === activeFilter)
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -244,7 +249,7 @@ export default function PracticeScreen() {
           {planLoading && (
             <View style={{ alignItems: 'center', paddingVertical: 20 }}>
               <ActivityIndicator color={teamColor} size="small" />
-              <Text style={{ fontSize: 13, color: '#888', marginTop: 8 }}>Building your plan...</Text>
+              <Text style={{ fontSize: 13, color: '#888', marginTop: 8 }}>Shuffling your plan...</Text>
             </View>
           )}
 
@@ -310,21 +315,45 @@ export default function PracticeScreen() {
             </View>
           </ScrollView>
 
+          {activeFilter === 'Favorites' && favoriteDrills.size === 0 && (
+            <View style={{ alignItems: 'center', paddingVertical: 32 }}>
+              <Text style={{ fontSize: 14, color: '#aaa' }}>Tap ♡ on any drill to save it here.</Text>
+            </View>
+          )}
+
           {filteredDrills.map(drill => {
             const dc = FOCUS_COLORS[drill.focus] ?? teamColor
+            const isFav = favoriteDrills.has(drill.id)
             return (
               <View key={drill.id} style={styles.drillCard}>
                 <View style={styles.drillTop}>
                   <View style={[styles.drillBadge, { backgroundColor: dc + '20' }]}>
                     <Text style={[styles.drillBadgeText, { color: dc }]}>{drill.focus}</Text>
                   </View>
-                  <Text style={styles.drillMeta}>{drill.level} · {drill.duration}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <Text style={styles.drillMeta}>{drill.level} · {drill.duration}</Text>
+                    <TouchableOpacity
+                      onPress={() => {
+                        setFavoriteDrills(prev => {
+                          const next = new Set(prev)
+                          if (next.has(drill.id)) next.delete(drill.id)
+                          else next.add(drill.id)
+                          return next
+                        })
+                      }}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <Text style={{ fontSize: 18, color: isFav ? teamColor : '#ccc' }}>
+                        {isFav ? '♥' : '♡'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
                 <Text style={styles.drillTitle}>{drill.title}</Text>
                 <Text style={styles.drillDesc}>{drill.desc}</Text>
                 {drill.videoId && (
                   <TouchableOpacity
-                    onPress={() => Linking.openURL(`https://www.youtube.com/watch?v=${drill.videoId}`)}
+                    onPress={() => Linking.openURL(`https://youtu.be/${drill.videoId}`)}
                     activeOpacity={0.85}
                     style={{ marginTop: 8, borderRadius: 10, overflow: 'hidden' }}
                   >

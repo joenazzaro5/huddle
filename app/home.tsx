@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Linking } from 'react-native'
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Linking, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { AppHeader } from '../lib/header'
@@ -7,6 +7,19 @@ import { supabase } from '../lib/supabase'
 import { generatePracticePlan } from '../lib/ai'
 
 const PHASE_COLORS = ['#4CAF50', '#1A56DB', '#FF6B35']
+
+const SNACK_DATA = [
+  { date: 'Apr 5', type: 'Practice', name: 'Sarah M', claimed: true },
+  { date: 'Apr 12', type: 'Practice', name: null as string | null, claimed: false },
+  { date: 'Apr 19', type: 'Game', name: 'Tom K', claimed: true },
+  { date: 'Apr 26', type: 'Practice', name: null as string | null, claimed: false },
+]
+
+const POLL_OPTS = [
+  { label: "Let's go, team!", votes: 12 },
+  { label: 'Hustle hard!', votes: 8 },
+  { label: 'All day, every day!', votes: 5 },
+]
 
 export default function HomeScreen() {
   const router = useRouter()
@@ -22,6 +35,9 @@ export default function HomeScreen() {
   const [lastMessage, setLastMessage] = useState<any>(null)
   const [allTeams, setAllTeams] = useState<any[]>([])
   const [showTeamPicker, setShowTeamPicker] = useState(false)
+  const [snacks, setSnacks] = useState(SNACK_DATA)
+  const [pollOptions, setPollOptions] = useState(POLL_OPTS)
+  const [userPollVote, setUserPollVote] = useState<number | null>(null)
 
   useEffect(() => { loadData() }, [])
 
@@ -251,7 +267,7 @@ export default function HomeScreen() {
             {planLoading && (
               <View style={styles.planLoading}>
                 <ActivityIndicator color={tc} size="small" />
-                <Text style={styles.planLoadingText}>Building your plan...</Text>
+                <Text style={styles.planLoadingText}>Shuffling your plan...</Text>
               </View>
             )}
 
@@ -303,7 +319,7 @@ export default function HomeScreen() {
         {/* Upcoming */}
         {events.length > 1 && (
           <View style={styles.card}>
-            <Text style={styles.cardLabel}>Coming up</Text>
+            <Text style={styles.cardLabel}>Upcoming</Text>
             {events.slice(1, 4).map((event, i) => {
               const isGame = event.type === 'game'
               return (
@@ -326,6 +342,81 @@ export default function HomeScreen() {
             })}
           </View>
         )}
+
+        {/* Snack Schedule */}
+        <View style={styles.card}>
+          <Text style={styles.cardLabel}>Snack schedule</Text>
+          {snacks.map((item, i) => (
+            <TouchableOpacity
+              key={i}
+              style={[styles.snackRow, i < snacks.length - 1 && styles.snackBorder]}
+              onPress={() => {
+                if (!item.claimed) {
+                  Alert.alert(
+                    'Sign up for snacks',
+                    'Sign up to bring snacks?',
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      {
+                        text: 'Confirm',
+                        onPress: () => {
+                          const updated = [...snacks]
+                          updated[i] = { ...item, claimed: true, name: 'You' }
+                          setSnacks(updated)
+                        },
+                      },
+                    ]
+                  )
+                }
+              }}
+              activeOpacity={item.claimed ? 1 : 0.75}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={styles.snackDate}>{item.date} · {item.type}</Text>
+                <Text style={[styles.snackName, { color: item.claimed ? '#1a1a1a' : tc }]}>
+                  {item.claimed ? item.name : 'Open — tap to sign up'}
+                </Text>
+              </View>
+              {!item.claimed && <Text style={[styles.snackPlus, { color: tc }]}>+</Text>}
+            </TouchableOpacity>
+          ))}
+          <Text style={styles.snackNote}>No one signed up for Apr 12 — remind the team in chat.</Text>
+        </View>
+
+        {/* Team Poll */}
+        <View style={styles.card}>
+          <Text style={styles.cardLabel}>Team poll</Text>
+          <Text style={styles.pollQuestion}>What should our team cheer be?</Text>
+          {pollOptions.map((option, i) => {
+            const totalVotes = pollOptions.reduce((sum, o) => sum + o.votes, 0)
+            const pct = totalVotes > 0 ? option.votes / totalVotes : 0
+            const isVoted = userPollVote === i
+            return (
+              <TouchableOpacity
+                key={i}
+                style={styles.pollRow}
+                onPress={() => {
+                  if (userPollVote !== null) return
+                  const updated = [...pollOptions]
+                  updated[i] = { ...option, votes: option.votes + 1 }
+                  setPollOptions(updated)
+                  setUserPollVote(i)
+                }}
+                activeOpacity={userPollVote !== null ? 1 : 0.75}
+              >
+                <View style={styles.pollLabelRow}>
+                  <Text style={[styles.pollOptionLabel, { fontWeight: isVoted ? '700' : '500', color: isVoted ? tc : '#1a1a1a' }]}>
+                    {option.label}
+                  </Text>
+                  <Text style={styles.pollVoteCount}>{option.votes}</Text>
+                </View>
+                <View style={styles.pollBarBg}>
+                  <View style={[styles.pollBarFill, { width: `${Math.round(pct * 100)}%` as any, backgroundColor: isVoted ? tc : tc + '40' }]} />
+                </View>
+              </TouchableOpacity>
+            )
+          })}
+        </View>
 
         {/* Team */}
         <View style={styles.card}>
@@ -442,4 +533,17 @@ const styles = StyleSheet.create({
   chatPreviewBody: { fontSize: 13, color: '#555', lineHeight: 18 },
   chatPreviewTime: { fontSize: 11, color: '#bbb', marginTop: 2 },
   chatLink: { fontSize: 13, fontWeight: '700' },
+  snackRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10 },
+  snackBorder: { borderBottomWidth: 0.5, borderBottomColor: '#f5f5f5' },
+  snackDate: { fontSize: 11, color: '#aaa', fontWeight: '600', marginBottom: 2 },
+  snackName: { fontSize: 14, fontWeight: '600' },
+  snackPlus: { fontSize: 20, fontWeight: '300', marginLeft: 8 },
+  snackNote: { fontSize: 11, color: '#FF8C42', marginTop: 8, fontStyle: 'italic' },
+  pollQuestion: { fontSize: 15, fontWeight: '700', color: '#1a1a1a', marginBottom: 12 },
+  pollRow: { marginBottom: 10 },
+  pollLabelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 },
+  pollOptionLabel: { fontSize: 14 },
+  pollVoteCount: { fontSize: 12, color: '#aaa', fontWeight: '600' },
+  pollBarBg: { height: 6, backgroundColor: '#f0f0f0', borderRadius: 3, overflow: 'hidden' },
+  pollBarFill: { height: 6, borderRadius: 3 },
 })
