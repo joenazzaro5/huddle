@@ -8,14 +8,14 @@ const BLUE = '#1A56DB'
 
 const ONBOARDING = {
   coach: [
-    { emoji: '⚡', title: 'AI practice plans in seconds', desc: 'Pick your focus, tap generate. Huddle builds a full Play-Practice-Play session tailored to your team and age group.' },
-    { emoji: '📋', title: 'Manage your lineup', desc: 'Build your starting lineup, plan substitutions, and track playing time — all in one place on game day.' },
-    { emoji: '💬', title: 'Keep everyone in the loop', desc: 'Message parents directly, track RSVPs, and share the schedule. No more group texts.' },
+    { emoji: '⚡', title: 'AI practice plans in seconds', desc: 'Pick your focus, tap generate. Huddle builds a full Play-Practice-Play session tailored to your team and age group.', nextLabel: 'Next: Lineup builder' },
+    { emoji: '📋', title: 'Manage your lineup', desc: 'Build your starting lineup, plan substitutions, and track playing time — all in one place on game day.', nextLabel: 'Next: Team communication' },
+    { emoji: '💬', title: 'Keep everyone in the loop', desc: 'Message parents directly, track RSVPs, and share the schedule. No more group texts.', nextLabel: null },
   ],
   parent: [
-    { emoji: '📅', title: 'Never miss a game or practice', desc: 'See the full schedule, get reminders, and RSVP in one tap. Your coach always knows who is coming.' },
-    { emoji: '💬', title: 'Direct line to the coach', desc: 'Message the coach, get updates, and stay connected with the team without digging through group chats.' },
-    { emoji: '🥤', title: 'Snack schedule and team votes', desc: 'Know whose week it is for snacks and weigh in on team decisions — all in the app.' },
+    { emoji: '📅', title: 'Never miss a game or practice', desc: 'See the full schedule, get reminders, and RSVP in one tap. Your coach always knows who is coming.', nextLabel: 'Next: Coach communication' },
+    { emoji: '💬', title: 'Direct line to the coach', desc: 'Message the coach, get updates, and stay connected with the team without digging through group chats.', nextLabel: 'Next: Team extras' },
+    { emoji: '🥤', title: 'Snack schedule and team votes', desc: 'Know whose week it is for snacks and weigh in on team decisions — all in the app.', nextLabel: null },
   ],
 }
 
@@ -88,13 +88,16 @@ export default function EntryScreen() {
 
         <View style={styles.splashFeatures}>
           {[
-            { emoji: '⚡', text: 'AI practice plans in seconds' },
-            { emoji: '📅', text: 'Schedules, RSVPs, and updates' },
-            { emoji: '📋', text: 'Lineup builder and game day tools' },
+            { emoji: '⚡', title: 'AI practice plans in seconds', desc: 'Pick your focus, tap generate. Done in seconds.' },
+            { emoji: '📅', title: 'Schedules, RSVPs, and updates', desc: 'Everything your team needs, all in one place.' },
+            { emoji: '📋', title: 'Lineup builder and game day tools', desc: 'Manage substitutions and track playing time.' },
           ].map((f, i) => (
-            <View key={i} style={styles.featureRow}>
+            <View key={i} style={styles.featureCard}>
               <Text style={styles.featureEmoji}>{f.emoji}</Text>
-              <Text style={styles.featureText}>{f.text}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.featureTitle}>{f.title}</Text>
+                <Text style={styles.featureDesc}>{f.desc}</Text>
+              </View>
             </View>
           ))}
         </View>
@@ -196,8 +199,15 @@ export default function EntryScreen() {
               else setOnboardingStep(onboardingStep + 1)
             }}
           >
-            <Text style={styles.primaryBtnText}>{isLast ? 'Create account' : 'Next'}</Text>
+            <Text style={styles.primaryBtnText}>
+              {isLast ? 'Create account' : `${slide.nextLabel} →`}
+            </Text>
           </TouchableOpacity>
+          {!isLast && (
+            <TouchableOpacity style={styles.ghostBtnDark} onPress={() => { setAuthMode('signup'); setScreen('auth') }}>
+              <Text style={styles.ghostBtnDarkText}>Skip to create account</Text>
+            </TouchableOpacity>
+          )}
           {isLast && (
             <TouchableOpacity style={styles.ghostBtnDark} onPress={() => { setAuthMode('signin'); setScreen('auth') }}>
               <Text style={styles.ghostBtnDarkText}>I already have an account</Text>
@@ -265,10 +275,11 @@ const styles = StyleSheet.create({
   iconEmoji: { fontSize: 42 },
   wordmark: { fontSize: 48, fontWeight: '900', color: '#fff', letterSpacing: -2, marginBottom: 8 },
   splashTagline: { fontSize: 15, color: 'rgba(255,255,255,0.65)', letterSpacing: 0.3 },
-  splashFeatures: { gap: 16 },
-  featureRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  splashFeatures: { gap: 12 },
+  featureCard: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 16, padding: 14 },
   featureEmoji: { fontSize: 22, width: 32, textAlign: 'center' },
-  featureText: { fontSize: 15, color: 'rgba(255,255,255,0.85)', fontWeight: '500' },
+  featureTitle: { fontSize: 15, color: '#fff', fontWeight: '700', marginBottom: 2 },
+  featureDesc: { fontSize: 13, color: 'rgba(255,255,255,0.6)', lineHeight: 18 },
   splashButtons: { gap: 12 },
   primaryBtn: { backgroundColor: '#fff', borderRadius: 16, paddingVertical: 16, alignItems: 'center' },
   primaryBtnText: { fontSize: 16, fontWeight: '700', color: BLUE },
