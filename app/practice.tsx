@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Dimensions, Modal } from 'react-native'
-import { WebView } from 'react-native-webview'
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Image, Linking } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { supabase } from '../lib/supabase'
 import { generatePracticePlan } from '../lib/ai'
@@ -56,7 +55,6 @@ export default function PracticeScreen() {
   const [activeTab, setActiveTab] = useState<'planner' | 'drills'>('planner')
   const [expandedDrill, setExpandedDrill] = useState<number | null>(null)
   const [inputFocused, setInputFocused] = useState(false)
-  const [selectedVideo, setSelectedVideo] = useState<string | null>(null)
 
   useEffect(() => { loadTeam() }, [])
 
@@ -253,8 +251,15 @@ export default function PracticeScreen() {
           {/* Current plan below prompt */}
           {plan && !planLoading && (
             <View style={styles.card}>
-              <Text style={styles.cardLabel}>Current plan</Text>
-              <Text style={styles.planTitle}>{plan.title}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.cardLabel}>Current plan</Text>
+                  <Text style={[styles.planTitle, { marginBottom: 0 }]}>{plan.title}</Text>
+                </View>
+                <TouchableOpacity onPress={() => nextEvent && autoGenerate(nextEvent, team)} style={{ padding: 6 }}>
+                  <Text style={{ fontSize: 20 }}>🔀</Text>
+                </TouchableOpacity>
+              </View>
               {plan.plan?.map((item: any, i: number) => (
                 <TouchableOpacity
                   key={i}
@@ -319,10 +324,20 @@ export default function PracticeScreen() {
                 <Text style={styles.drillDesc}>{drill.desc}</Text>
                 {drill.videoId && (
                   <TouchableOpacity
-                    style={[styles.watchBtn, { borderColor: dc }]}
-                    onPress={() => setSelectedVideo(drill.videoId)}
+                    onPress={() => Linking.openURL(`https://www.youtube.com/watch?v=${drill.videoId}`)}
+                    activeOpacity={0.85}
+                    style={{ marginTop: 8, borderRadius: 10, overflow: 'hidden' }}
                   >
-                    <Text style={[styles.watchBtnText, { color: dc }]}>▶ Watch video</Text>
+                    <Image
+                      source={{ uri: `https://img.youtube.com/vi/${drill.videoId}/mqdefault.jpg` }}
+                      style={{ width: '100%', height: 160, borderRadius: 10 }}
+                      resizeMode="cover"
+                    />
+                    <View style={styles.playOverlay}>
+                      <View style={styles.playCircle}>
+                        <Text style={styles.playIcon}>▶</Text>
+                      </View>
+                    </View>
                   </TouchableOpacity>
                 )}
               </View>
@@ -331,21 +346,6 @@ export default function PracticeScreen() {
         </ScrollView>
       )}
 
-      <Modal visible={selectedVideo !== null} transparent animationType="fade" onRequestClose={() => setSelectedVideo(null)}>
-        <View style={styles.videoOverlay}>
-          <TouchableOpacity style={styles.videoClose} onPress={() => setSelectedVideo(null)}>
-            <Text style={styles.videoCloseText}>✕</Text>
-          </TouchableOpacity>
-          {selectedVideo && (
-            <WebView
-              source={{ uri: `https://www.youtube-nocookie.com/embed/${selectedVideo}?autoplay=1&rel=0` }}
-              style={styles.videoPlayer}
-              allowsInlineMediaPlayback
-              mediaPlaybackRequiresUserAction={false}
-            />
-          )}
-        </View>
-      </Modal>
     </SafeAreaView>
   )
 }
@@ -399,10 +399,7 @@ const styles = StyleSheet.create({
   drillMeta: { fontSize: 11, color: '#aaa' },
   drillTitle: { fontSize: 15, fontWeight: '700', color: '#1a1a1a', marginBottom: 4 },
   drillDesc: { fontSize: 13, color: '#888', lineHeight: 18 },
-  watchBtn: { marginTop: 10, alignSelf: 'flex-start', paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5 },
-  watchBtnText: { fontSize: 13, fontWeight: '600' },
-  videoOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', justifyContent: 'center', alignItems: 'center' },
-  videoClose: { position: 'absolute', top: 56, right: 20, zIndex: 10, width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' },
-  videoCloseText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  videoPlayer: { width: Dimensions.get('window').width, height: Dimensions.get('window').width * 9 / 16, backgroundColor: '#000' },
+  playOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
+  playCircle: { width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(0,0,0,0.7)', alignItems: 'center', justifyContent: 'center' },
+  playIcon: { color: '#fff', fontSize: 18 },
 })

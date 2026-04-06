@@ -239,9 +239,13 @@ export default function HomeScreen() {
                 <Text style={styles.cardLabel}>Practice plan · AI generated</Text>
                 <Text style={styles.cardTitle}>{plan?.title ?? `${nextEvent.focus} · ${nextEvent.duration_min ?? 60} min`}</Text>
               </View>
-              <View style={[styles.aiChip, { backgroundColor: tc + '15' }]}>
+              <TouchableOpacity
+                style={[styles.aiChip, { backgroundColor: tc + '15' }]}
+                onPress={() => nextEvent && autoGeneratePlan(nextEvent, team)}
+              >
                 <Text style={styles.aiChipText}>⚡</Text>
-              </View>
+                <Text style={styles.aiChipLabel}>shuffle</Text>
+              </TouchableOpacity>
             </View>
 
             {planLoading && (
@@ -396,8 +400,9 @@ const styles = StyleSheet.create({
   cardLabel: { fontSize: 10, fontWeight: '700', color: '#aaa', textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 4 },
   cardTitle: { fontSize: 16, fontWeight: '800', color: '#1a1a1a' },
   planCardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 12 },
-  aiChip: { width: 30, height: 30, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  aiChip: { width: 40, borderRadius: 8, alignItems: 'center', justifyContent: 'center', paddingVertical: 4 },
   aiChipText: { fontSize: 14 },
+  aiChipLabel: { fontSize: 8, fontWeight: '600', color: '#1A56DB', marginTop: 1 },
   planLoading: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 14 },
   planLoadingText: { fontSize: 13, color: '#888' },
   phaseCard: { borderRadius: 12, overflow: 'hidden', borderWidth: 1, borderColor: '#eee', marginBottom: 8 },

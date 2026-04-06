@@ -26,6 +26,8 @@ export default function Layout() {
       <Tabs.Screen name="practice" options={{ tabBarIcon: ({ focused }) => <TabIcon label="Practice" focused={focused} /> }} />
       <Tabs.Screen name="games" options={{ tabBarIcon: ({ focused }) => <TabIcon label="Games" focused={focused} /> }} />
       <Tabs.Screen name="chat" options={{ tabBarIcon: ({ focused }) => <TabIcon label="Chat" focused={focused} /> }} />
+      <Tabs.Screen name="snacks" options={{ tabBarIcon: ({ focused }) => <TabIcon label="Snacks" focused={focused} /> }} />
+      <Tabs.Screen name="vote" options={{ tabBarIcon: ({ focused }) => <TabIcon label="Vote" focused={focused} /> }} />
       <Tabs.Screen name="account" options={{ tabBarIcon: ({ focused }) => <TabIcon label="Account" focused={focused} /> }} />
       <Tabs.Screen name="index" options={{ href: null, tabBarStyle: { display: 'none' } }} />
       <Tabs.Screen name="player" options={{ href: null }} />
