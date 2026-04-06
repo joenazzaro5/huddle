@@ -338,7 +338,7 @@ export default function PracticeScreen() {
           </TouchableOpacity>
           {selectedVideo && (
             <WebView
-              source={{ uri: `https://www.youtube.com/embed/${selectedVideo}?autoplay=1&rel=0` }}
+              source={{ uri: `https://www.youtube-nocookie.com/embed/${selectedVideo}?autoplay=1&rel=0` }}
               style={styles.videoPlayer}
               allowsInlineMediaPlayback
               mediaPlaybackRequiresUserAction={false}
