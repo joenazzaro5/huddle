@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
   featureDesc: { fontSize: 13, color: 'rgba(255,255,255,0.6)', lineHeight: 18 },
   splashButtons: { gap: 12 },
   primaryBtn: { backgroundColor: '#fff', borderRadius: 16, paddingVertical: 16, alignItems: 'center' },
-  primaryBtnText: { fontSize: 16, fontWeight: '700', color: BLUE },
+  primaryBtnText: { fontSize: 16, fontWeight: '700', color: '#fff' },
   ghostBtn: { borderRadius: 16, paddingVertical: 14, alignItems: 'center' },
   ghostBtnText: { fontSize: 15, color: 'rgba(255,255,255,0.7)', fontWeight: '500' },
   container: { flex: 1, backgroundColor: '#fff', paddingHorizontal: 24, paddingTop: 56, paddingBottom: 40 },
