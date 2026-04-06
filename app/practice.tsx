@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native'
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Dimensions, Modal } from 'react-native'
+import { WebView } from 'react-native-webview'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { supabase } from '../lib/supabase'
 import { generatePracticePlan } from '../lib/ai'
@@ -14,14 +15,14 @@ const FALLBACK_PLAN = [
 const PHASE_COLORS = ['#4CAF50', '#1A56DB', '#FF6B35']
 
 const DRILLS = [
-  { id: '1', title: 'Cone dribbling', focus: 'Dribbling', duration: '10 min', level: 'Beginner', desc: 'Set up 6 cones in a line 2 yards apart. Players dribble through using both feet.' },
-  { id: '2', title: 'Ball mastery', focus: 'Dribbling', duration: '12 min', level: 'Beginner', desc: 'Touches, rolls, and stepovers to build close control and confidence on the ball.' },
-  { id: '3', title: 'Sharks and minnows', focus: 'Dribbling', duration: '8 min', level: 'Beginner', desc: 'Fun tag game — dribblers keep the ball while sharks try to kick it out.' },
-  { id: '4', title: 'Triangle passing', focus: 'Passing', duration: '15 min', level: 'Beginner', desc: 'Three players form a triangle. Pass and move to the next cone.' },
-  { id: '5', title: 'Rondo possession', focus: 'Passing', duration: '10 min', level: 'Intermediate', desc: '5 vs 2 in the middle. Keep the ball moving with one or two touches.' },
-  { id: '6', title: 'Shooting on goal', focus: 'Shooting', duration: '15 min', level: 'Beginner', desc: 'Players take turns shooting from different angles. Rotate goalkeeper every 5 shots.' },
-  { id: '7', title: '1v1 defending', focus: 'Defending', duration: '10 min', level: 'Intermediate', desc: 'Stay between player and goal. No diving in — wait for the right moment.' },
-  { id: '8', title: 'GK shot stopping', focus: 'Goalkeeping', duration: '12 min', level: 'Beginner', desc: 'Reaction saves at close range. Keeper stays on feet and spreads wide.' },
+  { id: '1', title: 'Cone dribbling', focus: 'Dribbling', duration: '10 min', level: 'Beginner', desc: 'Set up 6 cones in a line 2 yards apart. Players dribble through using both feet.', videoId: 'RukcQggHAZU' },
+  { id: '2', title: 'Ball mastery', focus: 'Dribbling', duration: '12 min', level: 'Beginner', desc: 'Touches, rolls, and stepovers to build close control and confidence on the ball.', videoId: 'YqAyi27WejY' },
+  { id: '3', title: 'Sharks and minnows', focus: 'Dribbling', duration: '8 min', level: 'Beginner', desc: 'Fun tag game — dribblers keep the ball while sharks try to kick it out.', videoId: null },
+  { id: '4', title: 'Triangle passing', focus: 'Passing', duration: '15 min', level: 'Beginner', desc: 'Three players form a triangle. Pass and move to the next cone.', videoId: 'CosG13seo3o' },
+  { id: '5', title: 'Rondo possession', focus: 'Passing', duration: '10 min', level: 'Intermediate', desc: '5 vs 2 in the middle. Keep the ball moving with one or two touches.', videoId: 'Cq0rsuSEgvA' },
+  { id: '6', title: 'Shooting on goal', focus: 'Shooting', duration: '15 min', level: 'Beginner', desc: 'Players take turns shooting from different angles. Rotate goalkeeper every 5 shots.', videoId: 'DnWdr2DI758' },
+  { id: '7', title: '1v1 defending', focus: 'Defending', duration: '10 min', level: 'Intermediate', desc: 'Stay between player and goal. No diving in — wait for the right moment.', videoId: 'OIm6xrR0QRg' },
+  { id: '8', title: 'GK shot stopping', focus: 'Goalkeeping', duration: '12 min', level: 'Beginner', desc: 'Reaction saves at close range. Keeper stays on feet and spreads wide.', videoId: null },
 ]
 
 const FOCUSES = ['All', 'Dribbling', 'Passing', 'Shooting', 'Defending', 'Goalkeeping']
@@ -55,6 +56,7 @@ export default function PracticeScreen() {
   const [activeTab, setActiveTab] = useState<'planner' | 'drills'>('planner')
   const [expandedDrill, setExpandedDrill] = useState<number | null>(null)
   const [inputFocused, setInputFocused] = useState(false)
+  const [selectedVideo, setSelectedVideo] = useState<string | null>(null)
 
   useEffect(() => { loadTeam() }, [])
 
@@ -315,11 +317,35 @@ export default function PracticeScreen() {
                 </View>
                 <Text style={styles.drillTitle}>{drill.title}</Text>
                 <Text style={styles.drillDesc}>{drill.desc}</Text>
+                {drill.videoId && (
+                  <TouchableOpacity
+                    style={[styles.watchBtn, { borderColor: dc }]}
+                    onPress={() => setSelectedVideo(drill.videoId)}
+                  >
+                    <Text style={[styles.watchBtnText, { color: dc }]}>▶ Watch video</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             )
           })}
         </ScrollView>
       )}
+
+      <Modal visible={selectedVideo !== null} transparent animationType="fade" onRequestClose={() => setSelectedVideo(null)}>
+        <View style={styles.videoOverlay}>
+          <TouchableOpacity style={styles.videoClose} onPress={() => setSelectedVideo(null)}>
+            <Text style={styles.videoCloseText}>✕</Text>
+          </TouchableOpacity>
+          {selectedVideo && (
+            <WebView
+              source={{ uri: `https://www.youtube.com/embed/${selectedVideo}?autoplay=1&rel=0` }}
+              style={styles.videoPlayer}
+              allowsInlineMediaPlayback
+              mediaPlaybackRequiresUserAction={false}
+            />
+          )}
+        </View>
+      </Modal>
     </SafeAreaView>
   )
 }
@@ -373,4 +399,10 @@ const styles = StyleSheet.create({
   drillMeta: { fontSize: 11, color: '#aaa' },
   drillTitle: { fontSize: 15, fontWeight: '700', color: '#1a1a1a', marginBottom: 4 },
   drillDesc: { fontSize: 13, color: '#888', lineHeight: 18 },
+  watchBtn: { marginTop: 10, alignSelf: 'flex-start', paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5 },
+  watchBtnText: { fontSize: 13, fontWeight: '600' },
+  videoOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', justifyContent: 'center', alignItems: 'center' },
+  videoClose: { position: 'absolute', top: 56, right: 20, zIndex: 10, width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' },
+  videoCloseText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  videoPlayer: { width: Dimensions.get('window').width, height: Dimensions.get('window').width * 9 / 16, backgroundColor: '#000' },
 })
