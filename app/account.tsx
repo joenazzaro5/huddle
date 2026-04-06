@@ -50,13 +50,13 @@ export default function AccountScreen() {
 
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.profileCard}>
-          <View style={[styles.avatar, { backgroundColor: tc }]}>
+          <View style={[styles.avatar, { backgroundColor: '#111827' }]}>
             <Text style={styles.avatarText}>{(profile?.display_name ?? user?.email ?? 'C')[0].toUpperCase()}</Text>
           </View>
           <Text style={styles.displayName}>{profile?.display_name ?? 'Coach'}</Text>
           <Text style={styles.email}>{user?.email}</Text>
-          <View style={[styles.roleBadge, { backgroundColor: tc + '20' }]}>
-            <Text style={[styles.roleText, { color: tc }]}>
+          <View style={[styles.roleBadge, { backgroundColor: '#F3F4F6' }]}>
+            <Text style={[styles.roleText, { color: '#555' }]}>
               {profile?.coach_level ? `${profile.coach_level.charAt(0).toUpperCase() + profile.coach_level.slice(1)} Coach` : 'Coach'}
             </Text>
           </View>
@@ -70,7 +70,7 @@ export default function AccountScreen() {
             <View style={styles.infoRow}><Text style={styles.infoKey}>Gender</Text><Text style={styles.infoVal}>{team.gender}</Text></View>
             <View style={[styles.infoRow, { borderBottomWidth: 0 }]}>
               <Text style={styles.infoKey}>Invite code</Text>
-              <Text style={[styles.infoVal, { color: tc, fontWeight: '700' }]}>{team.invite_code}</Text>
+              <Text style={[styles.infoVal, { color: '#111827', fontWeight: '700' }]}>{team.invite_code}</Text>
             </View>
           </View>
         )}
