@@ -27,7 +27,7 @@ export default function Layout() {
       <Tabs.Screen name="games" options={{ tabBarIcon: ({ focused }) => <TabIcon label="Games" focused={focused} /> }} />
       <Tabs.Screen name="chat" options={{ tabBarIcon: ({ focused }) => <TabIcon label="Chat" focused={focused} /> }} />
       <Tabs.Screen name="account" options={{ tabBarIcon: ({ focused }) => <TabIcon label="Account" focused={focused} /> }} />
-      <Tabs.Screen name="index" options={{ href: null }} />
+      <Tabs.Screen name="index" options={{ href: null, tabBarStyle: { display: 'none' } }} />
       <Tabs.Screen name="player" options={{ href: null }} />
       <Tabs.Screen name="roster/index" options={{ href: null }} />
       <Tabs.Screen name="subs" options={{ href: null }} />
