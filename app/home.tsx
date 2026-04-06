@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Linking, Alert } from 'react-native'
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Linking } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { AppHeader } from '../lib/header'
@@ -323,7 +323,7 @@ export default function HomeScreen() {
             {events.slice(1, 4).map((event, i) => {
               const isGame = event.type === 'game'
               return (
-                <View key={event.id} style={[styles.eventRow, i < Math.min(events.length - 1, 3) - 1 && styles.eventBorder]}>
+                <View key={event.id} style={[styles.eventRow, i < 2 && styles.eventBorder]}>
                   <View style={[styles.eventIconBox, { backgroundColor: isGame ? '#FF8C4220' : tc + '20' }]}>
                     <Text style={[styles.eventIconText, { color: isGame ? '#FF8C42' : tc }]}>
                       {isGame ? 'G' : event.focus?.[0] ?? 'P'}
@@ -344,79 +344,36 @@ export default function HomeScreen() {
         )}
 
         {/* Snack Schedule */}
-        <View style={styles.card}>
+        <TouchableOpacity style={styles.card} onPress={() => router.push('/games')} activeOpacity={0.85}>
           <Text style={styles.cardLabel}>Snack schedule</Text>
-          {snacks.map((item, i) => (
-            <TouchableOpacity
-              key={i}
-              style={[styles.snackRow, i < snacks.length - 1 && styles.snackBorder]}
-              onPress={() => {
-                if (!item.claimed) {
-                  Alert.alert(
-                    'Sign up for snacks',
-                    'Sign up to bring snacks?',
-                    [
-                      { text: 'Cancel', style: 'cancel' },
-                      {
-                        text: 'Confirm',
-                        onPress: () => {
-                          const updated = [...snacks]
-                          updated[i] = { ...item, claimed: true, name: 'You' }
-                          setSnacks(updated)
-                        },
-                      },
-                    ]
-                  )
-                }
-              }}
-              activeOpacity={item.claimed ? 1 : 0.75}
-            >
+          {snacks.slice(0, 2).map((item, i) => (
+            <View key={i} style={[styles.snackRow, i < 1 && styles.snackBorder]}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.snackDate}>{item.date} · {item.type}</Text>
-                <Text style={[styles.snackName, { color: item.claimed ? '#1a1a1a' : tc }]}>
-                  {item.claimed ? item.name : 'Open — tap to sign up'}
+                <Text style={[styles.snackName, { color: item.claimed ? '#1a1a1a' : '#888' }]}>
+                  {item.claimed ? item.name : 'Open'}
                 </Text>
               </View>
-              {!item.claimed && <Text style={[styles.snackPlus, { color: tc }]}>+</Text>}
-            </TouchableOpacity>
+            </View>
           ))}
-          <Text style={styles.snackNote}>No one signed up for Apr 12 — remind the team in chat.</Text>
-        </View>
+          <Text style={[styles.snackViewLink, { color: tc }]}>View schedule →</Text>
+        </TouchableOpacity>
 
         {/* Team Poll */}
-        <View style={styles.card}>
+        <TouchableOpacity style={styles.card} onPress={() => router.push('/games')} activeOpacity={0.85}>
           <Text style={styles.cardLabel}>Team poll</Text>
           <Text style={styles.pollQuestion}>What should our team cheer be?</Text>
-          {pollOptions.map((option, i) => {
-            const totalVotes = pollOptions.reduce((sum, o) => sum + o.votes, 0)
-            const pct = totalVotes > 0 ? option.votes / totalVotes : 0
-            const isVoted = userPollVote === i
+          {(() => {
+            const leading = [...pollOptions].sort((a, b) => b.votes - a.votes)[0]
             return (
-              <TouchableOpacity
-                key={i}
-                style={styles.pollRow}
-                onPress={() => {
-                  if (userPollVote !== null) return
-                  const updated = [...pollOptions]
-                  updated[i] = { ...option, votes: option.votes + 1 }
-                  setPollOptions(updated)
-                  setUserPollVote(i)
-                }}
-                activeOpacity={userPollVote !== null ? 1 : 0.75}
-              >
-                <View style={styles.pollLabelRow}>
-                  <Text style={[styles.pollOptionLabel, { fontWeight: isVoted ? '700' : '500', color: isVoted ? tc : '#1a1a1a' }]}>
-                    {option.label}
-                  </Text>
-                  <Text style={styles.pollVoteCount}>{option.votes}</Text>
-                </View>
-                <View style={styles.pollBarBg}>
-                  <View style={[styles.pollBarFill, { width: `${Math.round(pct * 100)}%` as any, backgroundColor: isVoted ? tc : tc + '40' }]} />
-                </View>
-              </TouchableOpacity>
+              <View style={styles.pollLeadRow}>
+                <Text style={styles.pollLeadLabel}>{leading.label}</Text>
+                <Text style={styles.pollLeadVotes}>{leading.votes} votes</Text>
+              </View>
             )
-          })}
-        </View>
+          })()}
+          <Text style={[styles.snackViewLink, { color: tc }]}>See results →</Text>
+        </TouchableOpacity>
 
         {/* Team */}
         <View style={styles.card}>
@@ -539,7 +496,11 @@ const styles = StyleSheet.create({
   snackName: { fontSize: 14, fontWeight: '600' },
   snackPlus: { fontSize: 20, fontWeight: '300', marginLeft: 8 },
   snackNote: { fontSize: 11, color: '#FF8C42', marginTop: 8, fontStyle: 'italic' },
-  pollQuestion: { fontSize: 15, fontWeight: '700', color: '#1a1a1a', marginBottom: 12 },
+  snackViewLink: { fontSize: 13, fontWeight: '700', marginTop: 10 },
+  pollQuestion: { fontSize: 15, fontWeight: '700', color: '#1a1a1a', marginBottom: 10 },
+  pollLeadRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F7F7F5', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 2 },
+  pollLeadLabel: { fontSize: 14, fontWeight: '600', color: '#1a1a1a', flex: 1 },
+  pollLeadVotes: { fontSize: 12, color: '#888', fontWeight: '600' },
   pollRow: { marginBottom: 10 },
   pollLabelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 },
   pollOptionLabel: { fontSize: 14 },

@@ -34,7 +34,7 @@ export default function GamesScreen() {
   const [team, setTeam] = useState<any>(null)
   const [players, setPlayers] = useState<Player[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'gameday' | 'roster'>('gameday')
+  const [activeTab, setActiveTab] = useState<'gameday' | 'roster' | 'snacks' | 'polls'>('gameday')
   const [lineupPrompt, setLineupPrompt] = useState('')
   const [lineupLoading, setLineupLoading] = useState(false)
   const [lineupGenerated, setLineupGenerated] = useState(true)
@@ -45,6 +45,21 @@ export default function GamesScreen() {
   const [selectedPlayer, setSelectedPlayer] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<'field' | 'list'>('field')
   const timerRef = useRef<any>(null)
+
+  const [snackData, setSnackData] = useState([
+    { date: 'Apr 5', type: 'Practice', name: 'Sarah M', claimed: true },
+    { date: 'Apr 12', type: 'Practice', name: null as string | null, claimed: false },
+    { date: 'Apr 19', type: 'Game', name: 'Tom K', claimed: true },
+    { date: 'Apr 26', type: 'Practice', name: null as string | null, claimed: false },
+    { date: 'May 3', type: 'Practice', name: 'Lisa R', claimed: true },
+    { date: 'May 10', type: 'Game', name: null as string | null, claimed: false },
+  ])
+  const [pollOptions, setPollOptions] = useState([
+    { label: "Let's go, team!", votes: 12 },
+    { label: 'Hustle hard!', votes: 8 },
+    { label: 'All day, every day!', votes: 5 },
+  ])
+  const [votedOption, setVotedOption] = useState<number | null>(null)
 
   useEffect(() => {
     loadData()
@@ -229,24 +244,23 @@ Slots: 0=GK, 1=LB, 2=CB, 3=RB, 4=MF, 5=LW, 6=RW`
     <SafeAreaView style={styles.container} edges={['top']}>
       <AppHeader teamColor={tc} teamName={team?.name} />
 
-      <View style={styles.subTabs}>
-        <TouchableOpacity
-          style={[styles.subTab, activeTab === 'gameday' && { borderBottomColor: tc, borderBottomWidth: 2.5 }]}
-          onPress={() => setActiveTab('gameday')}
-        >
-          <Text style={[styles.subTabText, { color: activeTab === 'gameday' ? tc : '#999', fontWeight: activeTab === 'gameday' ? '700' : '500' }]}>
-            Game Day
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.subTab, activeTab === 'roster' && { borderBottomColor: tc, borderBottomWidth: 2.5 }]}
-          onPress={() => setActiveTab('roster')}
-        >
-          <Text style={[styles.subTabText, { color: activeTab === 'roster' ? tc : '#999', fontWeight: activeTab === 'roster' ? '700' : '500' }]}>
-            Roster
-          </Text>
-        </TouchableOpacity>
-      </View>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.subTabsScroll} contentContainerStyle={styles.subTabsContent}>
+        {(['gameday', 'roster', 'snacks', 'polls'] as const).map(tab => {
+          const labels: Record<string, string> = { gameday: 'Game Day', roster: 'Roster', snacks: 'Snacks', polls: 'Polls' }
+          const isActive = activeTab === tab
+          return (
+            <TouchableOpacity
+              key={tab}
+              style={[styles.subTab, isActive && { borderBottomColor: tc, borderBottomWidth: 2.5 }]}
+              onPress={() => setActiveTab(tab)}
+            >
+              <Text style={[styles.subTabText, { color: isActive ? tc : '#999', fontWeight: isActive ? '700' : '500' }]}>
+                {labels[tab]}
+              </Text>
+            </TouchableOpacity>
+          )
+        })}
+      </ScrollView>
 
       {activeTab === 'roster' ? (
         <ScrollView contentContainerStyle={styles.content}>
@@ -283,11 +297,104 @@ Slots: 0=GK, 1=LB, 2=CB, 3=RB, 4=MF, 5=LW, 6=RW`
             ))}
           </View>
         </ScrollView>
+      ) : activeTab === 'snacks' ? (
+        <ScrollView contentContainerStyle={styles.content}>
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Snack schedule</Text>
+            <Text style={styles.cardSub}>Sign up to bring snacks for your team</Text>
+            <View style={{ marginTop: 14 }}>
+              {snackData.map((item, i) => {
+                const isWithin7Days = false // static data; would compute from date in real app
+                return (
+                  <TouchableOpacity
+                    key={i}
+                    style={[styles.snackListRow, i < snackData.length - 1 && styles.snackListBorder, item.claimed && { opacity: 0.85 }]}
+                    onPress={() => {
+                      if (item.claimed) return
+                      Alert.alert(
+                        'Sign up for snacks',
+                        `Sign up to bring snacks on ${item.date}?`,
+                        [
+                          { text: 'Cancel', style: 'cancel' },
+                          {
+                            text: 'Confirm',
+                            onPress: () => {
+                              const updated = [...snackData]
+                              updated[i] = { ...item, claimed: true, name: 'You ✓' }
+                              setSnackData(updated)
+                            },
+                          },
+                        ]
+                      )
+                    }}
+                    activeOpacity={item.claimed ? 1 : 0.75}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.snackListDate}>{item.date} · {item.type}</Text>
+                      <Text style={[styles.snackListName, { color: item.name === 'You ✓' ? '#2E7D32' : item.claimed ? '#1a1a1a' : tc }]}>
+                        {item.claimed ? item.name : 'Open — tap to sign up'}
+                      </Text>
+                      {!item.claimed && isWithin7Days && (
+                        <Text style={styles.snackWarning}>No one signed up yet</Text>
+                      )}
+                    </View>
+                    {!item.claimed && <Text style={[styles.snackPlusIcon, { color: tc }]}>+</Text>}
+                  </TouchableOpacity>
+                )
+              })}
+            </View>
+            <Text style={styles.snackFootnote}>The coach will send a reminder if spots go unfilled</Text>
+          </View>
+        </ScrollView>
+      ) : activeTab === 'polls' ? (
+        <ScrollView contentContainerStyle={styles.content}>
+          <View style={styles.card}>
+            <Text style={styles.pollClosesLabel}>Poll closes in 3 days</Text>
+            <Text style={styles.pollQuestion}>What should our team cheer be?</Text>
+            {pollOptions.map((option, i) => {
+              const total = pollOptions.reduce((sum, o) => sum + o.votes, 0)
+              const pct = total > 0 ? option.votes / total : 0
+              const isVoted = votedOption === i
+              return (
+                <TouchableOpacity
+                  key={i}
+                  style={[
+                    styles.pollRow,
+                    isVoted && { borderLeftWidth: 3, borderLeftColor: tc, backgroundColor: '#EEF4FF', borderRadius: 10, paddingLeft: 10 },
+                  ]}
+                  onPress={() => {
+                    if (votedOption === i) return
+                    setPollOptions(prev => prev.map((o, idx) => {
+                      if (idx === i) return { ...o, votes: o.votes + 1 }
+                      if (idx === votedOption) return { ...o, votes: Math.max(0, o.votes - 1) }
+                      return o
+                    }))
+                    setVotedOption(i)
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.pollLabelRow}>
+                    <Text style={[styles.pollOptionLabel, { fontWeight: isVoted ? '700' : '500', color: isVoted ? tc : '#1a1a1a' }]}>
+                      {option.label}
+                    </Text>
+                    <Text style={styles.pollVoteCount}>{option.votes}</Text>
+                  </View>
+                  <View style={styles.pollBarBg}>
+                    <View style={[styles.pollBarFill, { width: `${Math.round(pct * 100)}%` as any, backgroundColor: isVoted ? tc : tc + '40' }]} />
+                  </View>
+                </TouchableOpacity>
+              )
+            })}
+            <TouchableOpacity style={[styles.newPollBtn, { borderColor: tc }]}>
+              <Text style={[styles.newPollBtnText, { color: tc }]}>Create new poll +</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
       ) : (
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
           {nextGame && (
-            <View style={[styles.gameCard, { backgroundColor: '#1A56DB' }]}>
+            <View style={[styles.gameCard, { backgroundColor: '#1C1C1E' }]}>
               <Text style={styles.gameCardLabel}>Next game</Text>
               <Text style={styles.gameCardTitle}>vs {nextGame.opponent}</Text>
               <Text style={styles.gameCardSub}>
@@ -339,7 +446,7 @@ Slots: 0=GK, 1=LB, 2=CB, 3=RB, 4=MF, 5=LW, 6=RW`
           ) : (
             <>
               {/* Timer */}
-              <View style={[styles.timerCard, { backgroundColor: '#1A56DB' }]}>
+              <View style={[styles.timerCard, { backgroundColor: '#1C1C1E' }]}>
                 <View style={styles.timerRow}>
                   <View>
                     <Text style={styles.timerLabel}>Half {period}</Text>
@@ -347,22 +454,22 @@ Slots: 0=GK, 1=LB, 2=CB, 3=RB, 4=MF, 5=LW, 6=RW`
                   </View>
                   <View style={styles.timerActions}>
                     <TouchableOpacity style={[styles.timerBtn, { backgroundColor: gameRunning ? '#E24B4A' : '#fff' }]} onPress={toggleTimer}>
-                      <Text style={[styles.timerBtnText, { color: gameRunning ? '#fff' : tc }]}>{gameRunning ? 'Pause' : 'Start'}</Text>
+                      <Text style={[styles.timerBtnText, { color: gameRunning ? '#fff' : '#1C1C1E' }]}>{gameRunning ? 'Pause' : 'Start'}</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.timerBtnOutline} onPress={() => setPeriod(p => p === 1 ? 2 : 1)}>
-                      <Text style={styles.timerBtnOutlineText}>2nd half →</Text>
+                    <TouchableOpacity style={[styles.timerBtnOutline, { backgroundColor: '#fff' }]} onPress={() => setPeriod(p => p === 1 ? 2 : 1)}>
+                      <Text style={[styles.timerBtnOutlineText, { color: '#1C1C1E' }]}>2nd half →</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.timerBtnOutline} onPress={resetGame}>
-                      <Text style={styles.timerBtnOutlineText}>Reset</Text>
+                    <TouchableOpacity style={[styles.timerBtnOutline, { backgroundColor: '#fff' }]} onPress={resetGame}>
+                      <Text style={[styles.timerBtnOutlineText, { color: '#1C1C1E' }]}>Reset</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
                 <View style={styles.viewToggle}>
-                  <TouchableOpacity onPress={() => setViewMode('field')} style={[styles.viewToggleBtn, viewMode === 'field' && { backgroundColor: 'rgba(255,255,255,0.3)' }]}>
-                    <Text style={styles.viewToggleText}>Field</Text>
+                  <TouchableOpacity onPress={() => setViewMode('field')} style={[styles.viewToggleBtn, viewMode === 'field' ? { backgroundColor: '#fff' } : { backgroundColor: 'transparent' }]}>
+                    <Text style={[styles.viewToggleText, { color: viewMode === 'field' ? '#1C1C1E' : 'rgba(255,255,255,0.5)' }]}>Field</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={() => setViewMode('list')} style={[styles.viewToggleBtn, viewMode === 'list' && { backgroundColor: 'rgba(255,255,255,0.3)' }]}>
-                    <Text style={styles.viewToggleText}>Roster</Text>
+                  <TouchableOpacity onPress={() => setViewMode('list')} style={[styles.viewToggleBtn, viewMode === 'list' ? { backgroundColor: '#fff' } : { backgroundColor: 'transparent' }]}>
+                    <Text style={[styles.viewToggleText, { color: viewMode === 'list' ? '#1C1C1E' : 'rgba(255,255,255,0.5)' }]}>Roster</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -394,17 +501,17 @@ Slots: 0=GK, 1=LB, 2=CB, 3=RB, 4=MF, 5=LW, 6=RW`
                             {
                               left: `${pos.x}%`,
                               top: `${pos.y}%`,
-                              backgroundColor: isSelected ? '#FFD700' : tc,
-                              borderColor: isBehind ? '#E24B4A' : 'rgba(255,255,255,0.4)',
+                              backgroundColor: isSelected ? '#FFD700' : '#fff',
+                              borderColor: isBehind ? '#E24B4A' : 'rgba(255,255,255,0.6)',
                               borderWidth: isBehind ? 2.5 : 1.5,
                             }
                           ]}
                           onPress={() => handlePlayerTap(player.id)}
                           activeOpacity={0.8}
                         >
-                          <Text style={styles.fieldPlayerNum}>{player.number ?? '?'}</Text>
-                          <Text style={styles.fieldPlayerName} numberOfLines={1}>{player.name.split(' ')[0]}</Text>
-                          <Text style={styles.fieldPlayerMins}>{formatMins(player.minutes)}</Text>
+                          <Text style={[styles.fieldPlayerNum, { color: isSelected ? '#1C1C1E' : '#1C1C1E' }]}>{player.number ?? '?'}</Text>
+                          <Text style={[styles.fieldPlayerName, { color: 'rgba(28,28,30,0.8)' }]} numberOfLines={1}>{player.name.split(' ')[0]}</Text>
+                          <Text style={[styles.fieldPlayerMins, { color: 'rgba(28,28,30,0.6)' }]}>{formatMins(player.minutes)}</Text>
                         </TouchableOpacity>
                       )
                     })}
@@ -429,8 +536,8 @@ Slots: 0=GK, 1=LB, 2=CB, 3=RB, 4=MF, 5=LW, 6=RW`
                               onPress={() => handlePlayerTap(player.id)}
                               activeOpacity={0.8}
                             >
-                              <View style={[styles.benchPlayerNum, { backgroundColor: tc + '20' }]}>
-                                <Text style={[styles.benchPlayerNumText, { color: tc }]}>{player.number ?? '?'}</Text>
+                              <View style={[styles.benchPlayerNum, { backgroundColor: '#f0f0f0' }]}>
+                                <Text style={[styles.benchPlayerNumText, { color: '#1C1C1E' }]}>{player.number ?? '?'}</Text>
                               </View>
                               <Text style={styles.benchPlayerName} numberOfLines={1}>{player.name.split(' ')[0]}</Text>
                               <Text style={[styles.benchPlayerMins, { color: needsTime ? '#E24B4A' : '#aaa' }]}>{formatMins(player.minutes)}</Text>
@@ -527,8 +634,9 @@ Slots: 0=GK, 1=LB, 2=CB, 3=RB, 4=MF, 5=LW, 6=RW`
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F7F7F5' },
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  subTabs: { flexDirection: 'row', backgroundColor: '#fff', borderBottomWidth: 0.5, borderBottomColor: '#eee' },
-  subTab: { flex: 1, paddingVertical: 12, alignItems: 'center', borderBottomWidth: 2.5, borderBottomColor: 'transparent' },
+  subTabsScroll: { backgroundColor: '#fff', borderBottomWidth: 0.5, borderBottomColor: '#eee', maxHeight: 46 },
+  subTabsContent: { flexDirection: 'row' },
+  subTab: { paddingHorizontal: 18, paddingVertical: 12, alignItems: 'center', borderBottomWidth: 2.5, borderBottomColor: 'transparent' },
   subTabText: { fontSize: 14 },
   content: { padding: 16 },
   teamCard: { borderRadius: 20, padding: 18, marginBottom: 14 },
@@ -587,12 +695,12 @@ const styles = StyleSheet.create({
   yourHalfLabel: { position: 'absolute', top: '53%', left: 8 },
   yourHalfText: { fontSize: 8, fontWeight: '700', color: 'rgba(255,255,255,0.25)', letterSpacing: 1 },
   fieldPlayer: { position: 'absolute', width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', marginLeft: -26, marginTop: -26, borderWidth: 1.5 },
-  fieldPlayerNum: { fontSize: 13, fontWeight: '900', color: '#fff' },
-  fieldPlayerName: { fontSize: 8, color: 'rgba(255,255,255,0.9)', fontWeight: '600', maxWidth: 48 },
-  fieldPlayerMins: { fontSize: 8, color: 'rgba(255,255,255,0.7)' },
+  fieldPlayerNum: { fontSize: 13, fontWeight: '900', color: '#1C1C1E' },
+  fieldPlayerName: { fontSize: 8, color: 'rgba(28,28,30,0.8)', fontWeight: '600', maxWidth: 48 },
+  fieldPlayerMins: { fontSize: 8, color: 'rgba(28,28,30,0.6)' },
   benchArea: { backgroundColor: '#fff', borderRadius: 14, padding: 12, borderWidth: 0.5, borderColor: '#eee' },
   benchLabel: { fontSize: 10, fontWeight: '700', color: '#aaa', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
-  benchPlayer: { alignItems: 'center', width: 64, borderRadius: 10, padding: 8, backgroundColor: '#F7F7F5', borderWidth: 1, borderColor: '#eee' },
+  benchPlayer: { alignItems: 'center', width: 64, borderRadius: 10, padding: 8, backgroundColor: '#fff', borderWidth: 1, borderColor: '#e8e8e8' },
   benchPlayerNum: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
   benchPlayerNumText: { fontSize: 13, fontWeight: '800' },
   benchPlayerName: { fontSize: 10, fontWeight: '600', color: '#555', maxWidth: 56, textAlign: 'center' },
@@ -611,4 +719,21 @@ const styles = StyleSheet.create({
   fairPlayAlert: { fontSize: 13, color: '#E24B4A', marginBottom: 3 },
   resetLineupBtn: { borderRadius: 14, paddingVertical: 13, alignItems: 'center', borderWidth: 1.5, marginBottom: 14 },
   resetLineupText: { fontSize: 14, fontWeight: '700' },
+  snackListRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12 },
+  snackListBorder: { borderBottomWidth: 0.5, borderBottomColor: '#f5f5f5' },
+  snackListDate: { fontSize: 11, color: '#aaa', fontWeight: '600', marginBottom: 2 },
+  snackListName: { fontSize: 14, fontWeight: '600' },
+  snackWarning: { fontSize: 11, color: '#FF8C42', fontWeight: '600', marginTop: 2 },
+  snackPlusIcon: { fontSize: 20, fontWeight: '300', marginLeft: 8 },
+  snackFootnote: { fontSize: 11, color: '#aaa', marginTop: 14, fontStyle: 'italic', textAlign: 'center' },
+  pollClosesLabel: { fontSize: 11, fontWeight: '700', color: '#888', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 },
+  pollQuestion: { fontSize: 16, fontWeight: '800', color: '#1a1a1a', marginBottom: 14 },
+  pollRow: { marginBottom: 12, paddingVertical: 4 },
+  pollLabelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
+  pollOptionLabel: { fontSize: 14 },
+  pollVoteCount: { fontSize: 12, color: '#aaa', fontWeight: '600' },
+  pollBarBg: { height: 6, backgroundColor: '#f0f0f0', borderRadius: 3, overflow: 'hidden' },
+  pollBarFill: { height: 6, borderRadius: 3 },
+  newPollBtn: { borderRadius: 12, paddingVertical: 11, alignItems: 'center', borderWidth: 1.5, marginTop: 8 },
+  newPollBtnText: { fontSize: 13, fontWeight: '700' },
 })

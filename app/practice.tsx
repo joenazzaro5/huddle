@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Image, Linking } from 'react-native'
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Image } from 'react-native'
+import * as WebBrowser from 'expo-web-browser'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { supabase } from '../lib/supabase'
 import { generatePracticePlan } from '../lib/ai'
@@ -353,7 +354,7 @@ export default function PracticeScreen() {
                 <Text style={styles.drillDesc}>{drill.desc}</Text>
                 {drill.videoId && (
                   <TouchableOpacity
-                    onPress={() => Linking.openURL(`https://youtu.be/${drill.videoId}`)}
+                    onPress={() => WebBrowser.openBrowserAsync('https://www.youtube.com/watch?v=' + drill.videoId)}
                     activeOpacity={0.85}
                     style={{ marginTop: 8, borderRadius: 10, overflow: 'hidden' }}
                   >
