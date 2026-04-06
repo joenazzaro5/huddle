@@ -104,7 +104,7 @@ export default function EntryScreen() {
 
         <View style={styles.splashButtons}>
           <TouchableOpacity style={styles.primaryBtn} onPress={() => setScreen('role')}>
-            <Text style={styles.primaryBtnText}>Get started</Text>
+            <Text style={styles.splashBtnText}>Get started — it's free</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.ghostBtn} onPress={() => { setAuthMode('signin'); setScreen('auth') }}>
             <Text style={styles.ghostBtnText}>I already have an account</Text>
@@ -281,8 +281,9 @@ const styles = StyleSheet.create({
   featureTitle: { fontSize: 15, color: '#fff', fontWeight: '700', marginBottom: 2 },
   featureDesc: { fontSize: 13, color: 'rgba(255,255,255,0.6)', lineHeight: 18 },
   splashButtons: { gap: 12 },
-  primaryBtn: { backgroundColor: '#fff', borderRadius: 16, paddingVertical: 16, alignItems: 'center' },
+  primaryBtn: { backgroundColor: '#fff', borderRadius: 16, paddingVertical: 17, alignItems: 'center' },
   primaryBtnText: { fontSize: 16, fontWeight: '700', color: '#fff' },
+  splashBtnText: { fontSize: 16, fontWeight: '700', color: '#1A56DB' },
   ghostBtn: { borderRadius: 16, paddingVertical: 14, alignItems: 'center' },
   ghostBtnText: { fontSize: 15, color: 'rgba(255,255,255,0.7)', fontWeight: '500' },
   container: { flex: 1, backgroundColor: '#fff', paddingHorizontal: 24, paddingTop: 56, paddingBottom: 40 },
