@@ -267,7 +267,7 @@ Slots: 0=GK, 1=LB, 2=CB, 3=RB, 4=MF, 5=LW, 6=RW`
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.subTabsScroll} contentContainerStyle={styles.subTabsContent}>
         {(['schedule', 'games', 'roster', 'snacks', 'polls'] as const).map(tab => {
-          const labels: Record<string, string> = { schedule: 'Sched', games: 'Games', roster: 'Roster', snacks: 'Snacks', polls: 'Polls' }
+          const labels: Record<string, string> = { schedule: 'Schedule', games: 'Games', roster: 'Roster', snacks: 'Snacks', polls: 'Polls' }
           const isActive = activeTab === tab
           return (
             <TouchableOpacity
@@ -461,13 +461,20 @@ Slots: 0=GK, 1=LB, 2=CB, 3=RB, 4=MF, 5=LW, 6=RW`
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
           {nextGame && (
-            <View style={[styles.gameCard, { backgroundColor: '#1C1C1E' }]}>
+            <View style={[
+              styles.gameCard,
+              { backgroundColor: '#1C1C1E' },
+              lineupGenerated && { marginBottom: 0, borderBottomLeftRadius: 0, borderBottomRightRadius: 0 },
+            ]}>
               <Text style={styles.gameCardLabel}>Next game</Text>
               <Text style={styles.gameCardTitle}>vs {nextGame.opponent}</Text>
               <Text style={styles.gameCardSub}>
                 {new Date(nextGame.starts_at).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
               </Text>
             </View>
+          )}
+          {nextGame && lineupGenerated && (
+            <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.08)' }} />
           )}
 
           {!lineupGenerated ? (
@@ -513,30 +520,34 @@ Slots: 0=GK, 1=LB, 2=CB, 3=RB, 4=MF, 5=LW, 6=RW`
           ) : (
             <>
               {/* Timer */}
-              <View style={[styles.timerCard, { backgroundColor: '#1C1C1E' }]}>
+              <View style={[
+                styles.timerCard,
+                { backgroundColor: '#1C1C1E' },
+                nextGame && { borderTopLeftRadius: 0, borderTopRightRadius: 0 },
+              ]}>
                 <View style={styles.timerRow}>
                   <View>
                     <Text style={styles.timerLabel}>Half {period}</Text>
                     <Text style={styles.timerTime}>{formatTime(gameTime)}</Text>
                   </View>
                   <View style={styles.timerActions}>
-                    <TouchableOpacity style={[styles.timerBtn, { backgroundColor: gameRunning ? '#E24B4A' : 'rgba(255,255,255,0.15)' }]} onPress={toggleTimer}>
+                    <TouchableOpacity style={[styles.timerBtn, { backgroundColor: gameRunning ? '#E24B4A' : 'rgba(255,255,255,0.12)' }]} onPress={toggleTimer}>
                       <Text style={[styles.timerBtnText, { color: '#fff' }]}>{gameRunning ? 'Pause' : 'Start'}</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={[styles.timerBtnOutline, { backgroundColor: 'rgba(255,255,255,0.15)' }]} onPress={() => setPeriod(p => p === 1 ? 2 : 1)}>
+                    <TouchableOpacity style={[styles.timerBtnOutline, { backgroundColor: 'rgba(255,255,255,0.12)' }]} onPress={() => setPeriod(p => p === 1 ? 2 : 1)}>
                       <Text style={[styles.timerBtnOutlineText, { color: '#fff' }]}>2nd half →</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={[styles.timerBtnOutline, { backgroundColor: 'rgba(255,255,255,0.15)' }]} onPress={resetGame}>
+                    <TouchableOpacity style={[styles.timerBtnOutline, { backgroundColor: 'rgba(255,255,255,0.12)' }]} onPress={resetGame}>
                       <Text style={[styles.timerBtnOutlineText, { color: '#fff' }]}>Reset</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
                 <View style={styles.viewToggle}>
                   <TouchableOpacity onPress={() => setViewMode('field')} style={[styles.viewToggleBtn, viewMode === 'field' ? { backgroundColor: '#fff' } : { backgroundColor: 'transparent' }]}>
-                    <Text style={[styles.viewToggleText, { color: viewMode === 'field' ? '#1C1C1E' : 'rgba(255,255,255,0.6)' }]}>Field</Text>
+                    <Text style={[styles.viewToggleText, { color: viewMode === 'field' ? '#1C1C1E' : 'rgba(255,255,255,0.5)', fontWeight: viewMode === 'field' ? '700' : '500' }]}>Field</Text>
                   </TouchableOpacity>
                   <TouchableOpacity onPress={() => setViewMode('list')} style={[styles.viewToggleBtn, viewMode === 'list' ? { backgroundColor: '#fff' } : { backgroundColor: 'transparent' }]}>
-                    <Text style={[styles.viewToggleText, { color: viewMode === 'list' ? '#1C1C1E' : 'rgba(255,255,255,0.6)' }]}>Roster</Text>
+                    <Text style={[styles.viewToggleText, { color: viewMode === 'list' ? '#1C1C1E' : 'rgba(255,255,255,0.5)', fontWeight: viewMode === 'list' ? '700' : '500' }]}>Roster</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -697,7 +708,7 @@ const styles = StyleSheet.create({
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   subTabsScroll: { backgroundColor: '#fff', borderBottomWidth: 0.5, borderBottomColor: '#eee', maxHeight: 46 },
   subTabsContent: { flexDirection: 'row' },
-  subTab: { paddingHorizontal: 16, paddingVertical: 12, alignItems: 'center', borderBottomWidth: 2.5, borderBottomColor: 'transparent' },
+  subTab: { paddingHorizontal: 16, paddingVertical: 12, alignItems: 'center', borderBottomWidth: 2.5, borderBottomColor: 'transparent', minWidth: 80 },
   subTabText: { fontSize: 13 },
   content: { padding: 16 },
   emptyState: { alignItems: 'center', paddingVertical: 60 },
@@ -728,9 +739,9 @@ const styles = StyleSheet.create({
   starterText: { fontSize: 11, fontWeight: '700' },
   chevron: { fontSize: 18, color: '#ccc', marginLeft: 4 },
   gameCard: { borderRadius: 20, padding: 16, marginBottom: 14 },
-  gameCardLabel: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 },
-  gameCardTitle: { fontSize: 24, fontWeight: '900', color: '#fff', marginBottom: 2 },
-  gameCardSub: { fontSize: 13, color: 'rgba(255,255,255,0.8)' },
+  gameCardLabel: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 },
+  gameCardTitle: { fontSize: 26, fontWeight: '900', color: '#fff', marginBottom: 2 },
+  gameCardSub: { fontSize: 14, color: 'rgba(255,255,255,0.7)' },
   aiHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 },
   aiIcon: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   aiIconText: { fontSize: 14 },
@@ -741,12 +752,12 @@ const styles = StyleSheet.create({
   skipBtnText: { fontSize: 13, color: '#aaa' },
   timerCard: { borderRadius: 16, padding: 16, marginBottom: 14 },
   timerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
-  timerLabel: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: 0.5 },
-  timerTime: { fontSize: 42, fontWeight: '900', color: '#fff', letterSpacing: -1 },
+  timerLabel: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 0.5 },
+  timerTime: { fontSize: 52, fontWeight: '900', color: '#fff', letterSpacing: -1 },
   timerActions: { flexDirection: 'row', gap: 8 },
-  timerBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12 },
-  timerBtnText: { fontSize: 14, fontWeight: '700' },
-  timerBtnOutline: { paddingHorizontal: 12, paddingVertical: 10, borderRadius: 12 },
+  timerBtn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10 },
+  timerBtnText: { fontSize: 13, fontWeight: '600' },
+  timerBtnOutline: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10 },
   timerBtnOutlineText: { fontSize: 13, fontWeight: '600' },
   viewToggle: { flexDirection: 'row', gap: 8 },
   viewToggleBtn: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20 },

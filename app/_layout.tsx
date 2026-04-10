@@ -1,4 +1,5 @@
-import { Tabs } from 'expo-router'
+import { useEffect } from 'react'
+import { Tabs, useRouter } from 'expo-router'
 import { View, Text, StyleSheet } from 'react-native'
 import { RoleProvider, useRole } from '../lib/roleStore'
 
@@ -17,6 +18,15 @@ function TabIcon({ label, focused }: { label: string; focused: boolean }) {
 function TabsLayout() {
   const { currentRole } = useRole()
   const isParent = currentRole === 'parent'
+  const router = useRouter()
+
+  useEffect(() => {
+    if (isParent) {
+      router.replace('/parent-home')
+    } else {
+      router.replace('/home')
+    }
+  }, [currentRole])
 
   return (
     <Tabs

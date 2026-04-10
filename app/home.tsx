@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Linking } from 'react-native'
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Linking, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { AppHeader } from '../lib/header'
 import { supabase } from '../lib/supabase'
 import { generatePracticePlan } from '../lib/ai'
+import { useRole } from '../lib/roleStore'
 
 const SNACK_DATA = [
   { date: 'Apr 5', type: 'Practice', name: 'Sarah M', claimed: true },
@@ -21,6 +22,7 @@ const POLL_OPTS = [
 
 export default function HomeScreen() {
   const router = useRouter()
+  const { currentRole, setRole } = useRole()
   const [team, setTeam] = useState<any>(null)
   const [events, setEvents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -205,6 +207,21 @@ export default function HomeScreen() {
     return msg.sender.display_name || msg.sender.email?.split('@')[0] || 'Team'
   }
 
+  const handleRolePress = () => {
+    const isParent = currentRole === 'parent'
+    if (isParent) {
+      Alert.alert('Switch role', 'You are viewing as Parent.', [
+        { text: 'Switch to Coach view', onPress: () => setRole('coach') },
+        { text: 'Stay as Parent', style: 'cancel' },
+      ])
+    } else {
+      Alert.alert('Switch role', 'You are viewing as Coach.', [
+        { text: 'Switch to Parent view', onPress: () => setRole('parent') },
+        { text: 'Stay as Coach', style: 'cancel' },
+      ])
+    }
+  }
+
   const nextEvent = events[0]
   const tc = '#1A56DB'
   const pending = Math.max(0, playerCount - rsvpYes - rsvpNo)
@@ -235,8 +252,13 @@ export default function HomeScreen() {
           <Text style={styles.headerBall}>⚽</Text>
         </View>
 
-        <TouchableOpacity style={[styles.roleChip, { backgroundColor: tc + '20' }]}>
-          <Text style={[styles.roleText, { color: tc }]}>Coach</Text>
+        <TouchableOpacity
+          style={[styles.roleChip, { backgroundColor: currentRole === 'parent' ? '#F3F4F620' : tc + '20' }]}
+          onPress={handleRolePress}
+        >
+          <Text style={[styles.roleText, { color: currentRole === 'parent' ? '#6B7280' : tc }]}>
+            {currentRole === 'parent' ? 'Parent' : 'Coach'}
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -304,24 +326,40 @@ export default function HomeScreen() {
         )}
 
         {/* 2. Practice preview module */}
-        <TouchableOpacity style={styles.card} onPress={() => router.push('/practice')} activeOpacity={0.85}>
+        <View style={styles.card}>
           <View style={styles.practicePreviewHeader}>
-            <Text style={styles.practiceIcon}>⚡</Text>
+            <TouchableOpacity onPress={() => nextEvent && autoGeneratePlan(nextEvent, team)} activeOpacity={0.6}>
+              <Text style={styles.practiceIcon}>⚡</Text>
+            </TouchableOpacity>
             <Text style={styles.cardLabel}>Practice plan · AI generated</Text>
           </View>
           {planLoading ? (
-            <ActivityIndicator color={tc} size="small" style={{ marginVertical: 6 }} />
+            <View style={styles.planLoadingRow}>
+              <ActivityIndicator color={tc} size="small" />
+              <Text style={styles.planLoadingText}>Building your plan...</Text>
+            </View>
           ) : plan ? (
             <>
               <Text style={styles.cardTitle}>{plan.title}</Text>
               {isOfflinePlan && <Text style={styles.offlineLabel}>Using saved plan</Text>}
-              {plan.plan?.[0] && <Text style={styles.planFirstPhase}>{plan.plan[0].drill}</Text>}
+              {plan.plan?.map((phase: any, i: number) => (
+                <View key={i} style={[styles.planPhaseRow, i < (plan.plan?.length ?? 0) - 1 && styles.planPhaseBorder]}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.planPhaseName}>{phase.phase} · {phase.drill}</Text>
+                  </View>
+                  <Text style={styles.planPhaseDur}>{phase.duration}</Text>
+                </View>
+              ))}
             </>
           ) : (
-            <Text style={styles.planTapHint}>Tap to generate your practice plan</Text>
+            <TouchableOpacity onPress={() => nextEvent && autoGeneratePlan(nextEvent, team)}>
+              <Text style={styles.planTapHint}>Tap to generate →</Text>
+            </TouchableOpacity>
           )}
-          <Text style={[styles.viewLink, { color: tc }]}>View full plan →</Text>
-        </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push('/practice')}>
+            <Text style={[styles.viewLink, { color: tc }]}>View full plan →</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* 3. Upcoming module */}
         {events.length > 1 && (
@@ -460,8 +498,13 @@ const styles = StyleSheet.create({
   practicePreviewHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
   practiceIcon: { fontSize: 14 },
   offlineLabel: { fontSize: 11, color: '#aaa', marginBottom: 4 },
-  planFirstPhase: { fontSize: 13, color: '#888', marginBottom: 6 },
   planTapHint: { fontSize: 14, color: '#aaa', marginBottom: 6 },
+  planLoadingRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginVertical: 6 },
+  planLoadingText: { fontSize: 13, color: '#888' },
+  planPhaseRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 7 },
+  planPhaseBorder: { borderBottomWidth: 0.5, borderBottomColor: '#f5f5f5' },
+  planPhaseName: { fontSize: 13, fontWeight: '600', color: '#1a1a1a' },
+  planPhaseDur: { fontSize: 12, color: '#888', fontWeight: '600' },
   viewLink: { fontSize: 13, fontWeight: '700', marginTop: 8 },
   eventRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingVertical: 10 },
   eventBorder: { borderBottomWidth: 0.5, borderBottomColor: '#f5f5f5' },
