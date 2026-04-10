@@ -5,16 +5,37 @@ type Props = {
   teamName?: string
   onTeamPress?: () => void
   showTeamSwitch?: boolean
+  allTeams?: any[]
+  onTeamSelect?: (team: any) => void
 }
 
-export function AppHeader({ teamColor = '#1A56DB', teamName, onTeamPress, showTeamSwitch }: Props) {
+export function AppHeader({ teamColor = '#1A56DB', teamName, onTeamPress, showTeamSwitch, allTeams, onTeamSelect }: Props) {
+  const hasMultiple = (allTeams?.length ?? 0) > 1
+
+  const handleTeamPress = () => {
+    if (onTeamPress) { onTeamPress(); return }
+    if (hasMultiple && onTeamSelect && allTeams) {
+      Alert.alert(
+        'Switch team',
+        undefined,
+        [
+          ...allTeams.map(m => ({
+            text: `${m.team.name} · ${m.team.age_group}`,
+            onPress: () => onTeamSelect(m.team),
+          })),
+          { text: 'Cancel', style: 'cancel' as const },
+        ]
+      )
+    }
+  }
+
   return (
     <View style={styles.header}>
-      <TouchableOpacity style={styles.left} onPress={onTeamPress} disabled={!showTeamSwitch}>
+      <TouchableOpacity style={styles.left} onPress={handleTeamPress} disabled={!onTeamPress && !hasMultiple}>
         <View style={[styles.dot, { backgroundColor: teamColor }]} />
         <View>
           <Text style={styles.teamName} numberOfLines={1}>{teamName ?? 'My Team'}</Text>
-          {showTeamSwitch && <Text style={styles.switch}>Switch ↓</Text>}
+          {(showTeamSwitch || hasMultiple) && <Text style={styles.switch}>Switch ↓</Text>}
         </View>
       </TouchableOpacity>
 

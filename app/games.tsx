@@ -35,7 +35,7 @@ export default function GamesScreen() {
   const [players, setPlayers] = useState<Player[]>([])
   const [events, setEvents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'schedule' | 'games' | 'roster' | 'snacks' | 'polls'>('games')
+  const [activeTab, setActiveTab] = useState<'schedule' | 'games' | 'roster' | 'snacks' | 'polls'>('schedule')
   const [lineupPrompt, setLineupPrompt] = useState('')
   const [lineupLoading, setLineupLoading] = useState(false)
   const [lineupGenerated, setLineupGenerated] = useState(true)
@@ -267,7 +267,7 @@ Slots: 0=GK, 1=LB, 2=CB, 3=RB, 4=MF, 5=LW, 6=RW`
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.subTabsScroll} contentContainerStyle={styles.subTabsContent}>
         {(['schedule', 'games', 'roster', 'snacks', 'polls'] as const).map(tab => {
-          const labels: Record<string, string> = { schedule: 'Schedule', games: 'Games', roster: 'Roster', snacks: 'Snacks', polls: 'Polls' }
+          const labels: Record<string, string> = { schedule: 'Sched', games: 'Games', roster: 'Roster', snacks: 'Snacks', polls: 'Polls' }
           const isActive = activeTab === tab
           return (
             <TouchableOpacity
@@ -520,23 +520,23 @@ Slots: 0=GK, 1=LB, 2=CB, 3=RB, 4=MF, 5=LW, 6=RW`
                     <Text style={styles.timerTime}>{formatTime(gameTime)}</Text>
                   </View>
                   <View style={styles.timerActions}>
-                    <TouchableOpacity style={[styles.timerBtn, { backgroundColor: gameRunning ? '#E24B4A' : '#fff' }]} onPress={toggleTimer}>
-                      <Text style={[styles.timerBtnText, { color: gameRunning ? '#fff' : '#1C1C1E' }]}>{gameRunning ? 'Pause' : 'Start'}</Text>
+                    <TouchableOpacity style={[styles.timerBtn, { backgroundColor: gameRunning ? '#E24B4A' : 'rgba(255,255,255,0.15)' }]} onPress={toggleTimer}>
+                      <Text style={[styles.timerBtnText, { color: '#fff' }]}>{gameRunning ? 'Pause' : 'Start'}</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={[styles.timerBtnOutline, { backgroundColor: '#fff' }]} onPress={() => setPeriod(p => p === 1 ? 2 : 1)}>
-                      <Text style={[styles.timerBtnOutlineText, { color: '#1C1C1E' }]}>2nd half →</Text>
+                    <TouchableOpacity style={[styles.timerBtnOutline, { backgroundColor: 'rgba(255,255,255,0.15)' }]} onPress={() => setPeriod(p => p === 1 ? 2 : 1)}>
+                      <Text style={[styles.timerBtnOutlineText, { color: '#fff' }]}>2nd half →</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={[styles.timerBtnOutline, { backgroundColor: '#fff' }]} onPress={resetGame}>
-                      <Text style={[styles.timerBtnOutlineText, { color: '#1C1C1E' }]}>Reset</Text>
+                    <TouchableOpacity style={[styles.timerBtnOutline, { backgroundColor: 'rgba(255,255,255,0.15)' }]} onPress={resetGame}>
+                      <Text style={[styles.timerBtnOutlineText, { color: '#fff' }]}>Reset</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
                 <View style={styles.viewToggle}>
                   <TouchableOpacity onPress={() => setViewMode('field')} style={[styles.viewToggleBtn, viewMode === 'field' ? { backgroundColor: '#fff' } : { backgroundColor: 'transparent' }]}>
-                    <Text style={[styles.viewToggleText, { color: viewMode === 'field' ? '#1C1C1E' : 'rgba(255,255,255,0.5)' }]}>Field</Text>
+                    <Text style={[styles.viewToggleText, { color: viewMode === 'field' ? '#1C1C1E' : 'rgba(255,255,255,0.6)' }]}>Field</Text>
                   </TouchableOpacity>
                   <TouchableOpacity onPress={() => setViewMode('list')} style={[styles.viewToggleBtn, viewMode === 'list' ? { backgroundColor: '#fff' } : { backgroundColor: 'transparent' }]}>
-                    <Text style={[styles.viewToggleText, { color: viewMode === 'list' ? '#1C1C1E' : 'rgba(255,255,255,0.5)' }]}>Roster</Text>
+                    <Text style={[styles.viewToggleText, { color: viewMode === 'list' ? '#1C1C1E' : 'rgba(255,255,255,0.6)' }]}>Roster</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -764,7 +764,7 @@ const styles = StyleSheet.create({
   fieldPlayerMins: { fontSize: 8 },
   benchArea: { backgroundColor: '#fff', borderRadius: 14, padding: 12, borderWidth: 0.5, borderColor: '#eee' },
   benchLabel: { fontSize: 10, fontWeight: '700', color: '#aaa', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
-  benchPlayer: { alignItems: 'center', width: 64, borderRadius: 10, padding: 8, backgroundColor: '#fff', borderWidth: 1, borderColor: '#e8e8e8' },
+  benchPlayer: { alignItems: 'center', width: 64, borderRadius: 10, padding: 8, backgroundColor: '#fff', borderWidth: 1, borderColor: '#E5E7EB' },
   benchPlayerNum: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
   benchPlayerNumText: { fontSize: 13, fontWeight: '800' },
   benchPlayerName: { fontSize: 10, fontWeight: '600', color: '#555', maxWidth: 56, textAlign: 'center' },

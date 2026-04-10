@@ -103,7 +103,7 @@ export default function PracticeScreen() {
   const [aiLoading, setAiLoading] = useState(false)
   const [plan, setPlan] = useState<any>(null)
   const [planLoading, setPlanLoading] = useState(false)
-  const [usedFallback, setUsedFallback] = useState(false)
+  const [isOfflinePlan, setIsOfflinePlan] = useState(false)
   const [activeFilter, setActiveFilter] = useState('All')
   const [activeTab, setActiveTab] = useState<'planner' | 'drills' | 'rules'>('planner')
   const [expandedDrill, setExpandedDrill] = useState<number | null>(null)
@@ -143,7 +143,7 @@ export default function PracticeScreen() {
 
   const autoGenerate = async (event: any, teamData: any) => {
     setPlanLoading(true)
-    setUsedFallback(false)
+    setIsOfflinePlan(false)
     const focus = event.focus ?? 'general skills'
     const fallback = {
       title: `${focus} Practice`,
@@ -169,7 +169,7 @@ export default function PracticeScreen() {
       setPlan(result)
     } catch {
       setPlan(fallback)
-      setUsedFallback(true)
+      setIsOfflinePlan(true)
     }
     setPlanLoading(false)
   }
@@ -193,7 +193,7 @@ export default function PracticeScreen() {
     const finalPrompt = buildPrompt()
     if (!finalPrompt || !team) return
     setAiLoading(true)
-    setUsedFallback(false)
+    setIsOfflinePlan(false)
     setPlan(null)
     try {
       const timeoutPromise = new Promise<never>((_, reject) =>
@@ -206,7 +206,7 @@ export default function PracticeScreen() {
       setPlan(result)
     } catch {
       setPlan({ title: 'Practice Plan', plan: FALLBACK_PLAN, coachTip: 'Keep energy high.' })
-      setUsedFallback(true)
+      setIsOfflinePlan(true)
     }
     setAiLoading(false)
   }
@@ -338,7 +338,7 @@ export default function PracticeScreen() {
                 <View style={{ flex: 1 }}>
                   <Text style={styles.cardLabel}>Current plan</Text>
                   <Text style={[styles.planTitle, { marginBottom: 0 }]}>{plan.title}</Text>
-                  {usedFallback && <Text style={styles.offlineLabel}>Generated offline</Text>}
+                  {isOfflinePlan && <Text style={styles.offlineLabel}>Using saved plan</Text>}
                 </View>
                 <TouchableOpacity onPress={() => nextEvent && autoGenerate(nextEvent, team)} style={{ padding: 6 }}>
                   <Text style={{ fontSize: 20 }}>🔀</Text>
@@ -474,20 +474,36 @@ export default function PracticeScreen() {
       ) : (
         /* Rules tab */
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          {SOCCER_RULES.map((rule, i) => (
-            <View key={i} style={styles.ruleCard}>
-              <Text style={styles.ruleName}>{rule.name}</Text>
-              <View style={styles.ruleWhenRow}>
-                <Text style={styles.ruleWhenLabel}>When it happens: </Text>
-                <Text style={styles.ruleWhen}>{rule.when}</Text>
-              </View>
-              <Text style={styles.ruleExplanation}>{rule.explanation}</Text>
-              <View style={styles.tipBox}>
-                <Text style={styles.tipLabel}>💡 Coach tip</Text>
-                <Text style={styles.tipText}>{rule.coachTip}</Text>
-              </View>
-            </View>
-          ))}
+          {(() => {
+            const ageGroup = team?.age_group ?? ''
+            const ag = ageGroup.toUpperCase().replace('-', '')
+            const isYoung = ag.includes('U6') || ag.includes('U8') || ag === '6U' || ag === '8U'
+            const YOUNG_RULE_NAMES = ['Throw-in', 'Goal kick', 'Corner kick', 'Kick-off']
+            const filteredRules = isYoung
+              ? SOCCER_RULES.filter(r => YOUNG_RULE_NAMES.includes(r.name))
+              : SOCCER_RULES
+            return (
+              <>
+                <Text style={styles.ageGroupLabel}>Rules for {ageGroup || 'your age group'}</Text>
+                {filteredRules.map((rule, i) => (
+                  <View key={i} style={styles.ruleCard}>
+                    <Text style={styles.ruleName}>{rule.name}</Text>
+                    <View style={styles.ruleWhenRow}>
+                      <Text style={styles.ruleWhenLabel}>When it happens: </Text>
+                      <Text style={styles.ruleWhen}>{rule.when}</Text>
+                    </View>
+                    <Text style={styles.ruleExplanation}>{rule.explanation}</Text>
+                    {!isYoung && (
+                      <View style={styles.tipBox}>
+                        <Text style={styles.tipLabel}>💡 Coach tip</Text>
+                        <Text style={styles.tipText}>{rule.coachTip}</Text>
+                      </View>
+                    )}
+                  </View>
+                ))}
+              </>
+            )
+          })()}
         </ScrollView>
       )}
 
@@ -554,6 +570,7 @@ const styles = StyleSheet.create({
   practicedBtnDone: { backgroundColor: '#1A56DB' },
   practicedBtnText: { fontSize: 13, fontWeight: '600', color: '#1A56DB' },
   practicedBtnTextDone: { color: '#fff' },
+  ageGroupLabel: { fontSize: 12, color: '#aaa', fontWeight: '600', marginBottom: 12 },
   ruleCard: { backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 0.5, borderColor: '#eee' },
   ruleName: { fontSize: 17, fontWeight: '800', color: '#1a1a1a', marginBottom: 6 },
   ruleWhenRow: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 8 },

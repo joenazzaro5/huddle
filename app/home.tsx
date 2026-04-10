@@ -26,7 +26,7 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true)
   const [plan, setPlan] = useState<any>(null)
   const [planLoading, setPlanLoading] = useState(false)
-  const [usedFallback, setUsedFallback] = useState(false)
+  const [isOfflinePlan, setIsOfflinePlan] = useState(false)
   const [rsvpYes, setRsvpYes] = useState(0)
   const [rsvpNo, setRsvpNo] = useState(0)
   const [playerCount, setPlayerCount] = useState(0)
@@ -95,7 +95,7 @@ export default function HomeScreen() {
 
   const autoGeneratePlan = async (event: any, teamData: any) => {
     setPlanLoading(true)
-    setUsedFallback(false)
+    setIsOfflinePlan(false)
     const focus = event.focus ?? 'general skills'
     const fallback = {
       title: `${focus} Practice`,
@@ -120,9 +120,54 @@ export default function HomeScreen() {
       setPlan(result)
     } catch {
       setPlan(fallback)
-      setUsedFallback(true)
+      setIsOfflinePlan(true)
     }
     setPlanLoading(false)
+  }
+
+  const switchTeam = async (teamData: any) => {
+    setTeam(teamData)
+    setShowTeamPicker(false)
+    setPlan(null)
+
+    const { data: eventData } = await supabase
+      .from('events')
+      .select('*')
+      .eq('team_id', teamData.id)
+      .gte('starts_at', new Date().toISOString())
+      .order('starts_at', { ascending: true })
+    setEvents(eventData ?? [])
+
+    const { count: pc } = await supabase
+      .from('players')
+      .select('*', { count: 'exact', head: true })
+      .eq('team_id', teamData.id)
+      .eq('is_active', true)
+    setPlayerCount(pc ?? 0)
+
+    if (eventData && eventData.length > 0) {
+      const { count: yes } = await supabase
+        .from('rsvps').select('*', { count: 'exact', head: true })
+        .eq('event_id', eventData[0].id).eq('status', 'yes')
+      const { count: no } = await supabase
+        .from('rsvps').select('*', { count: 'exact', head: true })
+        .eq('event_id', eventData[0].id).eq('status', 'no')
+      setRsvpYes(yes ?? 0)
+      setRsvpNo(no ?? 0)
+      if (eventData[0].type === 'practice') autoGeneratePlan(eventData[0], teamData)
+    } else {
+      setRsvpYes(0)
+      setRsvpNo(0)
+    }
+
+    const { data: msgData } = await supabase
+      .from('messages')
+      .select('*, sender:users(display_name, email)')
+      .eq('team_id', teamData.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    setLastMessage(msgData)
   }
 
   const formatDay = (dateStr: string) =>
@@ -201,7 +246,7 @@ export default function HomeScreen() {
             <TouchableOpacity
               key={m.team.id}
               style={styles.teamPickerRow}
-              onPress={() => { setTeam(m.team); setShowTeamPicker(false) }}
+              onPress={() => switchTeam(m.team)}
             >
               <View style={[styles.teamPickerSwatch, { backgroundColor: m.team.color ?? tc }]} />
               <View>
@@ -268,7 +313,7 @@ export default function HomeScreen() {
           ) : plan ? (
             <>
               <Text style={styles.cardTitle}>{plan.title}</Text>
-              {usedFallback && <Text style={styles.offlineLabel}>Generated offline</Text>}
+              {isOfflinePlan && <Text style={styles.offlineLabel}>Using saved plan</Text>}
               {plan.plan?.[0] && <Text style={styles.planFirstPhase}>{plan.plan[0].drill}</Text>}
             </>
           ) : (
@@ -317,11 +362,6 @@ export default function HomeScreen() {
               <Text style={styles.teamMeta}>{team?.age_group} · {team?.gender} · {playerCount} players</Text>
             </View>
           </View>
-          {team?.invite_code && (
-            <Text style={styles.inviteCodeRow}>
-              Invite code: <Text style={styles.inviteCodeValue}>{team.invite_code}</Text>
-            </Text>
-          )}
           <TouchableOpacity style={[styles.viewRosterBtn, { borderColor: tc }]} onPress={() => router.push('/games')}>
             <Text style={[styles.viewRosterText, { color: tc }]}>View roster →</Text>
           </TouchableOpacity>
@@ -434,8 +474,6 @@ const styles = StyleSheet.create({
   teamSwatch: { width: 34, height: 34, borderRadius: 9 },
   teamName: { fontSize: 17, fontWeight: '800', color: '#1a1a1a' },
   teamMeta: { fontSize: 12, color: '#888', marginTop: 1 },
-  inviteCodeRow: { fontSize: 12, color: '#888', marginBottom: 8 },
-  inviteCodeValue: { color: '#111827', fontWeight: '800' },
   viewRosterBtn: { borderRadius: 10, paddingVertical: 10, alignItems: 'center', borderWidth: 1.5 },
   viewRosterText: { fontSize: 13, fontWeight: '700' },
   chatPreviewRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginTop: 6, marginBottom: 6 },
