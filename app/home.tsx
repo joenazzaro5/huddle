@@ -6,8 +6,6 @@ import { AppHeader } from '../lib/header'
 import { supabase } from '../lib/supabase'
 import { generatePracticePlan } from '../lib/ai'
 
-const PHASE_COLORS = ['#4CAF50', '#1A56DB', '#FF6B35']
-
 const SNACK_DATA = [
   { date: 'Apr 5', type: 'Practice', name: 'Sarah M', claimed: true },
   { date: 'Apr 12', type: 'Practice', name: null as string | null, claimed: false },
@@ -28,16 +26,15 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true)
   const [plan, setPlan] = useState<any>(null)
   const [planLoading, setPlanLoading] = useState(false)
+  const [usedFallback, setUsedFallback] = useState(false)
   const [rsvpYes, setRsvpYes] = useState(0)
   const [rsvpNo, setRsvpNo] = useState(0)
   const [playerCount, setPlayerCount] = useState(0)
-  const [expandedDrill, setExpandedDrill] = useState<number | null>(null)
   const [lastMessage, setLastMessage] = useState<any>(null)
   const [allTeams, setAllTeams] = useState<any[]>([])
   const [showTeamPicker, setShowTeamPicker] = useState(false)
-  const [snacks, setSnacks] = useState(SNACK_DATA)
-  const [pollOptions, setPollOptions] = useState(POLL_OPTS)
-  const [userPollVote, setUserPollVote] = useState<number | null>(null)
+  const [snacks] = useState(SNACK_DATA)
+  const [pollOptions] = useState(POLL_OPTS)
 
   useEffect(() => { loadData() }, [])
 
@@ -98,23 +95,32 @@ export default function HomeScreen() {
 
   const autoGeneratePlan = async (event: any, teamData: any) => {
     setPlanLoading(true)
+    setUsedFallback(false)
     const focus = event.focus ?? 'general skills'
+    const fallback = {
+      title: `${focus} Practice`,
+      plan: [
+        { phase: 'Opening Play', duration: '15 min', drill: 'Small-sided free play', desc: 'Players arrive and jump into a game. Coach observes.' },
+        { phase: 'Practice Phase', duration: '30 min', drill: `${focus} drills`, desc: 'Coach-guided skill work with positive cues and repetition.' },
+        { phase: 'Final Play', duration: '15 min', drill: '7v7 full game', desc: 'Full game. Let them play.' },
+      ],
+      coachTip: 'Keep energy high. Every player should touch the ball often.'
+    }
     try {
-      const result = await generatePracticePlan(
-        `${event.duration_min ?? 60} minute ${focus} session`,
-        teamData.name, teamData.age_group
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('timeout')), 8000)
       )
+      const result = await Promise.race([
+        generatePracticePlan(
+          `${event.duration_min ?? 60} minute ${focus} session`,
+          teamData.name, teamData.age_group
+        ),
+        timeoutPromise
+      ])
       setPlan(result)
     } catch {
-      setPlan({
-        title: `${focus} Practice`,
-        plan: [
-          { phase: 'Opening Play', duration: '15 min', drill: 'Small-sided free play', desc: 'Players arrive and jump into a game. Coach observes.' },
-          { phase: 'Practice Phase', duration: '30 min', drill: `${focus} drills`, desc: 'Coach-guided skill work with positive cues and repetition.' },
-          { phase: 'Final Play', duration: '15 min', drill: '7v7 full game', desc: 'Full game. Let them play.' },
-        ],
-        coachTip: 'Keep energy high. Every player should touch the ball often.'
-      })
+      setPlan(fallback)
+      setUsedFallback(true)
     }
     setPlanLoading(false)
   }
@@ -140,6 +146,11 @@ export default function HomeScreen() {
     Linking.openURL(`maps://maps.apple.com/?q=${encodeURIComponent(addr)}`)
       .catch(() => Linking.openURL(`https://maps.google.com/?q=${encodeURIComponent(addr)}`))
 
+  const addToCalendar = (dateStr: string) => {
+    const ts = Math.floor(new Date(dateStr).getTime() / 1000)
+    Linking.openURL(`calshow://${ts}`)
+  }
+
   const formatMsgTime = (dateStr: string) =>
     new Date(dateStr).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
 
@@ -161,7 +172,6 @@ export default function HomeScreen() {
 
       {/* Header — three zone */}
       <View style={styles.header}>
-        {/* Left: team switcher */}
         <TouchableOpacity
           style={styles.headerTeam}
           onPress={() => allTeams.length > 1 && setShowTeamPicker(true)}
@@ -173,20 +183,17 @@ export default function HomeScreen() {
           </View>
         </TouchableOpacity>
 
-        {/* Center: Huddle wordmark */}
         <View style={styles.headerCenter}>
           <Text style={styles.headerBall}>⚽</Text>
           <Text style={[styles.wordmark, { color: tc }]}>Huddle</Text>
           <Text style={styles.headerBall}>⚽</Text>
         </View>
 
-        {/* Right: role chip */}
         <TouchableOpacity style={[styles.roleChip, { backgroundColor: tc + '20' }]}>
           <Text style={[styles.roleText, { color: tc }]}>Coach</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Team picker dropdown */}
       {showTeamPicker && (
         <View style={styles.teamPicker}>
           <Text style={styles.teamPickerTitle}>Switch team</Text>
@@ -211,7 +218,7 @@ export default function HomeScreen() {
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
-        {/* Hero event card */}
+        {/* 1. Hero event card */}
         {nextEvent ? (
           <View style={[styles.heroCard, { backgroundColor: tc }]}>
             <View style={styles.heroTopRow}>
@@ -232,6 +239,9 @@ export default function HomeScreen() {
                 </Text>
               </TouchableOpacity>
             )}
+            <TouchableOpacity onPress={() => addToCalendar(nextEvent.starts_at)} style={{ marginBottom: 8 }}>
+              <Text style={styles.heroCalLink}>📅 Add to calendar</Text>
+            </TouchableOpacity>
             <View style={styles.rsvpRow}>
               <Text style={styles.rsvpText}>
                 {rsvpYes > 0 ? `${rsvpYes} confirmed` : 'No RSVPs yet'}
@@ -247,83 +257,34 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* Practice plan */}
-        {nextEvent?.type === 'practice' && (
-          <View style={styles.card}>
-            <View style={styles.planCardHeader}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.cardLabel}>Practice plan · AI generated</Text>
-                <Text style={styles.cardTitle}>{plan?.title ?? `${nextEvent.focus} · ${nextEvent.duration_min ?? 60} min`}</Text>
-              </View>
-              <TouchableOpacity
-                style={[styles.aiChip, { backgroundColor: tc + '15' }]}
-                onPress={() => nextEvent && autoGeneratePlan(nextEvent, team)}
-              >
-                <Text style={styles.aiChipText}>⚡</Text>
-                <Text style={styles.aiChipLabel}>shuffle</Text>
-              </TouchableOpacity>
-            </View>
-
-            {planLoading && (
-              <View style={styles.planLoading}>
-                <ActivityIndicator color={tc} size="small" />
-                <Text style={styles.planLoadingText}>Shuffling your plan...</Text>
-              </View>
-            )}
-
-            {plan && !planLoading && (
-              <View>
-                {plan.plan?.map((item: any, i: number) => (
-                  <TouchableOpacity
-                    key={i}
-                    style={styles.phaseCard}
-                    onPress={() => setExpandedDrill(expandedDrill === i ? null : i)}
-                    activeOpacity={0.8}
-                  >
-                    <View style={[styles.phaseHeader, { backgroundColor: PHASE_COLORS[i] ?? '#888' }]}>
-                      <Text style={styles.phaseLabel}>{item.phase}</Text>
-                      <Text style={styles.phaseDuration}>{item.duration}</Text>
-                    </View>
-                    <View style={styles.phaseBody}>
-                      <View style={styles.drillRow}>
-                        <Text style={styles.phaseDrill}>{item.drill}</Text>
-                        <Text style={styles.expandHint}>{expandedDrill === i ? '▲' : '▼'}</Text>
-                      </View>
-                      {expandedDrill === i && (
-                        <Text style={styles.phaseDesc}>{item.desc}</Text>
-                      )}
-                    </View>
-                  </TouchableOpacity>
-                ))}
-
-                {plan.coachTip && (
-                  <View style={styles.tipBox}>
-                    <Text style={styles.tipLabel}>💡 Coach tip</Text>
-                    <Text style={styles.tipText}>{plan.coachTip}</Text>
-                  </View>
-                )}
-
-                <View style={styles.planActions}>
-                  <TouchableOpacity style={[styles.planBtn, { backgroundColor: tc }]} onPress={() => router.push('/practice')}>
-                    <Text style={styles.planBtnText}>Edit plan</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={[styles.planBtnOutline, { borderColor: tc }]} onPress={() => nextEvent && autoGeneratePlan(nextEvent, team)}>
-                    <Text style={[styles.planBtnOutlineText, { color: tc }]}>New plan</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            )}
+        {/* 2. Practice preview module */}
+        <TouchableOpacity style={styles.card} onPress={() => router.push('/practice')} activeOpacity={0.85}>
+          <View style={styles.practicePreviewHeader}>
+            <Text style={styles.practiceIcon}>⚡</Text>
+            <Text style={styles.cardLabel}>Practice plan · AI generated</Text>
           </View>
-        )}
+          {planLoading ? (
+            <ActivityIndicator color={tc} size="small" style={{ marginVertical: 6 }} />
+          ) : plan ? (
+            <>
+              <Text style={styles.cardTitle}>{plan.title}</Text>
+              {usedFallback && <Text style={styles.offlineLabel}>Generated offline</Text>}
+              {plan.plan?.[0] && <Text style={styles.planFirstPhase}>{plan.plan[0].drill}</Text>}
+            </>
+          ) : (
+            <Text style={styles.planTapHint}>Tap to generate your practice plan</Text>
+          )}
+          <Text style={[styles.viewLink, { color: tc }]}>View full plan →</Text>
+        </TouchableOpacity>
 
-        {/* Upcoming */}
+        {/* 3. Upcoming module */}
         {events.length > 1 && (
           <View style={styles.card}>
             <Text style={styles.cardLabel}>Upcoming</Text>
             {events.slice(1, 4).map((event, i) => {
               const isGame = event.type === 'game'
               return (
-                <View key={event.id} style={[styles.eventRow, i < 2 && styles.eventBorder]}>
+                <View key={event.id} style={[styles.eventRow, i < events.slice(1, 4).length - 1 && styles.eventBorder]}>
                   <View style={[styles.eventIconBox, { backgroundColor: isGame ? '#FF8C4220' : tc + '20' }]}>
                     <Text style={[styles.eventIconText, { color: isGame ? '#FF8C42' : tc }]}>
                       {isGame ? 'G' : event.focus?.[0] ?? 'P'}
@@ -340,10 +301,33 @@ export default function HomeScreen() {
                 </View>
               )
             })}
+            <TouchableOpacity onPress={() => router.push('/games')}>
+              <Text style={[styles.viewLink, { color: tc }]}>View full schedule →</Text>
+            </TouchableOpacity>
           </View>
         )}
 
-        {/* Snack Schedule */}
+        {/* 4. Your team module */}
+        <View style={styles.card}>
+          <Text style={styles.cardLabel}>Your team</Text>
+          <View style={styles.teamRow}>
+            <View style={[styles.teamSwatch, { backgroundColor: tc }]} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.teamName}>{team?.name}</Text>
+              <Text style={styles.teamMeta}>{team?.age_group} · {team?.gender} · {playerCount} players</Text>
+            </View>
+          </View>
+          {team?.invite_code && (
+            <Text style={styles.inviteCodeRow}>
+              Invite code: <Text style={styles.inviteCodeValue}>{team.invite_code}</Text>
+            </Text>
+          )}
+          <TouchableOpacity style={[styles.viewRosterBtn, { borderColor: tc }]} onPress={() => router.push('/games')}>
+            <Text style={[styles.viewRosterText, { color: tc }]}>View roster →</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* 5. Snack schedule */}
         <TouchableOpacity style={styles.card} onPress={() => router.push('/games')} activeOpacity={0.85}>
           <Text style={styles.cardLabel}>Snack schedule</Text>
           {snacks.slice(0, 2).map((item, i) => (
@@ -356,10 +340,10 @@ export default function HomeScreen() {
               </View>
             </View>
           ))}
-          <Text style={[styles.snackViewLink, { color: tc }]}>View schedule →</Text>
+          <Text style={[styles.viewLink, { color: tc }]}>View schedule →</Text>
         </TouchableOpacity>
 
-        {/* Team Poll */}
+        {/* 6. Team poll */}
         <TouchableOpacity style={styles.card} onPress={() => router.push('/games')} activeOpacity={0.85}>
           <Text style={styles.cardLabel}>Team poll</Text>
           <Text style={styles.pollQuestion}>What should our team cheer be?</Text>
@@ -372,26 +356,10 @@ export default function HomeScreen() {
               </View>
             )
           })()}
-          <Text style={[styles.snackViewLink, { color: tc }]}>See results →</Text>
+          <Text style={[styles.viewLink, { color: tc }]}>See results →</Text>
         </TouchableOpacity>
 
-        {/* Team */}
-        <View style={styles.card}>
-          <Text style={styles.cardLabel}>Your team</Text>
-          <View style={styles.teamRow}>
-            <View style={[styles.teamSwatch, { backgroundColor: tc }]} />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.teamName}>{team?.name}</Text>
-              <Text style={styles.teamMeta}>{team?.age_group} · {team?.gender} · {playerCount} players</Text>
-            </View>
-          </View>
-          {team?.cheer && <Text style={styles.teamCheer}>"{team.cheer}"</Text>}
-          <TouchableOpacity style={[styles.viewRosterBtn, { borderColor: tc }]} onPress={() => router.push('/roster')}>
-            <Text style={[styles.viewRosterText, { color: tc }]}>View roster →</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Chat — last in list, mirrors tab bar order */}
+        {/* 7. Chat preview */}
         {lastMessage && (
           <TouchableOpacity style={styles.card} onPress={() => router.push('/chat')}>
             <Text style={styles.cardLabel}>Team chat</Text>
@@ -402,7 +370,7 @@ export default function HomeScreen() {
               </View>
               <Text style={styles.chatPreviewTime}>{formatMsgTime(lastMessage.created_at)}</Text>
             </View>
-            <Text style={[styles.chatLink, { color: tc }]}>Open chat →</Text>
+            <Text style={[styles.viewLink, { color: tc }]}>Open chat →</Text>
           </TouchableOpacity>
         )}
 
@@ -438,39 +406,23 @@ const styles = StyleSheet.create({
   heroDay: { fontSize: 15, fontWeight: '700', color: '#fff', marginBottom: 2 },
   heroTitle: { fontSize: 24, fontWeight: '900', color: '#fff', letterSpacing: -0.5, marginBottom: 4 },
   heroTime: { fontSize: 14, color: 'rgba(255,255,255,0.9)', fontWeight: '600', marginBottom: 4 },
-  heroLocation: { fontSize: 12, color: 'rgba(255,255,255,0.7)', marginBottom: 10 },
+  heroLocation: { fontSize: 12, color: 'rgba(255,255,255,0.7)', marginBottom: 6 },
+  heroCalLink: { fontSize: 12, color: 'rgba(255,255,255,0.85)', fontWeight: '600', marginBottom: 8 },
   rsvpRow: { backgroundColor: 'rgba(0,0,0,0.15)', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 },
   rsvpText: { fontSize: 12, color: 'rgba(255,255,255,0.85)', fontWeight: '600' },
   emptyHero: { backgroundColor: '#fff', borderRadius: 18, padding: 24, marginBottom: 12, alignItems: 'center', borderWidth: 0.5, borderColor: '#eee' },
   emptyTitle: { fontSize: 16, fontWeight: '700', color: '#1a1a1a', marginBottom: 6 },
   emptySub: { fontSize: 13, color: '#888', textAlign: 'center' },
   card: { backgroundColor: '#fff', borderRadius: 18, padding: 16, marginBottom: 12, borderWidth: 0.5, borderColor: '#eee' },
-  cardLabel: { fontSize: 10, fontWeight: '700', color: '#aaa', textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 4 },
-  cardTitle: { fontSize: 16, fontWeight: '800', color: '#1a1a1a' },
-  planCardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 12 },
-  aiChip: { width: 40, borderRadius: 8, alignItems: 'center', justifyContent: 'center', paddingVertical: 4 },
-  aiChipText: { fontSize: 14 },
-  aiChipLabel: { fontSize: 8, fontWeight: '600', color: '#1A56DB', marginTop: 1 },
-  planLoading: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 14 },
-  planLoadingText: { fontSize: 13, color: '#888' },
-  phaseCard: { borderRadius: 12, overflow: 'hidden', borderWidth: 1, borderColor: '#eee', marginBottom: 8 },
-  phaseHeader: { paddingHorizontal: 12, paddingVertical: 7, flexDirection: 'row', justifyContent: 'space-between' },
-  phaseLabel: { fontSize: 10, fontWeight: '800', color: '#fff', textTransform: 'uppercase', letterSpacing: 0.5 },
-  phaseDuration: { fontSize: 10, color: 'rgba(255,255,255,0.85)', fontWeight: '600' },
-  phaseBody: { backgroundColor: '#fff', padding: 12 },
-  drillRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  phaseDrill: { fontSize: 14, fontWeight: '700', color: '#1a1a1a', flex: 1 },
-  expandHint: { fontSize: 10, color: '#ccc' },
-  phaseDesc: { fontSize: 12, color: '#888', marginTop: 8, lineHeight: 17 },
-  tipBox: { backgroundColor: '#FFF8E1', borderRadius: 10, padding: 10, marginTop: 2, marginBottom: 8 },
-  tipLabel: { fontSize: 11, fontWeight: '700', color: '#F57F17', marginBottom: 2 },
-  tipText: { fontSize: 12, color: '#555', lineHeight: 17 },
-  planActions: { flexDirection: 'row', gap: 8 },
-  planBtn: { flex: 2, borderRadius: 12, paddingVertical: 11, alignItems: 'center' },
-  planBtnText: { fontSize: 13, fontWeight: '700', color: '#fff' },
-  planBtnOutline: { flex: 1, borderRadius: 12, paddingVertical: 11, alignItems: 'center', borderWidth: 1.5 },
-  planBtnOutlineText: { fontSize: 13, fontWeight: '700' },
-  eventRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingVertical: 10, borderBottomWidth: 0.5, borderBottomColor: '#f5f5f5' },
+  cardLabel: { fontSize: 10, fontWeight: '700', color: '#aaa', textTransform: 'uppercase', letterSpacing: 0.7 },
+  cardTitle: { fontSize: 16, fontWeight: '800', color: '#1a1a1a', marginBottom: 2 },
+  practicePreviewHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
+  practiceIcon: { fontSize: 14 },
+  offlineLabel: { fontSize: 11, color: '#aaa', marginBottom: 4 },
+  planFirstPhase: { fontSize: 13, color: '#888', marginBottom: 6 },
+  planTapHint: { fontSize: 14, color: '#aaa', marginBottom: 6 },
+  viewLink: { fontSize: 13, fontWeight: '700', marginTop: 8 },
+  eventRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingVertical: 10 },
   eventBorder: { borderBottomWidth: 0.5, borderBottomColor: '#f5f5f5' },
   eventIconBox: { width: 36, height: 36, borderRadius: 9, alignItems: 'center', justifyContent: 'center', marginTop: 2 },
   eventIconText: { fontSize: 12, fontWeight: '900' },
@@ -482,29 +434,20 @@ const styles = StyleSheet.create({
   teamSwatch: { width: 34, height: 34, borderRadius: 9 },
   teamName: { fontSize: 17, fontWeight: '800', color: '#1a1a1a' },
   teamMeta: { fontSize: 12, color: '#888', marginTop: 1 },
-  teamCheer: { fontSize: 13, color: '#888', fontStyle: 'italic', marginBottom: 8 },
+  inviteCodeRow: { fontSize: 12, color: '#888', marginBottom: 8 },
+  inviteCodeValue: { color: '#111827', fontWeight: '800' },
   viewRosterBtn: { borderRadius: 10, paddingVertical: 10, alignItems: 'center', borderWidth: 1.5 },
   viewRosterText: { fontSize: 13, fontWeight: '700' },
   chatPreviewRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginTop: 6, marginBottom: 6 },
   chatSender: { fontSize: 12, fontWeight: '700', color: '#1a1a1a', marginBottom: 2 },
   chatPreviewBody: { fontSize: 13, color: '#555', lineHeight: 18 },
   chatPreviewTime: { fontSize: 11, color: '#bbb', marginTop: 2 },
-  chatLink: { fontSize: 13, fontWeight: '700' },
   snackRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10 },
   snackBorder: { borderBottomWidth: 0.5, borderBottomColor: '#f5f5f5' },
   snackDate: { fontSize: 11, color: '#aaa', fontWeight: '600', marginBottom: 2 },
   snackName: { fontSize: 14, fontWeight: '600' },
-  snackPlus: { fontSize: 20, fontWeight: '300', marginLeft: 8 },
-  snackNote: { fontSize: 11, color: '#FF8C42', marginTop: 8, fontStyle: 'italic' },
-  snackViewLink: { fontSize: 13, fontWeight: '700', marginTop: 10 },
   pollQuestion: { fontSize: 15, fontWeight: '700', color: '#1a1a1a', marginBottom: 10 },
   pollLeadRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F7F7F5', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 2 },
   pollLeadLabel: { fontSize: 14, fontWeight: '600', color: '#1a1a1a', flex: 1 },
   pollLeadVotes: { fontSize: 12, color: '#888', fontWeight: '600' },
-  pollRow: { marginBottom: 10 },
-  pollLabelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 },
-  pollOptionLabel: { fontSize: 14 },
-  pollVoteCount: { fontSize: 12, color: '#aaa', fontWeight: '600' },
-  pollBarBg: { height: 6, backgroundColor: '#f0f0f0', borderRadius: 3, overflow: 'hidden' },
-  pollBarFill: { height: 6, borderRadius: 3 },
 })

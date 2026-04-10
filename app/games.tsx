@@ -33,8 +33,9 @@ export default function GamesScreen() {
   const router = useRouter()
   const [team, setTeam] = useState<any>(null)
   const [players, setPlayers] = useState<Player[]>([])
+  const [events, setEvents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'gameday' | 'roster' | 'snacks' | 'polls'>('gameday')
+  const [activeTab, setActiveTab] = useState<'schedule' | 'games' | 'roster' | 'snacks' | 'polls'>('games')
   const [lineupPrompt, setLineupPrompt] = useState('')
   const [lineupLoading, setLineupLoading] = useState(false)
   const [lineupGenerated, setLineupGenerated] = useState(true)
@@ -111,6 +112,13 @@ export default function GamesScreen() {
         .limit(1)
         .maybeSingle()
       setNextGame(gameData)
+
+      const { data: allEvents } = await supabase
+        .from('events')
+        .select('*')
+        .eq('team_id', membership.team.id)
+        .order('starts_at', { ascending: true })
+      setEvents(allEvents ?? [])
     }
     setLoading(false)
   }
@@ -200,7 +208,6 @@ Slots: 0=GK, 1=LB, 2=CB, 3=RB, 4=MF, 5=LW, 6=RW`
       setSelectedPlayer(null)
       return
     }
-    // Swap two players
     setPlayers(prev => {
       const a = prev.find(p => p.id === selectedPlayer)
       const b = prev.find(p => p.id === playerId)
@@ -232,6 +239,20 @@ Slots: 0=GK, 1=LB, 2=CB, 3=RB, 4=MF, 5=LW, 6=RW`
   const formatTime = (s: number) => `${Math.floor(s/60)}:${(s%60).toString().padStart(2,'0')}`
   const formatMins = (m: number) => m < 1 ? '0m' : `${Math.floor(m)}m`
 
+  const groupEventsByMonth = (evts: any[]) => {
+    const groups: { month: string; events: any[] }[] = []
+    evts.forEach(evt => {
+      const month = new Date(evt.starts_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+      const existing = groups.find(g => g.month === month)
+      if (existing) {
+        existing.events.push(evt)
+      } else {
+        groups.push({ month, events: [evt] })
+      }
+    })
+    return groups
+  }
+
   const onPlayers = players.filter(p => p.isOn).sort((a, b) => (a.fieldSlot ?? 0) - (b.fieldSlot ?? 0))
   const offPlayers = players.filter(p => !p.isOn)
   const tc = '#1A56DB'
@@ -245,8 +266,8 @@ Slots: 0=GK, 1=LB, 2=CB, 3=RB, 4=MF, 5=LW, 6=RW`
       <AppHeader teamColor={tc} teamName={team?.name} />
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.subTabsScroll} contentContainerStyle={styles.subTabsContent}>
-        {(['gameday', 'roster', 'snacks', 'polls'] as const).map(tab => {
-          const labels: Record<string, string> = { gameday: 'Game Day', roster: 'Roster', snacks: 'Snacks', polls: 'Polls' }
+        {(['schedule', 'games', 'roster', 'snacks', 'polls'] as const).map(tab => {
+          const labels: Record<string, string> = { schedule: 'Schedule', games: 'Games', roster: 'Roster', snacks: 'Snacks', polls: 'Polls' }
           const isActive = activeTab === tab
           return (
             <TouchableOpacity
@@ -262,7 +283,58 @@ Slots: 0=GK, 1=LB, 2=CB, 3=RB, 4=MF, 5=LW, 6=RW`
         })}
       </ScrollView>
 
-      {activeTab === 'roster' ? (
+      {activeTab === 'schedule' ? (
+        <ScrollView contentContainerStyle={styles.content}>
+          {events.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyText}>No events scheduled yet</Text>
+            </View>
+          ) : (
+            groupEventsByMonth(events).map(({ month, events: monthEvents }) => (
+              <View key={month}>
+                <Text style={styles.monthHeader}>{month}</Text>
+                <View style={styles.card}>
+                  {monthEvents.map((event, i) => {
+                    const d = new Date(event.starts_at)
+                    const isGame = event.type === 'game'
+                    return (
+                      <View
+                        key={event.id}
+                        style={[
+                          styles.scheduleRow,
+                          i % 2 === 1 && styles.scheduleRowAlt,
+                          i < monthEvents.length - 1 && styles.scheduleBorder,
+                        ]}
+                      >
+                        <View style={styles.scheduleDateCol}>
+                          <Text style={styles.scheduleDay}>{d.getDate()}</Text>
+                          <Text style={styles.scheduleDOW}>{d.toLocaleDateString('en-US', { weekday: 'short' })}</Text>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={[styles.scheduleType, { color: isGame ? '#FF8C42' : tc }]}>
+                            {isGame ? '⚽ Game' : event.type === 'practice' ? '🏃 Practice' : '📅 Event'}
+                          </Text>
+                          <Text style={styles.scheduleTitle}>
+                            {isGame ? `vs ${event.opponent}` : (event.focus ?? event.title ?? '')}
+                          </Text>
+                        </View>
+                        <View style={{ alignItems: 'flex-end' }}>
+                          <Text style={styles.scheduleTime}>
+                            {d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                          </Text>
+                          {event.location ? (
+                            <Text style={styles.scheduleLoc} numberOfLines={1}>{event.location}</Text>
+                          ) : null}
+                        </View>
+                      </View>
+                    )
+                  })}
+                </View>
+              </View>
+            ))
+          )}
+        </ScrollView>
+      ) : activeTab === 'roster' ? (
         <ScrollView contentContainerStyle={styles.content}>
           <View style={[styles.teamCard, { backgroundColor: tc }]}>
             <Text style={styles.teamCardName}>{team?.name}</Text>
@@ -287,7 +359,7 @@ Slots: 0=GK, 1=LB, 2=CB, 3=RB, 4=MF, 5=LW, 6=RW`
                     <Text style={styles.rosterPos}>{player.positions.join(' · ')}</Text>
                   )}
                 </View>
-                {player.is_starter && (
+                {(player as any).is_starter && (
                   <View style={[styles.starterChip, { backgroundColor: tc + '20' }]}>
                     <Text style={[styles.starterText, { color: tc }]}>Starter</Text>
                   </View>
@@ -303,45 +375,39 @@ Slots: 0=GK, 1=LB, 2=CB, 3=RB, 4=MF, 5=LW, 6=RW`
             <Text style={styles.cardTitle}>Snack schedule</Text>
             <Text style={styles.cardSub}>Sign up to bring snacks for your team</Text>
             <View style={{ marginTop: 14 }}>
-              {snackData.map((item, i) => {
-                const isWithin7Days = false // static data; would compute from date in real app
-                return (
-                  <TouchableOpacity
-                    key={i}
-                    style={[styles.snackListRow, i < snackData.length - 1 && styles.snackListBorder, item.claimed && { opacity: 0.85 }]}
-                    onPress={() => {
-                      if (item.claimed) return
-                      Alert.alert(
-                        'Sign up for snacks',
-                        `Sign up to bring snacks on ${item.date}?`,
-                        [
-                          { text: 'Cancel', style: 'cancel' },
-                          {
-                            text: 'Confirm',
-                            onPress: () => {
-                              const updated = [...snackData]
-                              updated[i] = { ...item, claimed: true, name: 'You ✓' }
-                              setSnackData(updated)
-                            },
+              {snackData.map((item, i) => (
+                <TouchableOpacity
+                  key={i}
+                  style={[styles.snackListRow, i < snackData.length - 1 && styles.snackListBorder, item.claimed && { opacity: 0.85 }]}
+                  onPress={() => {
+                    if (item.claimed) return
+                    Alert.alert(
+                      'Sign up for snacks',
+                      `Sign up to bring snacks on ${item.date}?`,
+                      [
+                        { text: 'Cancel', style: 'cancel' },
+                        {
+                          text: 'Confirm',
+                          onPress: () => {
+                            const updated = [...snackData]
+                            updated[i] = { ...item, claimed: true, name: 'You ✓' }
+                            setSnackData(updated)
                           },
-                        ]
-                      )
-                    }}
-                    activeOpacity={item.claimed ? 1 : 0.75}
-                  >
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.snackListDate}>{item.date} · {item.type}</Text>
-                      <Text style={[styles.snackListName, { color: item.name === 'You ✓' ? '#2E7D32' : item.claimed ? '#1a1a1a' : tc }]}>
-                        {item.claimed ? item.name : 'Open — tap to sign up'}
-                      </Text>
-                      {!item.claimed && isWithin7Days && (
-                        <Text style={styles.snackWarning}>No one signed up yet</Text>
-                      )}
-                    </View>
-                    {!item.claimed && <Text style={[styles.snackPlusIcon, { color: tc }]}>+</Text>}
-                  </TouchableOpacity>
-                )
-              })}
+                        },
+                      ]
+                    )
+                  }}
+                  activeOpacity={item.claimed ? 1 : 0.75}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.snackListDate}>{item.date} · {item.type}</Text>
+                    <Text style={[styles.snackListName, { color: item.name === 'You ✓' ? '#2E7D32' : item.claimed ? '#1a1a1a' : tc }]}>
+                      {item.claimed ? item.name : 'Open — tap to sign up'}
+                    </Text>
+                  </View>
+                  {!item.claimed && <Text style={[styles.snackPlusIcon, { color: tc }]}>+</Text>}
+                </TouchableOpacity>
+              ))}
             </View>
             <Text style={styles.snackFootnote}>The coach will send a reminder if spots go unfilled</Text>
           </View>
@@ -391,6 +457,7 @@ Slots: 0=GK, 1=LB, 2=CB, 3=RB, 4=MF, 5=LW, 6=RW`
           </View>
         </ScrollView>
       ) : (
+        /* Games tab — game day content */
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
           {nextGame && (
@@ -406,7 +473,7 @@ Slots: 0=GK, 1=LB, 2=CB, 3=RB, 4=MF, 5=LW, 6=RW`
           {!lineupGenerated ? (
             <View style={styles.card}>
               <View style={styles.aiHeader}>
-                <View style={[styles.aiIcon, { backgroundColor: tc }]}>
+                <View style={[styles.aiIcon, { backgroundColor: '#F3F4F6' }]}>
                   <Text style={styles.aiIconText}>⚡</Text>
                 </View>
                 <View>
@@ -475,19 +542,16 @@ Slots: 0=GK, 1=LB, 2=CB, 3=RB, 4=MF, 5=LW, 6=RW`
               </View>
 
               {viewMode === 'field' ? (
-                /* Field view */
                 <View style={styles.fieldContainer}>
                   {selectedPlayer && (
                     <Text style={styles.fieldHint}>Tap another player to swap · tap same to deselect</Text>
                   )}
                   <View style={styles.field}>
-                    {/* Field markings */}
                     <View style={styles.fieldCenterCircle} />
                     <View style={styles.fieldCenterLine} />
                     <View style={styles.fieldPenaltyTop} />
                     <View style={styles.fieldPenaltyBottom} />
 
-                    {/* On-field players */}
                     {onPlayers.map(player => {
                       const slot = player.fieldSlot ?? 0
                       const pos = FORMATION_737[slot] ?? FORMATION_737[0]
@@ -509,7 +573,7 @@ Slots: 0=GK, 1=LB, 2=CB, 3=RB, 4=MF, 5=LW, 6=RW`
                           onPress={() => handlePlayerTap(player.id)}
                           activeOpacity={0.8}
                         >
-                          <Text style={[styles.fieldPlayerNum, { color: isSelected ? '#1C1C1E' : '#1C1C1E' }]}>{player.number ?? '?'}</Text>
+                          <Text style={[styles.fieldPlayerNum, { color: '#1C1C1E' }]}>{player.number ?? '?'}</Text>
                           <Text style={[styles.fieldPlayerName, { color: 'rgba(28,28,30,0.8)' }]} numberOfLines={1}>{player.name.split(' ')[0]}</Text>
                           <Text style={[styles.fieldPlayerMins, { color: 'rgba(28,28,30,0.6)' }]}>{formatMins(player.minutes)}</Text>
                         </TouchableOpacity>
@@ -517,7 +581,6 @@ Slots: 0=GK, 1=LB, 2=CB, 3=RB, 4=MF, 5=LW, 6=RW`
                     })}
                   </View>
 
-                  {/* Bench */}
                   <View style={styles.benchArea}>
                     <Text style={styles.benchLabel}>Bench · {offPlayers.length}</Text>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -549,7 +612,6 @@ Slots: 0=GK, 1=LB, 2=CB, 3=RB, 4=MF, 5=LW, 6=RW`
                   </View>
                 </View>
               ) : (
-                /* List view */
                 <>
                   <View style={styles.section}>
                     <Text style={styles.sectionLabel}>On the field · {onPlayers.length}</Text>
@@ -602,7 +664,6 @@ Slots: 0=GK, 1=LB, 2=CB, 3=RB, 4=MF, 5=LW, 6=RW`
                 </>
               )}
 
-              {/* Equal time */}
               {gameTime > 120 && players.some(p => p.minutes < fairShare * 0.7) && (
                 <View style={styles.fairPlayCard}>
                   <Text style={styles.fairPlayTitle}>⚠ Playing time alert</Text>
@@ -636,9 +697,22 @@ const styles = StyleSheet.create({
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   subTabsScroll: { backgroundColor: '#fff', borderBottomWidth: 0.5, borderBottomColor: '#eee', maxHeight: 46 },
   subTabsContent: { flexDirection: 'row' },
-  subTab: { paddingHorizontal: 18, paddingVertical: 12, alignItems: 'center', borderBottomWidth: 2.5, borderBottomColor: 'transparent' },
-  subTabText: { fontSize: 14 },
+  subTab: { paddingHorizontal: 16, paddingVertical: 12, alignItems: 'center', borderBottomWidth: 2.5, borderBottomColor: 'transparent' },
+  subTabText: { fontSize: 13 },
   content: { padding: 16 },
+  emptyState: { alignItems: 'center', paddingVertical: 60 },
+  emptyText: { fontSize: 14, color: '#aaa' },
+  monthHeader: { fontSize: 12, fontWeight: '700', color: '#aaa', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8, marginTop: 4 },
+  scheduleRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, gap: 12 },
+  scheduleRowAlt: { backgroundColor: '#FAFAFA' },
+  scheduleBorder: { borderBottomWidth: 0.5, borderBottomColor: '#f0f0f0' },
+  scheduleDateCol: { width: 32, alignItems: 'center' },
+  scheduleDay: { fontSize: 16, fontWeight: '800', color: '#1a1a1a' },
+  scheduleDOW: { fontSize: 10, color: '#aaa', fontWeight: '600', textTransform: 'uppercase' },
+  scheduleType: { fontSize: 11, fontWeight: '700', marginBottom: 1 },
+  scheduleTitle: { fontSize: 13, fontWeight: '600', color: '#1a1a1a' },
+  scheduleTime: { fontSize: 12, fontWeight: '600', color: '#555' },
+  scheduleLoc: { fontSize: 11, color: '#aaa', maxWidth: 90 },
   teamCard: { borderRadius: 20, padding: 18, marginBottom: 14 },
   teamCardName: { fontSize: 20, fontWeight: '800', color: '#fff', marginBottom: 4 },
   teamCardSub: { fontSize: 13, color: 'rgba(255,255,255,0.8)' },
@@ -672,32 +746,22 @@ const styles = StyleSheet.create({
   timerActions: { flexDirection: 'row', gap: 8 },
   timerBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12 },
   timerBtnText: { fontSize: 14, fontWeight: '700' },
-  timerBtnOutline: { paddingHorizontal: 12, paddingVertical: 10, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.2)' },
-  timerBtnOutlineText: { fontSize: 13, fontWeight: '600', color: '#fff' },
+  timerBtnOutline: { paddingHorizontal: 12, paddingVertical: 10, borderRadius: 12 },
+  timerBtnOutlineText: { fontSize: 13, fontWeight: '600' },
   viewToggle: { flexDirection: 'row', gap: 8 },
   viewToggleBtn: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20 },
-  viewToggleText: { fontSize: 13, fontWeight: '600', color: '#fff' },
+  viewToggleText: { fontSize: 13, fontWeight: '600' },
   fieldContainer: { marginBottom: 14 },
   fieldHint: { fontSize: 12, color: '#888', textAlign: 'center', marginBottom: 8 },
   field: { backgroundColor: '#3d7a35', borderRadius: 16, height: 300, position: 'relative', marginBottom: 12, overflow: 'hidden', borderWidth: 2, borderColor: '#2d5a25' },
   fieldCenterCircle: { position: 'absolute', width: 60, height: 60, borderRadius: 30, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.4)', top: '50%', left: '50%', marginTop: -30, marginLeft: -30 },
-  fieldCenterLine: { position: 'absolute', left: 8, right: 8, top: 0, height: 1.5, backgroundColor: 'rgba(255,255,255,0.4)' },
+  fieldCenterLine: { position: 'absolute', left: 8, right: 8, top: '50%', height: 1.5, backgroundColor: 'rgba(255,255,255,0.4)' },
   fieldPenaltyTop: { position: 'absolute', top: 0, left: '28%', right: '28%', height: 36, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.4)', borderTopWidth: 0 },
   fieldPenaltyBottom: { position: 'absolute', bottom: 0, left: '28%', right: '28%', height: 36, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.4)', borderBottomWidth: 0 },
-  fieldPenaltyTop: { position: 'absolute', top: 0, left: '28%', right: '28%', height: 36, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.4)', borderTopWidth: 0 },
-  fieldGoalBottom: { position: 'absolute', bottom: 0, left: '38%', right: '38%', height: 10, backgroundColor: 'rgba(255,255,255,0.5)', borderTopLeftRadius: 3, borderTopRightRadius: 3 },
-  fieldGoalTop: { position: 'absolute', top: 0, left: '38%', right: '38%', height: 10, backgroundColor: 'rgba(255,255,255,0.5)', borderBottomLeftRadius: 3, borderBottomRightRadius: 3 },
-  fieldCenterDot: { position: 'absolute', width: 8, height: 8, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.5)', top: '50%', left: '50%', marginTop: -4, marginLeft: -4 },
-  cornerTL: { position: 'absolute', top: 0, left: 0, width: 14, height: 14, borderBottomRightRadius: 14, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.4)', borderTopWidth: 0, borderLeftWidth: 0 },
-  cornerTR: { position: 'absolute', top: 0, right: 0, width: 14, height: 14, borderBottomLeftRadius: 14, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.4)', borderTopWidth: 0, borderRightWidth: 0 },
-  cornerBL: { position: 'absolute', bottom: 0, left: 0, width: 14, height: 14, borderTopRightRadius: 14, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.4)', borderBottomWidth: 0, borderLeftWidth: 0 },
-  cornerBR: { position: 'absolute', bottom: 0, right: 0, width: 14, height: 14, borderTopLeftRadius: 14, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.4)', borderBottomWidth: 0, borderRightWidth: 0 },
-  yourHalfLabel: { position: 'absolute', top: '53%', left: 8 },
-  yourHalfText: { fontSize: 8, fontWeight: '700', color: 'rgba(255,255,255,0.25)', letterSpacing: 1 },
   fieldPlayer: { position: 'absolute', width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', marginLeft: -26, marginTop: -26, borderWidth: 1.5 },
-  fieldPlayerNum: { fontSize: 13, fontWeight: '900', color: '#1C1C1E' },
-  fieldPlayerName: { fontSize: 8, color: 'rgba(28,28,30,0.8)', fontWeight: '600', maxWidth: 48 },
-  fieldPlayerMins: { fontSize: 8, color: 'rgba(28,28,30,0.6)' },
+  fieldPlayerNum: { fontSize: 13, fontWeight: '900' },
+  fieldPlayerName: { fontSize: 8, fontWeight: '600', maxWidth: 48 },
+  fieldPlayerMins: { fontSize: 8 },
   benchArea: { backgroundColor: '#fff', borderRadius: 14, padding: 12, borderWidth: 0.5, borderColor: '#eee' },
   benchLabel: { fontSize: 10, fontWeight: '700', color: '#aaa', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
   benchPlayer: { alignItems: 'center', width: 64, borderRadius: 10, padding: 8, backgroundColor: '#fff', borderWidth: 1, borderColor: '#e8e8e8' },
