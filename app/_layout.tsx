@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router'
 import { View, Text, StyleSheet } from 'react-native'
+import { RoleProvider, useRole } from '../lib/roleStore'
 
 function TabIcon({ label, focused }: { label: string; focused: boolean }) {
   const color = '#1A56DB'
@@ -13,7 +14,10 @@ function TabIcon({ label, focused }: { label: string; focused: boolean }) {
   )
 }
 
-export default function Layout() {
+function TabsLayout() {
+  const { currentRole } = useRole()
+  const isParent = currentRole === 'parent'
+
   return (
     <Tabs
       screenOptions={{
@@ -22,18 +26,72 @@ export default function Layout() {
         tabBarShowLabel: false,
       }}
     >
-      <Tabs.Screen name="home" options={{ tabBarIcon: ({ focused }) => <TabIcon label="Home" focused={focused} /> }} />
-      <Tabs.Screen name="practice" options={{ tabBarIcon: ({ focused }) => <TabIcon label="Practice" focused={focused} /> }} />
-      <Tabs.Screen name="games" options={{ tabBarIcon: ({ focused }) => <TabIcon label="Team" focused={focused} /> }} />
-      <Tabs.Screen name="chat" options={{ tabBarIcon: ({ focused }) => <TabIcon label="Chat" focused={focused} /> }} />
+      {/* Coach home — hide for parent */}
+      <Tabs.Screen
+        name="home"
+        options={{
+          href: isParent ? null : undefined,
+          tabBarIcon: ({ focused }) => <TabIcon label="Home" focused={focused} />,
+        }}
+      />
+      {/* Parent home — hide for coach */}
+      <Tabs.Screen
+        name="parent-home"
+        options={{
+          href: isParent ? undefined : null,
+          tabBarIcon: ({ focused }) => <TabIcon label="Home" focused={focused} />,
+        }}
+      />
+      {/* Practice — coach only */}
+      <Tabs.Screen
+        name="practice"
+        options={{
+          href: isParent ? null : undefined,
+          tabBarIcon: ({ focused }) => <TabIcon label="Practice" focused={focused} />,
+        }}
+      />
+      {/* Team / games — coach only */}
+      <Tabs.Screen
+        name="games"
+        options={{
+          href: isParent ? null : undefined,
+          tabBarIcon: ({ focused }) => <TabIcon label="Team" focused={focused} />,
+        }}
+      />
+      {/* Parent schedule — parent only */}
+      <Tabs.Screen
+        name="parent-schedule"
+        options={{
+          href: isParent ? undefined : null,
+          tabBarIcon: ({ focused }) => <TabIcon label="Schedule" focused={focused} />,
+        }}
+      />
+      {/* Chat — both roles */}
+      <Tabs.Screen
+        name="chat"
+        options={{ tabBarIcon: ({ focused }) => <TabIcon label="Chat" focused={focused} /> }}
+      />
+      {/* Account — both roles */}
+      <Tabs.Screen
+        name="account"
+        options={{ tabBarIcon: ({ focused }) => <TabIcon label="Account" focused={focused} /> }}
+      />
+      {/* Hidden utility screens */}
       <Tabs.Screen name="snacks" options={{ href: null }} />
       <Tabs.Screen name="vote" options={{ href: null }} />
-      <Tabs.Screen name="account" options={{ tabBarIcon: ({ focused }) => <TabIcon label="Account" focused={focused} /> }} />
       <Tabs.Screen name="index" options={{ href: null, tabBarStyle: { display: 'none' } }} />
       <Tabs.Screen name="player" options={{ href: null }} />
       <Tabs.Screen name="roster/index" options={{ href: null }} />
       <Tabs.Screen name="subs" options={{ href: null }} />
     </Tabs>
+  )
+}
+
+export default function Layout() {
+  return (
+    <RoleProvider>
+      <TabsLayout />
+    </RoleProvider>
   )
 }
 

@@ -118,6 +118,7 @@ export default function HomeScreen() {
         timeoutPromise
       ])
       setPlan(result)
+      // TODO: trigger push notification to parents — "Coach just updated the practice plan"
     } catch {
       setPlan(fallback)
       setIsOfflinePlan(true)

@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native'
+import { useRole } from './roleStore'
 
 type Props = {
   teamColor?: string
@@ -11,6 +12,8 @@ type Props = {
 
 export function AppHeader({ teamColor = '#1A56DB', teamName, onTeamPress, showTeamSwitch, allTeams, onTeamSelect }: Props) {
   const hasMultiple = (allTeams?.length ?? 0) > 1
+  const { currentRole, setRole } = useRole()
+  const isParent = currentRole === 'parent'
 
   const handleTeamPress = () => {
     if (onTeamPress) { onTeamPress(); return }
@@ -28,6 +31,30 @@ export function AppHeader({ teamColor = '#1A56DB', teamName, onTeamPress, showTe
       )
     }
   }
+
+  const handleRolePress = () => {
+    if (isParent) {
+      Alert.alert('Switch role', 'You are viewing as Parent.', [
+        {
+          text: 'Switch to Coach view',
+          onPress: () => setRole('coach'),
+        },
+        { text: 'Stay as Parent', style: 'cancel' },
+      ])
+    } else {
+      Alert.alert('Switch role', 'You are viewing as Coach.', [
+        {
+          text: 'Switch to Parent view',
+          onPress: () => setRole('parent'),
+        },
+        { text: 'Stay as Coach', style: 'cancel' },
+      ])
+    }
+  }
+
+  const chipBg = isParent ? '#F3F4F620' : teamColor + '20'
+  const chipText = isParent ? '#6B7280' : teamColor
+  const chipLabel = isParent ? 'Parent' : 'Coach'
 
   return (
     <View style={styles.header}>
@@ -47,18 +74,10 @@ export function AppHeader({ teamColor = '#1A56DB', teamName, onTeamPress, showTe
 
       <View style={styles.right}>
         <TouchableOpacity
-          style={[styles.roleChip, { backgroundColor: teamColor + '20' }]}
-          onPress={() => {
-            Alert.alert('Switch role', 'You are viewing as Coach.', [
-              {
-                text: 'Switch to Parent view',
-                onPress: () => Alert.alert('Coming soon', 'Parent view coming soon — stay tuned!'),
-              },
-              { text: 'Stay as Coach', style: 'cancel' },
-            ])
-          }}
+          style={[styles.roleChip, { backgroundColor: chipBg }]}
+          onPress={handleRolePress}
         >
-          <Text style={[styles.roleText, { color: teamColor }]}>Coach</Text>
+          <Text style={[styles.roleText, { color: chipText }]}>{chipLabel}</Text>
         </TouchableOpacity>
       </View>
     </View>

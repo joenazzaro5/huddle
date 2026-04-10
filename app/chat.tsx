@@ -1,8 +1,17 @@
 import { useEffect, useState, useRef } from 'react'
-import { View, Text, ScrollView, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator, Alert } from 'react-native'
+import { View, Text, ScrollView, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, Image } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import * as ImagePicker from 'expo-image-picker'
 import { supabase } from '../lib/supabase'
 import { AppHeader } from '../lib/header'
+
+const MOCK_TEAM_MEMBERS = [
+  'Sarah Martinez',
+  'Tom Kim',
+  'Jessica Chen',
+  'David Park',
+  'Emily Rodriguez',
+]
 
 export default function ChatScreen() {
   const [team, setTeam] = useState<any>(null)
@@ -11,6 +20,7 @@ export default function ChatScreen() {
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [currentUser, setCurrentUser] = useState<any>(null)
+  const [pendingImage, setPendingImage] = useState<string | null>(null)
   const scrollRef = useRef<ScrollView>(null)
   const teamIdRef = useRef<string | null>(null)
   const latestMessageRef = useRef<string | null>(null)
@@ -100,8 +110,68 @@ export default function ChatScreen() {
     setSending(false)
   }
 
-  const formatTime = (dateStr: string) =>
-    new Date(dateStr).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+  const openImagePicker = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
+    if (status !== 'granted') {
+      Alert.alert('Permission needed', 'Allow access to your photo library to share images.')
+      return
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.8,
+    })
+    if (!result.canceled && result.assets[0]) {
+      setPendingImage(result.assets[0].uri)
+      Alert.alert('Image sharing coming soon', 'Image sharing coming soon — stay tuned!')
+    }
+  }
+
+  const showDirectMessage = () => {
+    Alert.alert(
+      'Direct message',
+      'Choose a team member',
+      [
+        ...MOCK_TEAM_MEMBERS.map(name => ({
+          text: name,
+          onPress: () => Alert.alert('Coming soon', `1:1 messaging with ${name} coming soon!`),
+        })),
+        { text: 'Cancel', style: 'cancel' as const },
+      ]
+    )
+  }
+
+  const isToday = (dateStr: string) => {
+    const d = new Date(dateStr)
+    const now = new Date()
+    return d.getFullYear() === now.getFullYear() &&
+      d.getMonth() === now.getMonth() &&
+      d.getDate() === now.getDate()
+  }
+
+  const formatTime = (dateStr: string) => {
+    if (isToday(dateStr)) {
+      return new Date(dateStr).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+    }
+    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+  }
+
+  const getSenderInitial = (msg: any): string => {
+    if (msg.sender_name) return msg.sender_name[0].toUpperCase()
+    if (msg.user_id) return msg.user_id[0].toUpperCase()
+    return '?'
+  }
+
+  const getSenderName = (msg: any): string => {
+    if (msg.sender_name) return msg.sender_name
+    return 'Team member'
+  }
+
+  const avatarColor = (userId: string) => {
+    const colors = ['#1A56DB', '#7C3AED', '#059669', '#DC2626', '#D97706', '#0891B2']
+    let hash = 0
+    for (let i = 0; i < userId.length; i++) hash = userId.charCodeAt(i) + ((hash << 5) - hash)
+    return colors[Math.abs(hash) % colors.length]
+  }
 
   const tc = '#1A56DB'
 
@@ -111,8 +181,12 @@ export default function ChatScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <AppHeader teamColor={tc} teamName={team?.name} />
 
+      {/* Chat header with DM button */}
       <View style={styles.chatHeader}>
         <Text style={styles.chatTitle}>{team?.name} · Team chat</Text>
+        <TouchableOpacity style={styles.dmBtn} onPress={showDirectMessage}>
+          <Text style={styles.dmIcon}>👤</Text>
+        </TouchableOpacity>
       </View>
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -135,17 +209,53 @@ export default function ChatScreen() {
               }
               return (
                 <View key={msg.id} style={[styles.msgWrap, isMe && styles.msgWrapMe]}>
-                  <View style={[styles.bubble, isMe ? [styles.bubbleMe, { backgroundColor: tc }] : styles.bubbleOther]}>
-                    <Text style={[styles.bubbleText, isMe && styles.bubbleTextMe]}>{msg.body}</Text>
+                  {!isMe && (
+                    <View style={styles.senderRow}>
+                      <View style={[styles.avatar, { backgroundColor: avatarColor(msg.user_id ?? 'x') }]}>
+                        <Text style={styles.avatarText}>{getSenderInitial(msg)}</Text>
+                      </View>
+                      <Text style={styles.senderName}>{getSenderName(msg)}</Text>
+                    </View>
+                  )}
+                  <View style={[styles.bubbleWrap, isMe && styles.bubbleWrapMe]}>
+                    {!isMe && <View style={styles.avatarSpacer} />}
+                    <View style={[styles.bubble, isMe ? [styles.bubbleMe, { backgroundColor: tc }] : styles.bubbleOther]}>
+                      <Text style={[styles.bubbleText, isMe && styles.bubbleTextMe]}>{msg.body}</Text>
+                    </View>
                   </View>
-                  <Text style={[styles.msgTime, isMe && styles.msgTimeMe]}>{formatTime(msg.created_at)}</Text>
+                  <View style={[styles.timeRow, isMe && styles.timeRowMe]}>
+                    {!isMe && <View style={styles.avatarSpacer} />}
+                    <Text style={[styles.msgTime, isMe && styles.msgTimeMe]}>{formatTime(msg.created_at)}</Text>
+                  </View>
                 </View>
               )
             })
           )}
         </ScrollView>
 
+        {/* Image preview above composer */}
+        {pendingImage && (
+          <View style={styles.imagePreviewWrap}>
+            <Image source={{ uri: pendingImage }} style={styles.imagePreview} />
+            <TouchableOpacity style={styles.imageRemoveBtn} onPress={() => setPendingImage(null)}>
+              <Text style={styles.imageRemoveText}>✕</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         <View style={styles.composer}>
+          {/* + image button */}
+          <TouchableOpacity style={styles.composerAction} onPress={openImagePicker}>
+            <Text style={styles.composerActionText}>+</Text>
+          </TouchableOpacity>
+          {/* GIF button */}
+          <TouchableOpacity
+            style={styles.composerAction}
+            onPress={() => Alert.alert('GIF support coming soon!')}
+          >
+            <Text style={[styles.composerActionText, { fontSize: 11, fontWeight: '800' }]}>GIF</Text>
+          </TouchableOpacity>
+
           <TextInput
             style={styles.composerInput}
             placeholder="Message team..."
@@ -171,8 +281,10 @@ export default function ChatScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F7F7F5' },
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  chatHeader: { paddingHorizontal: 16, paddingVertical: 10, backgroundColor: '#fff', borderBottomWidth: 0.5, borderBottomColor: '#eee' },
+  chatHeader: { paddingHorizontal: 16, paddingVertical: 10, backgroundColor: '#fff', borderBottomWidth: 0.5, borderBottomColor: '#eee', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   chatTitle: { fontSize: 13, fontWeight: '600', color: '#888' },
+  dmBtn: { padding: 4 },
+  dmIcon: { fontSize: 18 },
   messages: { flex: 1 },
   messagesContent: { padding: 16, gap: 4 },
   emptyState: { alignItems: 'center', paddingVertical: 60 },
@@ -181,17 +293,65 @@ const styles = StyleSheet.create({
   emptySub: { fontSize: 14, color: '#888' },
   systemMsg: { alignItems: 'center', paddingVertical: 6 },
   systemMsgText: { fontSize: 12, color: '#aaa' },
-  msgWrap: { alignItems: 'flex-start', marginBottom: 8 },
+  msgWrap: { alignItems: 'flex-start', marginBottom: 12 },
   msgWrapMe: { alignItems: 'flex-end' },
+  senderRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
+  avatar: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  avatarText: { fontSize: 10, fontWeight: '800', color: '#fff' },
+  avatarSpacer: { width: 30 },
+  senderName: { fontSize: 11, fontWeight: '700', color: '#555' },
+  bubbleWrap: { flexDirection: 'row', alignItems: 'flex-end', gap: 6 },
+  bubbleWrapMe: { flexDirection: 'row-reverse' },
   bubble: { maxWidth: '78%', borderRadius: 18, padding: 12 },
   bubbleMe: { borderBottomRightRadius: 4 },
   bubbleOther: { backgroundColor: '#F3F4F6', borderBottomLeftRadius: 4 },
   bubbleText: { fontSize: 15, color: '#111827', lineHeight: 21 },
   bubbleTextMe: { color: '#fff' },
-  msgTime: { fontSize: 11, color: '#bbb', marginTop: 3, marginLeft: 4 },
+  timeRow: { flexDirection: 'row', alignItems: 'center', marginTop: 3 },
+  timeRowMe: { flexDirection: 'row-reverse' },
+  msgTime: { fontSize: 11, color: '#bbb', marginLeft: 4 },
   msgTimeMe: { marginLeft: 0, marginRight: 4 },
-  composer: { flexDirection: 'row', padding: 12, gap: 10, borderTopWidth: 0.5, borderTopColor: '#eee', backgroundColor: '#fff' },
-  composerInput: { flex: 1, backgroundColor: '#F7F7F5', borderRadius: 24, paddingHorizontal: 16, paddingVertical: 10, fontSize: 15, color: '#1a1a1a', maxHeight: 80 },
+  imagePreviewWrap: { flexDirection: 'row', alignItems: 'flex-start', paddingHorizontal: 12, paddingTop: 8, backgroundColor: '#fff', borderTopWidth: 0.5, borderTopColor: '#eee' },
+  imagePreview: { width: 60, height: 60, borderRadius: 10 },
+  imageRemoveBtn: { position: 'absolute', top: 4, left: 62, backgroundColor: '#333', borderRadius: 10, width: 20, height: 20, alignItems: 'center', justifyContent: 'center' },
+  imageRemoveText: { color: '#fff', fontSize: 10, fontWeight: '800' },
+  composer: {
+    flexDirection: 'row',
+    padding: 10,
+    gap: 8,
+    borderTopWidth: 0.5,
+    borderTopColor: '#eee',
+    backgroundColor: '#fff',
+    alignItems: 'flex-end',
+  },
+  composerAction: {
+    width: 36,
+    height: 44,
+    borderRadius: 18,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'flex-end',
+  },
+  composerActionText: { fontSize: 18, color: '#6B7280', fontWeight: '600' },
+  composerInput: {
+    flex: 1,
+    backgroundColor: '#F7F7F5',
+    borderRadius: 22,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    fontSize: 15,
+    color: '#1a1a1a',
+    maxHeight: 100,
+    minHeight: 44,
+    borderWidth: 0.5,
+    borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 3,
+    elevation: 1,
+  },
   sendBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', alignSelf: 'flex-end' },
   sendIcon: { color: '#fff', fontSize: 18, fontWeight: '800' },
 })
