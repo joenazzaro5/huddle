@@ -8,10 +8,43 @@ import { AppHeader } from '../lib/header'
 const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl2c3B5d21od3FkYXB4ZW14bHVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMDIwMjksImV4cCI6MjA5MDY3ODAyOX0.HXsFNltsIhtL0S2tLtzFK55lbQX6GMFQKxw-U3OY6KQ'
 const SUPABASE_URL = 'https://yvspywmhwqdapxemxlug.supabase.co'
 
-const SUB_PLAN = [
-  { time: '15 min', on: 'Amelia', off: 'Isabella' },
-  { time: '30 min', on: 'Harper', off: 'Charlotte' },
-  { time: '45 min', on: 'Evelyn', off: 'Emma' },
+const SEASON_SCHEDULE = [
+  { id:'ss-1',  type:'practice',    starts_at:'2025-09-03T16:00:00', location:'Marin Community Fields' },
+  { id:'ss-2',  type:'practice',    starts_at:'2025-09-05T16:00:00', location:'Marin Community Fields' },
+  { id:'ss-3',  type:'game',        starts_at:'2025-09-07T10:00:00', opponent:'Tiburon FC' },
+  { id:'ss-4',  type:'practice',    starts_at:'2025-09-10T16:00:00', location:'Marin Community Fields' },
+  { id:'ss-5',  type:'practice',    starts_at:'2025-09-12T16:00:00', location:'Marin Community Fields' },
+  { id:'ss-6',  type:'game',        starts_at:'2025-09-14T10:00:00', opponent:'Mill Valley SC' },
+  { id:'ss-7',  type:'practice',    starts_at:'2025-09-17T16:00:00', location:'Marin Community Fields' },
+  { id:'ss-8',  type:'practice',    starts_at:'2025-09-19T16:00:00', location:'Marin Community Fields' },
+  { id:'ss-9',  type:'game',        starts_at:'2025-09-21T10:00:00', opponent:'Novato United' },
+  { id:'ss-10', type:'practice',    starts_at:'2025-09-24T16:00:00', location:'Marin Community Fields' },
+  { id:'ss-11', type:'practice',    starts_at:'2025-09-26T16:00:00', location:'Marin Community Fields' },
+  { id:'ss-12', type:'game',        starts_at:'2025-09-28T10:00:00', opponent:'San Anselmo FC' },
+  { id:'ss-13', type:'practice',    starts_at:'2025-10-01T16:00:00', location:'Marin Community Fields' },
+  { id:'ss-14', type:'practice',    starts_at:'2025-10-03T16:00:00', location:'Marin Community Fields' },
+  { id:'ss-15', type:'picture_day', starts_at:'2025-10-04T09:00:00', title:'Picture Day', location:'Marin Community Fields' },
+  { id:'ss-16', type:'game',        starts_at:'2025-10-05T10:00:00', opponent:'Fairfax FC' },
+  { id:'ss-17', type:'practice',    starts_at:'2025-10-08T16:00:00', location:'Marin Community Fields' },
+  { id:'ss-18', type:'practice',    starts_at:'2025-10-10T16:00:00', location:'Marin Community Fields' },
+  { id:'ss-19', type:'game',        starts_at:'2025-10-12T10:00:00', opponent:'Corte Madera FC' },
+  { id:'ss-20', type:'practice',    starts_at:'2025-10-15T16:00:00', location:'Marin Community Fields' },
+  { id:'ss-21', type:'practice',    starts_at:'2025-10-17T16:00:00', location:'Marin Community Fields' },
+  { id:'ss-22', type:'game',        starts_at:'2025-10-19T10:00:00', opponent:'Larkspur SC' },
+  { id:'ss-23', type:'practice',    starts_at:'2025-10-22T16:00:00', location:'Marin Community Fields' },
+  { id:'ss-24', type:'practice',    starts_at:'2025-10-24T16:00:00', location:'Marin Community Fields' },
+  { id:'ss-25', type:'game',        starts_at:'2025-10-26T10:00:00', opponent:'Greenbrae United' },
+  { id:'ss-26', type:'practice',    starts_at:'2025-10-29T16:00:00', location:'Marin Community Fields' },
+  { id:'ss-27', type:'practice',    starts_at:'2025-10-31T16:00:00', location:'Marin Community Fields' },
+]
+
+const STANDINGS = [
+  { team:'Marin Cheetahs', w:4, l:1, d:1, pts:13, isUs:true },
+  { team:'Tiburon FC',     w:3, l:2, d:1, pts:10 },
+  { team:'Mill Valley SC', w:3, l:2, d:0, pts:9 },
+  { team:'Novato United',  w:2, l:2, d:2, pts:8 },
+  { team:'San Anselmo FC', w:1, l:4, d:1, pts:4 },
+  { team:'Fairfax FC',     w:0, l:5, d:1, pts:1 },
 ]
 
 const FORMATION_737 = [
@@ -41,7 +74,7 @@ export default function GamesScreen() {
   const [players, setPlayers] = useState<Player[]>([])
   const [events, setEvents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'schedule' | 'games' | 'roster' | 'snacks' | 'polls'>('schedule')
+  const [activeTab, setActiveTab] = useState<'schedule' | 'games' | 'roster' | 'standings' | 'snacks' | 'polls'>('schedule')
   const [lineupPrompt, setLineupPrompt] = useState('')
   const [lineupLoading, setLineupLoading] = useState(false)
   const [lineupGenerated, setLineupGenerated] = useState(true)
@@ -272,8 +305,8 @@ Slots: 0=GK, 1=LB, 2=CB, 3=RB, 4=MF, 5=LW, 6=RW`
       <AppHeader teamColor={tc} teamName={team?.name} />
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.subTabsScroll} contentContainerStyle={styles.subTabsContent}>
-        {(['schedule', 'games', 'roster', 'snacks', 'polls'] as const).map(tab => {
-          const labels: Record<string, string> = { schedule: 'Schedule', games: 'Games', roster: 'Roster', snacks: 'Snacks', polls: 'Polls' }
+        {(['schedule', 'games', 'roster', 'standings', 'snacks', 'polls'] as const).map(tab => {
+          const labels: Record<string, string> = { schedule: 'Schedule', games: 'Games', roster: 'Roster', standings: 'Standings', snacks: 'Snacks', polls: 'Polls' }
           const isActive = activeTab === tab
           return (
             <TouchableOpacity
@@ -291,54 +324,49 @@ Slots: 0=GK, 1=LB, 2=CB, 3=RB, 4=MF, 5=LW, 6=RW`
 
       {activeTab === 'schedule' ? (
         <ScrollView contentContainerStyle={styles.content}>
-          {events.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>No events scheduled yet</Text>
-            </View>
-          ) : (
-            groupEventsByMonth(events).map(({ month, events: monthEvents }) => (
-              <View key={month}>
-                <Text style={styles.monthHeader}>{month}</Text>
-                <View style={styles.card}>
-                  {monthEvents.map((event, i) => {
-                    const d = new Date(event.starts_at)
-                    const isGame = event.type === 'game'
-                    return (
-                      <View
-                        key={event.id}
-                        style={[
-                          styles.scheduleRow,
-                          i % 2 === 1 && styles.scheduleRowAlt,
-                          i < monthEvents.length - 1 && styles.scheduleBorder,
-                        ]}
-                      >
-                        <View style={styles.scheduleDateCol}>
-                          <Text style={styles.scheduleDay}>{d.getDate()}</Text>
-                          <Text style={styles.scheduleDOW}>{d.toLocaleDateString('en-US', { weekday: 'short' })}</Text>
-                        </View>
-                        <View style={{ flex: 1 }}>
-                          <Text style={[styles.scheduleType, { color: isGame ? '#FF8C42' : tc }]}>
-                            {isGame ? '⚽ Game' : event.type === 'practice' ? '🏃 Practice' : '📅 Event'}
-                          </Text>
-                          <Text style={styles.scheduleTitle}>
-                            {isGame ? `vs ${event.opponent}` : (event.focus ?? event.title ?? '')}
-                          </Text>
-                        </View>
-                        <View style={{ alignItems: 'flex-end' }}>
-                          <Text style={styles.scheduleTime}>
-                            {d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
-                          </Text>
-                          {event.location ? (
-                            <Text style={styles.scheduleLoc} numberOfLines={1}>{event.location}</Text>
-                          ) : null}
-                        </View>
+          {groupEventsByMonth(events.length > 0 ? events : SEASON_SCHEDULE).map(({ month, events: monthEvents }) => (
+            <View key={month}>
+              <Text style={styles.monthHeader}>{month}</Text>
+              <View style={styles.card}>
+                {monthEvents.map((event, i) => {
+                  const d = new Date(event.starts_at)
+                  const isGame = event.type === 'game'
+                  const isPictureDay = event.type === 'picture_day'
+                  return (
+                    <View
+                      key={event.id}
+                      style={[
+                        styles.scheduleRow,
+                        i % 2 === 1 && styles.scheduleRowAlt,
+                        i < monthEvents.length - 1 && styles.scheduleBorder,
+                      ]}
+                    >
+                      <View style={styles.scheduleDateCol}>
+                        <Text style={styles.scheduleDay}>{d.getDate()}</Text>
+                        <Text style={styles.scheduleDOW}>{d.toLocaleDateString('en-US', { weekday: 'short' })}</Text>
                       </View>
-                    )
-                  })}
-                </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.scheduleType, { color: isGame ? '#FF8C42' : isPictureDay ? '#9C27B0' : tc }]}>
+                          {isGame ? '⚽ Game' : isPictureDay ? '📸 Picture Day' : '🏃 Practice'}
+                        </Text>
+                        <Text style={styles.scheduleTitle}>
+                          {isGame ? `vs ${event.opponent}` : (event.focus ?? event.title ?? '')}
+                        </Text>
+                      </View>
+                      <View style={{ alignItems: 'flex-end' }}>
+                        <Text style={styles.scheduleTime}>
+                          {d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                        </Text>
+                        {event.location ? (
+                          <Text style={styles.scheduleLoc} numberOfLines={1}>{event.location}</Text>
+                        ) : null}
+                      </View>
+                    </View>
+                  )
+                })}
               </View>
-            ))
-          )}
+            </View>
+          ))}
         </ScrollView>
       ) : activeTab === 'roster' ? (
         <ScrollView contentContainerStyle={styles.content}>
@@ -460,6 +488,45 @@ Slots: 0=GK, 1=LB, 2=CB, 3=RB, 4=MF, 5=LW, 6=RW`
             <TouchableOpacity style={[styles.newPollBtn, { borderColor: tc }]}>
               <Text style={[styles.newPollBtnText, { color: tc }]}>Create new poll +</Text>
             </TouchableOpacity>
+          </View>
+        </ScrollView>
+      ) : activeTab === 'standings' ? (
+        <ScrollView contentContainerStyle={styles.content}>
+          <View style={styles.card}>
+            <Text style={styles.cardLabel}>League standings</Text>
+            {/* Header row */}
+            <View style={styles.standingsHeaderRow}>
+              <Text style={[styles.standingsCell, { flex: 1 }]}>Team</Text>
+              <Text style={styles.standingsColHdr}>W</Text>
+              <Text style={styles.standingsColHdr}>L</Text>
+              <Text style={styles.standingsColHdr}>D</Text>
+              <Text style={[styles.standingsColHdr, { color: tc }]}>Pts</Text>
+            </View>
+            {STANDINGS.map((row, i) => (
+              <View key={i} style={[styles.standingsRow, row.isUs && styles.standingsRowUs, i < STANDINGS.length - 1 && styles.standingsBorder]}>
+                <Text style={[styles.standingsTeamName, row.isUs && { fontWeight: '800', color: tc }]} numberOfLines={1}>{row.team}</Text>
+                <Text style={styles.standingsVal}>{row.w}</Text>
+                <Text style={styles.standingsVal}>{row.l}</Text>
+                <Text style={styles.standingsVal}>{row.d}</Text>
+                <Text style={[styles.standingsVal, { fontWeight: '800', color: tc }]}>{row.pts}</Text>
+              </View>
+            ))}
+          </View>
+
+          {/* Season stats 2x2 grid */}
+          <Text style={[styles.cardLabel, { marginBottom: 8, marginLeft: 2 }]}>Season stats</Text>
+          <View style={styles.statsGrid}>
+            {[
+              { label: 'Goals scored', value: '12' },
+              { label: 'Goals against', value: '6' },
+              { label: 'Clean sheets', value: '2' },
+              { label: 'Win rate', value: '67%' },
+            ].map((stat, i) => (
+              <View key={i} style={styles.statBox}>
+                <Text style={styles.statValue}>{stat.value}</Text>
+                <Text style={styles.statLabel}>{stat.label}</Text>
+              </View>
+            ))}
           </View>
         </ScrollView>
       ) : (
@@ -681,21 +748,65 @@ Slots: 0=GK, 1=LB, 2=CB, 3=RB, 4=MF, 5=LW, 6=RW`
                 </>
               )}
 
-              {/* Substitution plan */}
-              <View style={styles.subPlanCard}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                  <Text style={styles.subPlanTitle}>Sub plan · AI suggested</Text>
-                  <TouchableOpacity onPress={() => Alert.alert('Custom sub planner', 'Custom sub planner coming soon')}>
-                    <Text style={[styles.subPlanAdjust, { color: tc }]}>Adjust →</Text>
-                  </TouchableOpacity>
-                </View>
-                {SUB_PLAN.map((sub, i) => (
-                  <View key={i} style={[styles.subPlanRow, i < SUB_PLAN.length - 1 && styles.subPlanBorder]}>
-                    <Text style={styles.subPlanTime}>{sub.time}</Text>
-                    <Text style={styles.subPlanText}>{sub.on} on for {sub.off}</Text>
+              {/* Substitution plan — Equal time rotator */}
+              {(() => {
+                const on = players.filter(p => p.isOn).sort((a,b)=>(a.fieldSlot??99)-(b.fieldSlot??99))
+                const bench = players.filter(p => !p.isOn)
+                if (bench.length === 0) return null
+
+                const gk  = on.find(p => p.fieldSlot === 0)
+                const def = on.find(p => [1,2,3].includes(p.fieldSlot??-1))
+                const mf  = on.find(p => p.fieldSlot === 4)
+                const fwd = on.find(p => [5,6].includes(p.fieldSlot??-1))
+
+                type Sub = { minute:number; onName:string; onId:string; offName:string; offId:string }
+                const tl: Sub[] = []
+                let bi = 0
+                if (mf  && bench[bi]) { tl.push({minute:15,onName:bench[bi].name,onId:bench[bi].id,offName:mf.name,offId:mf.id}); bi++ }
+                if (def && bench[bi]) { tl.push({minute:20,onName:bench[bi].name,onId:bench[bi].id,offName:def.name,offId:def.id}); bi++ }
+                if (fwd && bench[bi]) { tl.push({minute:25,onName:bench[bi].name,onId:bench[bi].id,offName:fwd.name,offId:fwd.id}); bi++ }
+                if (gk  && bench[bi]) { tl.push({minute:30,onName:bench[bi].name,onId:bench[bi].id,offName:gk.name,offId:gk.id}); bi++ }
+                const first = [...tl]
+                if (first[0]) tl.push({minute:35,onName:first[0].offName,onId:first[0].offId,offName:first[0].onName,offId:first[0].onId})
+                if (first[1]) tl.push({minute:40,onName:first[1].offName,onId:first[1].offId,offName:first[1].onName,offId:first[1].onId})
+                if (first[2]) tl.push({minute:45,onName:first[2].offName,onId:first[2].offId,offName:first[2].onName,offId:first[2].onId})
+                tl.sort((a,b) => a.minute - b.minute)
+
+                // Projected minutes per player
+                const proj: Record<string,number> = {}
+                players.forEach(p => { proj[p.id] = 0 })
+                const field = new Set(on.map(p => p.id))
+                let prev = 0
+                for (const evt of tl) {
+                  field.forEach(id => { proj[id] = (proj[id]??0) + (evt.minute - prev) })
+                  prev = evt.minute
+                  field.delete(evt.offId)
+                  field.add(evt.onId)
+                }
+                field.forEach(id => { proj[id] = (proj[id]??0) + (60 - prev) })
+
+                return (
+                  <View style={styles.subPlanCard}>
+                    <Text style={styles.subPlanTitle}>Sub plan · Equal time</Text>
+                    {tl.map((evt, i) => (
+                      <View key={i} style={[styles.subPlanRow, i < tl.length - 1 && styles.subPlanBorder]}>
+                        <Text style={styles.subPlanTime}>{evt.minute}'</Text>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.subPlanIn}>↑ {evt.onName}</Text>
+                          <Text style={styles.subPlanOut}>↓ {evt.offName}</Text>
+                        </View>
+                      </View>
+                    ))}
+                    <View style={styles.projMinsRow}>
+                      {players.map(p => (
+                        <View key={p.id} style={styles.projMinsChip}>
+                          <Text style={styles.projMinsChipText}>{p.name.split(' ')[0]} {proj[p.id]??0}m</Text>
+                        </View>
+                      ))}
+                    </View>
                   </View>
-                ))}
-              </View>
+                )
+              })()}
 
               {gameTime > 120 && players.some(p => p.minutes < fairShare * 0.7) && (
                 <View style={styles.fairPlayCard}>
@@ -834,10 +945,27 @@ const styles = StyleSheet.create({
   newPollBtn: { borderRadius: 12, paddingVertical: 11, alignItems: 'center', borderWidth: 1.5, marginTop: 8 },
   newPollBtnText: { fontSize: 13, fontWeight: '700' },
   subPlanCard: { backgroundColor: '#fff', borderRadius: 16, padding: 14, marginBottom: 14, borderWidth: 0.5, borderColor: '#E5E7EB' },
-  subPlanTitle: { fontSize: 13, fontWeight: '700', color: '#1a1a1a' },
-  subPlanAdjust: { fontSize: 12, fontWeight: '700' },
-  subPlanRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, gap: 12 },
+  subPlanTitle: { fontSize: 13, fontWeight: '700', color: '#1a1a1a', marginBottom: 10 },
+  subPlanRow: { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 8, gap: 12 },
   subPlanBorder: { borderBottomWidth: 0.5, borderBottomColor: '#f5f5f5' },
-  subPlanTime: { fontSize: 12, fontWeight: '700', color: '#6B7280', minWidth: 48 },
-  subPlanText: { fontSize: 13, color: '#1a1a1a', flex: 1 },
+  subPlanTime: { fontSize: 12, fontWeight: '700', color: '#6B7280', minWidth: 32, marginTop: 1 },
+  subPlanIn:  { fontSize: 13, fontWeight: '600', color: '#16A34A' },
+  subPlanOut: { fontSize: 13, fontWeight: '600', color: '#DC2626', marginTop: 1 },
+  projMinsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 12 },
+  projMinsChip: { backgroundColor: '#F3F4F6', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
+  projMinsChipText: { fontSize: 11, fontWeight: '600', color: '#555' },
+  // Standings
+  standingsHeaderRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: '#E5E7EB', marginBottom: 2 },
+  standingsColHdr: { fontSize: 11, fontWeight: '700', color: '#aaa', width: 30, textAlign: 'center' },
+  standingsRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10 },
+  standingsRowUs: { backgroundColor: '#EEF4FF', borderRadius: 8, paddingHorizontal: 6, marginHorizontal: -6 },
+  standingsBorder: { borderBottomWidth: 0.5, borderBottomColor: '#f5f5f5' },
+  standingsTeamName: { flex: 1, fontSize: 13, fontWeight: '600', color: '#1a1a1a' },
+  standingsCell: { fontSize: 13, fontWeight: '600', color: '#1a1a1a' },
+  standingsVal: { width: 30, textAlign: 'center', fontSize: 13, fontWeight: '600', color: '#555' },
+  // Season stats grid
+  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 14 },
+  statBox: { backgroundColor: '#fff', borderRadius: 14, padding: 14, flex: 1, minWidth: '45%', borderWidth: 0.5, borderColor: '#eee', alignItems: 'center' },
+  statValue: { fontSize: 28, fontWeight: '900', color: '#1A56DB', marginBottom: 2 },
+  statLabel: { fontSize: 11, fontWeight: '600', color: '#888', textAlign: 'center' },
 })
