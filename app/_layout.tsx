@@ -87,8 +87,8 @@ function TabsLayout() {
         options={{ tabBarIcon: ({ focused }) => <TabIcon label="Account" focused={focused} /> }}
       />
       {/* Hidden utility screens */}
-      <Tabs.Screen name="snacks" options={{ href: null }} />
-      <Tabs.Screen name="vote" options={{ href: null }} />
+
+
       <Tabs.Screen name="index" options={{ href: null, tabBarStyle: { display: 'none' } }} />
       <Tabs.Screen name="player" options={{ href: null }} />
       <Tabs.Screen name="roster/index" options={{ href: null }} />
