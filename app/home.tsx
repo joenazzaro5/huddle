@@ -306,17 +306,14 @@ export default function HomeScreen() {
         <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#1A56DB', padding: 0, overflow: 'hidden' }]}>
           {/* Header strip */}
           <View style={styles.practicePlanHeader}>
-            <View style={{ alignItems: 'center' }}>
-              <TouchableOpacity
-                onPress={() => nextEvent && autoGeneratePlan(nextEvent, team)}
-                onLongPress={() => Alert.alert('⚡ Shuffle plan', 'Tap to shuffle and generate a fresh practice plan')}
-                activeOpacity={0.6}
-              >
-                <Text style={styles.practiceIcon}>⚡</Text>
-              </TouchableOpacity>
-              <Text style={styles.shuffleLabel}>Shuffle</Text>
-            </View>
-            <Text style={[styles.cardLabel, { marginBottom: 0 }]}>Practice plan · AI generated</Text>
+            <Text style={[styles.cardLabel, { marginBottom: 0, flex: 1 }]}>Practice plan · AI generated</Text>
+            <TouchableOpacity
+              onPress={() => nextEvent && autoGeneratePlan(nextEvent, team)}
+              onLongPress={() => Alert.alert('🔀 Shuffle plan', 'Shuffle to generate a fresh practice plan')}
+              activeOpacity={0.6}
+            >
+              <Text style={styles.practiceIcon}>🔀</Text>
+            </TouchableOpacity>
           </View>
           {/* Body */}
           <View style={styles.practicePlanBody}>
@@ -329,14 +326,19 @@ export default function HomeScreen() {
               <>
                 <Text style={styles.cardTitle}>{plan.title}</Text>
                 {isOfflinePlan && <Text style={styles.offlineLabel}>Using saved plan</Text>}
-                {plan.plan?.map((phase: any, i: number) => (
-                  <View key={i} style={[styles.planPhaseRow, i < (plan.plan?.length ?? 0) - 1 && styles.planPhaseBorder]}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.planPhaseName}>{phase.phase} · {phase.drill}</Text>
+                {plan.plan?.map((phase: any, i: number) => {
+                  const phaseColors = ['#10B981', '#1A56DB', '#F59E0B']
+                  const phaseColor = phaseColors[i % phaseColors.length]
+                  return (
+                    <View key={i} style={[styles.planPhaseRow, i < (plan.plan?.length ?? 0) - 1 && styles.planPhaseBorder]}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.planPhaseHeader, { color: phaseColor }]}>{phase.phase}</Text>
+                        <Text style={styles.planPhaseName}>{phase.drill}</Text>
+                      </View>
+                      <Text style={styles.planPhaseDur}>{phase.duration}</Text>
                     </View>
-                    <Text style={styles.planPhaseDur}>{phase.duration}</Text>
-                  </View>
-                ))}
+                  )
+                })}
               </>
             ) : (
               <TouchableOpacity onPress={() => nextEvent && autoGeneratePlan(nextEvent, team)}>
@@ -355,45 +357,45 @@ export default function HomeScreen() {
             <Text style={styles.cardLabel}>Upcoming</Text>
             {events.slice(1, 4).map((event, i) => {
               const isGame = event.type === 'game'
+              const dotColor = isGame ? '#F59E0B' : '#1A56DB'
               return (
                 <View key={event.id} style={[styles.eventRow, i < events.slice(1, 4).length - 1 && styles.eventBorder]}>
-                  <View style={[styles.eventIconBox, { backgroundColor: isGame ? '#FF8C4220' : tc + '20' }]}>
-                    <Text style={[styles.eventIconText, { color: isGame ? '#FF8C42' : tc }]}>
-                      {isGame ? 'G' : event.focus?.[0] ?? 'P'}
-                    </Text>
-                  </View>
+                  <View style={[styles.upcomingDot, { backgroundColor: dotColor }]} />
                   <View style={{ flex: 1 }}>
                     <Text style={styles.eventTitle}>
-                      {isGame ? `Game vs ${event.opponent}` : `Practice · ${event.focus}`}
+                      {isGame ? `Game vs ${event.opponent}` : `Practice · ${event.focus ?? 'General skills'}`}
                     </Text>
                     <Text style={styles.eventSub}>{formatDay(event.starts_at)}</Text>
                     <Text style={styles.eventTime}>{formatTimeRange(event.starts_at, event.duration_min ?? 60)}</Text>
                   </View>
-                  <Text style={[styles.eventDays, { color: tc }]}>{daysUntil(event.starts_at)}</Text>
                 </View>
               )
             })}
-            <TouchableOpacity onPress={() => router.push('/games')}>
+            <TouchableOpacity onPress={() => router.push('/team')}>
               <Text style={[styles.viewLink, { color: tc }]}>View full schedule →</Text>
             </TouchableOpacity>
           </View>
         )}
 
         {/* 4. Your team module */}
-        <View style={styles.card}>
-          <Text style={styles.cardLabel}>Your team</Text>
-          <View style={styles.teamRow}>
-            <View style={[styles.teamAvatar, { backgroundColor: tc, shadowColor: tc }]}>
-              <Text style={styles.teamAvatarLetter}>{team?.name?.[0] ?? 'T'}</Text>
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.teamName}>{team?.name}</Text>
-              <Text style={styles.teamMeta}>{team?.age_group} · {team?.gender} · {playerCount} players</Text>
-            </View>
+        <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#1A56DB', padding: 0, overflow: 'hidden' }]}>
+          <View style={styles.teamCardHeader}>
+            <Text style={styles.cardLabel}>Your team</Text>
           </View>
-          <TouchableOpacity style={[styles.viewRosterBtn, { borderColor: tc }]} onPress={() => router.push('/games')}>
-            <Text style={[styles.viewRosterText, { color: tc }]}>View roster →</Text>
-          </TouchableOpacity>
+          <View style={styles.teamCardBody}>
+            <View style={styles.teamRow}>
+              <View style={[styles.teamAvatar, { backgroundColor: tc, shadowColor: tc }]}>
+                <Text style={styles.teamAvatarLetter}>{team?.name?.[0] ?? 'T'}</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.teamName}>{team?.name}</Text>
+                <Text style={styles.teamMeta}>{team?.age_group} · {team?.gender} · {playerCount} players</Text>
+              </View>
+            </View>
+            <TouchableOpacity style={[styles.viewRosterBtn, { borderColor: tc }]} onPress={() => router.push('/games')}>
+              <Text style={[styles.viewRosterText, { color: tc }]}>View roster →</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* 5. Snack schedule */}
@@ -513,25 +515,26 @@ const styles = StyleSheet.create({
   practicePlanHeader: { backgroundColor: '#F0F4FF', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10, flexDirection: 'row', alignItems: 'center', gap: 8 },
   practicePlanBody: { paddingHorizontal: 16, paddingBottom: 14, paddingTop: 10 },
   practiceIcon: { fontSize: 16 },
-  shuffleLabel: { fontSize: 9, fontWeight: '700', color: '#1A56DB', letterSpacing: 0.3, marginTop: 1 },
   offlineLabel: { fontSize: 11, color: '#aaa', marginBottom: 4 },
   planTapHint: { fontSize: 14, color: '#aaa', marginBottom: 6 },
   planLoadingRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginVertical: 8 },
   planLoadingText: { fontSize: 13, color: '#888' },
   planPhaseRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 7 },
   planPhaseBorder: { borderBottomWidth: 0.5, borderBottomColor: '#f5f5f5' },
+  planPhaseHeader: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 1 },
   planPhaseName: { fontSize: 13, fontWeight: '600', color: '#1a1a1a' },
   planPhaseDur: { fontSize: 12, color: '#888', fontWeight: '600' },
   viewLink: { fontSize: 13, fontWeight: '700', marginTop: 8 },
   eventRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingVertical: 10 },
   eventBorder: { borderBottomWidth: 0.5, borderBottomColor: '#f5f5f5' },
-  eventIconBox: { width: 36, height: 36, borderRadius: 9, alignItems: 'center', justifyContent: 'center', marginTop: 2 },
-  eventIconText: { fontSize: 12, fontWeight: '900' },
+  upcomingDot: { width: 10, height: 10, borderRadius: 5, marginTop: 4 },
   eventTitle: { fontSize: 14, fontWeight: '700', color: '#1a1a1a' },
   eventSub: { fontSize: 12, color: '#888', marginTop: 1 },
   eventTime: { fontSize: 11, color: '#bbb', marginTop: 1 },
   eventDays: { fontSize: 11, fontWeight: '700', marginTop: 3 },
   // Team card
+  teamCardHeader: { backgroundColor: '#F0F4FF', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 },
+  teamCardBody: { paddingHorizontal: 16, paddingBottom: 14, paddingTop: 10 },
   teamRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 6, marginTop: 8 },
   teamAvatar: {
     width: 52, height: 52, borderRadius: 26,
