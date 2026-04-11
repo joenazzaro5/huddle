@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react'
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Linking, Alert } from 'react-native'
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Linking } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { AppHeader } from '../lib/header'
 import { supabase } from '../lib/supabase'
 import { generatePracticePlan } from '../lib/ai'
-import { useRole } from '../lib/roleStore.tsx'
 
 const SNACK_DATA = [
   { date: 'Apr 5', type: 'Practice', name: 'Sarah M', claimed: true },
@@ -22,7 +21,6 @@ const POLL_OPTS = [
 
 export default function HomeScreen() {
   const router = useRouter()
-  const { currentRole, setRole } = useRole()
   const [team, setTeam] = useState<any>(null)
   const [events, setEvents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -207,21 +205,6 @@ export default function HomeScreen() {
     return msg.sender.display_name || msg.sender.email?.split('@')[0] || 'Team'
   }
 
-  const handleRolePress = () => {
-    const isParent = currentRole === 'parent'
-    if (isParent) {
-      Alert.alert('Switch role', 'You are viewing as Parent.', [
-        { text: 'Switch to Coach view', onPress: () => setRole('coach') },
-        { text: 'Stay as Parent', style: 'cancel' },
-      ])
-    } else {
-      Alert.alert('Switch role', 'You are viewing as Coach.', [
-        { text: 'Switch to Parent view', onPress: () => setRole('parent') },
-        { text: 'Stay as Coach', style: 'cancel' },
-      ])
-    }
-  }
-
   const nextEvent = events[0]
   const tc = '#1A56DB'
   const pending = Math.max(0, playerCount - rsvpYes - rsvpNo)
@@ -252,14 +235,9 @@ export default function HomeScreen() {
           <Text style={styles.headerBall}>⚽</Text>
         </View>
 
-        <TouchableOpacity
-          style={[styles.roleChip, { backgroundColor: currentRole === 'parent' ? '#F3F4F620' : tc + '20' }]}
-          onPress={handleRolePress}
-        >
-          <Text style={[styles.roleText, { color: currentRole === 'parent' ? '#6B7280' : tc }]}>
-            {currentRole === 'parent' ? 'Parent' : 'Coach'}
-          </Text>
-        </TouchableOpacity>
+        <View style={[styles.roleChip, { backgroundColor: tc + '20' }]}>
+          <Text style={[styles.roleText, { color: tc }]}>Coach</Text>
+        </View>
       </View>
 
       {showTeamPicker && (
