@@ -42,13 +42,21 @@ export function AppHeader({ teamColor = '#1A56DB', teamName, onTeamPress, showTe
       duration: 150,
       useNativeDriver: true,
     }).start(() => {
-      setRole(newRole)
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 150,
-        useNativeDriver: true,
-      }).start()
-      router.replace(newRole === 'parent' ? '/parent-home' : '/')
+      try {
+        setRole(newRole)
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 150,
+          useNativeDriver: true,
+        }).start()
+        router.replace(newRole === 'parent' ? '/parent-home' : '/home')
+      } catch {
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 150,
+          useNativeDriver: true,
+        }).start()
+      }
     })
   }
 

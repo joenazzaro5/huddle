@@ -20,7 +20,7 @@ function TabsLayout() {
 
   return (
     <Tabs
-      initialRouteName={isParent ? 'parent-home' : 'home'}
+      initialRouteName="home"
       screenOptions={{
         headerShown: false,
         tabBarStyle: styles.tabBar,

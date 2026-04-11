@@ -23,5 +23,9 @@ export function RoleProvider({ children }: { children: ReactNode }) {
 }
 
 export function useRole() {
-  return useContext(RoleContext)
+  try {
+    return useContext(RoleContext)
+  } catch {
+    return { currentRole: 'coach' as const, setRole: (_role: Role) => {} }
+  }
 }
