@@ -4,9 +4,11 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { supabase } from '../lib/supabase'
 import { useRouter } from 'expo-router'
 import { AppHeader } from '../lib/header'
+import { useRole } from '../lib/roleStore'
 
 export default function AccountScreen() {
   const router = useRouter()
+  const { currentRole } = useRole()
   const [user, setUser] = useState<any>(null)
   const [profile, setProfile] = useState<any>(null)
   const [team, setTeam] = useState<any>(null)
@@ -41,6 +43,14 @@ export default function AccountScreen() {
   }
 
   const tc = '#1A56DB'
+  const isParent = currentRole === 'parent'
+  const firstName = (profile?.display_name ?? user?.email ?? '').split(' ')[0] || (isParent ? 'Parent' : 'Coach')
+  const displayName = isParent ? `${firstName} (Parent)` : (profile?.display_name ?? 'Coach')
+  const badgeBg = isParent ? '#F0FDF4' : '#F3F4F6'
+  const badgeColor = isParent ? '#059669' : '#555'
+  const badgeLabel = isParent
+    ? 'Team Parent'
+    : (profile?.coach_level ? `${profile.coach_level.charAt(0).toUpperCase() + profile.coach_level.slice(1)} Coach` : 'Coach')
 
   if (loading) return <View style={styles.loading}><ActivityIndicator color={tc} size="large" /></View>
 
@@ -50,15 +60,13 @@ export default function AccountScreen() {
 
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.profileCard}>
-          <View style={[styles.avatar, { backgroundColor: '#111827' }]}>
-            <Text style={styles.avatarText}>{(profile?.display_name ?? user?.email ?? 'C')[0].toUpperCase()}</Text>
+          <View style={[styles.avatar, { backgroundColor: isParent ? '#059669' : '#111827' }]}>
+            <Text style={styles.avatarText}>{(firstName ?? 'U')[0].toUpperCase()}</Text>
           </View>
-          <Text style={styles.displayName}>{profile?.display_name ?? 'Coach'}</Text>
+          <Text style={styles.displayName}>{displayName}</Text>
           <Text style={styles.email}>{user?.email}</Text>
-          <View style={[styles.roleBadge, { backgroundColor: '#F3F4F6' }]}>
-            <Text style={[styles.roleText, { color: '#555' }]}>
-              {profile?.coach_level ? `${profile.coach_level.charAt(0).toUpperCase() + profile.coach_level.slice(1)} Coach` : 'Coach'}
-            </Text>
+          <View style={[styles.roleBadge, { backgroundColor: badgeBg }]}>
+            <Text style={[styles.roleText, { color: badgeColor }]}>{badgeLabel}</Text>
           </View>
         </View>
 

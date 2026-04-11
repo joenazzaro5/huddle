@@ -6,6 +6,36 @@ import { supabase } from '../lib/supabase'
 
 const tc = '#1A56DB'
 
+const SEASON_SCHEDULE = [
+  { id:'ss-1',  type:'practice',    starts_at:'2025-09-03T16:00:00', location:'Marin Community Fields' },
+  { id:'ss-2',  type:'practice',    starts_at:'2025-09-05T16:00:00', location:'Marin Community Fields' },
+  { id:'ss-3',  type:'game',        starts_at:'2025-09-07T10:00:00', opponent:'Tiburon FC' },
+  { id:'ss-4',  type:'practice',    starts_at:'2025-09-10T16:00:00', location:'Marin Community Fields' },
+  { id:'ss-5',  type:'practice',    starts_at:'2025-09-12T16:00:00', location:'Marin Community Fields' },
+  { id:'ss-6',  type:'game',        starts_at:'2025-09-14T10:00:00', opponent:'Mill Valley SC' },
+  { id:'ss-7',  type:'practice',    starts_at:'2025-09-17T16:00:00', location:'Marin Community Fields' },
+  { id:'ss-8',  type:'practice',    starts_at:'2025-09-19T16:00:00', location:'Marin Community Fields' },
+  { id:'ss-9',  type:'game',        starts_at:'2025-09-21T10:00:00', opponent:'Novato United' },
+  { id:'ss-10', type:'practice',    starts_at:'2025-09-24T16:00:00', location:'Marin Community Fields' },
+  { id:'ss-11', type:'practice',    starts_at:'2025-09-26T16:00:00', location:'Marin Community Fields' },
+  { id:'ss-12', type:'game',        starts_at:'2025-09-28T10:00:00', opponent:'San Anselmo FC' },
+  { id:'ss-13', type:'practice',    starts_at:'2025-10-01T16:00:00', location:'Marin Community Fields' },
+  { id:'ss-14', type:'practice',    starts_at:'2025-10-03T16:00:00', location:'Marin Community Fields' },
+  { id:'ss-15', type:'picture_day', starts_at:'2025-10-04T09:00:00', title:'Picture Day', location:'Marin Community Fields' },
+  { id:'ss-16', type:'game',        starts_at:'2025-10-05T10:00:00', opponent:'Fairfax FC' },
+  { id:'ss-17', type:'practice',    starts_at:'2025-10-08T16:00:00', location:'Marin Community Fields' },
+  { id:'ss-18', type:'practice',    starts_at:'2025-10-10T16:00:00', location:'Marin Community Fields' },
+  { id:'ss-19', type:'game',        starts_at:'2025-10-12T10:00:00', opponent:'Corte Madera FC' },
+  { id:'ss-20', type:'practice',    starts_at:'2025-10-15T16:00:00', location:'Marin Community Fields' },
+  { id:'ss-21', type:'practice',    starts_at:'2025-10-17T16:00:00', location:'Marin Community Fields' },
+  { id:'ss-22', type:'game',        starts_at:'2025-10-19T10:00:00', opponent:'Larkspur SC' },
+  { id:'ss-23', type:'practice',    starts_at:'2025-10-22T16:00:00', location:'Marin Community Fields' },
+  { id:'ss-24', type:'practice',    starts_at:'2025-10-24T16:00:00', location:'Marin Community Fields' },
+  { id:'ss-25', type:'game',        starts_at:'2025-10-26T10:00:00', opponent:'Greenbrae United' },
+  { id:'ss-26', type:'practice',    starts_at:'2025-10-29T16:00:00', location:'Marin Community Fields' },
+  { id:'ss-27', type:'practice',    starts_at:'2025-10-31T16:00:00', location:'Marin Community Fields' },
+]
+
 export default function ParentScheduleScreen() {
   const [team, setTeam] = useState<any>(null)
   const [allTeams, setAllTeams] = useState<any[]>([])
@@ -93,9 +123,11 @@ export default function ParentScheduleScreen() {
   const getMonthKey = (dateStr: string) =>
     new Date(dateStr).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
 
+  const scheduleItems = events.length > 0 ? events : SEASON_SCHEDULE
+
   // Group events by month
   const grouped: { month: string; events: any[] }[] = []
-  events.forEach(event => {
+  scheduleItems.forEach(event => {
     const month = getMonthKey(event.starts_at)
     const last = grouped[grouped.length - 1]
     if (last && last.month === month) {
@@ -105,10 +137,10 @@ export default function ParentScheduleScreen() {
     }
   })
 
-  const eventDotColor = (type: string) => {
-    if (type === 'practice') return tc
-    if (type === 'game') return '#F97316'
-    return '#9CA3AF'
+  const eventEmoji = (type: string) => {
+    if (type === 'game') return '⚽'
+    if (type === 'picture_day') return '📸'
+    return '🏃'
   }
 
   const rsvpChipStyle = (status: 'yes' | 'no' | 'maybe' | undefined) => {
@@ -133,22 +165,13 @@ export default function ParentScheduleScreen() {
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
-        {events.length > 0 && (
-          <View style={styles.seasonSummary}>
-            <Text style={styles.seasonSummaryText}>
-              {events.length} events · {events.filter(e => e.type === 'practice').length} practices · {events.filter(e => e.type === 'game').length} games
-            </Text>
-          </View>
-        )}
+        <View style={styles.seasonSummary}>
+          <Text style={styles.seasonSummaryText}>
+            {scheduleItems.length} events · {scheduleItems.filter((e: any) => e.type === 'practice').length} practices · {scheduleItems.filter((e: any) => e.type === 'game').length} games
+          </Text>
+        </View>
 
-        {events.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyEmoji}>📅</Text>
-            <Text style={styles.emptyTitle}>No upcoming events</Text>
-            <Text style={styles.emptySub}>Check back soon — your coach will add events</Text>
-          </View>
-        ) : (
-          grouped.map(group => (
+        {grouped.map(group => (
             <View key={group.month}>
               <Text style={styles.monthHeader}>{group.month}</Text>
               <View style={styles.monthCard}>
@@ -157,13 +180,13 @@ export default function ParentScheduleScreen() {
                   const isGame = event.type === 'game'
                   return (
                     <View key={event.id} style={[styles.eventRow, i < group.events.length - 1 && styles.eventBorder]}>
-                      <View style={[styles.dotWrap, { marginTop: 6 }]}>
-                        <View style={[styles.dot, { backgroundColor: eventDotColor(event.type) }]} />
-                      </View>
+                      <Text style={styles.eventEmoji}>{eventEmoji(event.type)}</Text>
                       <View style={{ flex: 1 }}>
                         <Text style={styles.eventType}>
                           {isGame
                             ? `Game vs ${event.opponent ?? 'TBD'}`
+                            : event.type === 'picture_day'
+                            ? (event.title ?? 'Picture Day')
                             : event.focus
                             ? `Practice · ${event.focus}`
                             : 'Practice'}
@@ -191,8 +214,7 @@ export default function ParentScheduleScreen() {
                 })}
               </View>
             </View>
-          ))
-        )}
+        ))}
 
       </ScrollView>
     </SafeAreaView>
@@ -211,8 +233,7 @@ const styles = StyleSheet.create({
   monthCard: { backgroundColor: '#fff', borderRadius: 18, paddingHorizontal: 16, marginBottom: 16, borderWidth: 0.5, borderColor: '#eee' },
   eventRow: { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 14, gap: 12 },
   eventBorder: { borderBottomWidth: 0.5, borderBottomColor: '#f5f5f5' },
-  dotWrap: { paddingTop: 2 },
-  dot: { width: 9, height: 9, borderRadius: 5, marginTop: 3 },
+  eventEmoji: { fontSize: 16, marginTop: 1 },
   eventType: { fontSize: 14, fontWeight: '700', color: '#1a1a1a', marginBottom: 2 },
   eventDate: { fontSize: 12, color: '#555', marginBottom: 1 },
   eventTime: { fontSize: 11, color: '#888' },

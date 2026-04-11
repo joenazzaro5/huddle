@@ -229,7 +229,7 @@ export default function ParentHomeScreen() {
             </View>
             <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
               <Text style={styles.practiceFocus}>
-                Focus: {nextEvent.focus ?? 'General skills'}
+                This week: {nextEvent.focus ?? 'General skills'} focus
               </Text>
               <Text style={styles.practiceDate}>
                 {formatDay(nextEvent.starts_at)} · {nextEvent.duration_min ?? 60} min
@@ -250,11 +250,7 @@ export default function ParentHomeScreen() {
               const rsvpStatus = eventRsvps[event.id]
               return (
                 <View key={event.id} style={[styles.eventRow, i < upcomingEvents.length - 1 && styles.eventBorder]}>
-                  <View style={[styles.eventIconBox, { backgroundColor: isGame ? '#FF8C4220' : tc + '20' }]}>
-                    <Text style={[styles.eventIconText, { color: isGame ? '#FF8C42' : tc }]}>
-                      {isGame ? 'G' : event.focus?.[0] ?? 'P'}
-                    </Text>
-                  </View>
+                  <View style={[styles.upcomingTypeDot, { backgroundColor: isGame ? '#F59E0B' : tc }]} />
                   <View style={{ flex: 1 }}>
                     <Text style={styles.eventTitle}>
                       {isGame ? `Game vs ${event.opponent}` : `Practice · ${event.focus ?? 'General'}`}
@@ -290,7 +286,27 @@ export default function ParentHomeScreen() {
           </View>
         </View>
 
-        {/* 5. Chat preview */}
+        {/* 5. Team poll preview */}
+        <TouchableOpacity
+          style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#8B5CF6', padding: 0, overflow: 'hidden' }]}
+          onPress={() => router.push('/team')}
+          activeOpacity={0.85}
+        >
+          <View style={{ backgroundColor: '#F5F3FF', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 }}>
+            <Text style={styles.cardLabel}>🗳️ Team poll</Text>
+          </View>
+          <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
+            <Text style={{ fontSize: 14, fontWeight: '700', color: '#1a1a1a', marginBottom: 6 }}>
+              What should our team cheer be?
+            </Text>
+            <Text style={{ fontSize: 13, color: '#555', marginBottom: 8 }}>
+              Leading: "Let's go, team!" · 12 votes
+            </Text>
+            <Text style={[styles.viewLink, { color: tc }]}>Vote →</Text>
+          </View>
+        </TouchableOpacity>
+
+        {/* 6. Chat preview */}
         {lastMessage && (
           <TouchableOpacity
             style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#10B981', padding: 0, overflow: 'hidden' }]}
@@ -347,8 +363,7 @@ const styles = StyleSheet.create({
   practicePlanNote: { fontSize: 12, color: '#aaa', fontStyle: 'italic' },
   eventRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingVertical: 10 },
   eventBorder: { borderBottomWidth: 0.5, borderBottomColor: '#f5f5f5' },
-  eventIconBox: { width: 36, height: 36, borderRadius: 9, alignItems: 'center', justifyContent: 'center', marginTop: 2 },
-  eventIconText: { fontSize: 12, fontWeight: '900' },
+  upcomingTypeDot: { width: 10, height: 10, borderRadius: 5, marginTop: 4 },
   eventTitle: { fontSize: 14, fontWeight: '700', color: '#1a1a1a' },
   eventSub: { fontSize: 12, color: '#888', marginTop: 1 },
   eventTime: { fontSize: 11, color: '#bbb', marginTop: 1 },
