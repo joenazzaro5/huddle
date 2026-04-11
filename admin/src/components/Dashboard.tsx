@@ -1,13 +1,15 @@
 import { useState } from 'react'
 import TeamsManager from './TeamsManager'
+import PlayersManager from './PlayersManager'
 import ScheduleBuilder from './ScheduleBuilder'
 import Standings from './Standings'
 import Announcements from './Announcements'
 
-type Section = 'teams' | 'schedule' | 'standings' | 'announcements'
+type Section = 'teams' | 'players' | 'schedule' | 'standings' | 'announcements'
 
 const NAV: { key: Section; label: string; icon: string }[] = [
   { key: 'teams',         label: 'Teams',         icon: '👥' },
+  { key: 'players',       label: 'Players',       icon: '⚽' },
   { key: 'schedule',      label: 'Schedule',      icon: '📅' },
   { key: 'standings',     label: 'Standings',     icon: '🏆' },
   { key: 'announcements', label: 'Announcements', icon: '📢' },
@@ -75,6 +77,7 @@ export default function Dashboard({ user, onSignOut }: { user: any; onSignOut: (
       <main style={{ flex: 1, overflow: 'auto', background: '#F9FAFB' }}>
         <div style={{ maxWidth: 1000, margin: '0 auto', padding: '32px 28px' }}>
           {active === 'teams'         && <TeamsManager />}
+          {active === 'players'       && <PlayersManager />}
           {active === 'schedule'      && <ScheduleBuilder />}
           {active === 'standings'     && <Standings />}
           {active === 'announcements' && <Announcements />}
