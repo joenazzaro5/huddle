@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Linking } from 'react-native'
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Linking, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { AppHeader } from '../lib/header'
@@ -118,7 +118,6 @@ export default function HomeScreen() {
         timeoutPromise
       ])
       setPlan(result)
-      // TODO: trigger push notification to parents — "Coach just updated the practice plan"
     } catch {
       setPlan(fallback)
       setIsOfflinePlan(true)
@@ -304,39 +303,50 @@ export default function HomeScreen() {
         )}
 
         {/* 2. Practice preview module */}
-        <View style={styles.card}>
-          <View style={styles.practicePreviewHeader}>
-            <TouchableOpacity onPress={() => nextEvent && autoGeneratePlan(nextEvent, team)} activeOpacity={0.6}>
-              <Text style={styles.practiceIcon}>⚡</Text>
-            </TouchableOpacity>
-            <Text style={styles.cardLabel}>Practice plan · AI generated</Text>
-          </View>
-          {planLoading ? (
-            <View style={styles.planLoadingRow}>
-              <ActivityIndicator color={tc} size="small" />
-              <Text style={styles.planLoadingText}>Building your plan...</Text>
+        <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#1A56DB', padding: 0, overflow: 'hidden' }]}>
+          {/* Header strip */}
+          <View style={styles.practicePlanHeader}>
+            <View style={{ alignItems: 'center' }}>
+              <TouchableOpacity
+                onPress={() => nextEvent && autoGeneratePlan(nextEvent, team)}
+                onLongPress={() => Alert.alert('⚡ Shuffle plan', 'Tap to shuffle and generate a fresh practice plan')}
+                activeOpacity={0.6}
+              >
+                <Text style={styles.practiceIcon}>⚡</Text>
+              </TouchableOpacity>
+              <Text style={styles.shuffleLabel}>Shuffle</Text>
             </View>
-          ) : plan ? (
-            <>
-              <Text style={styles.cardTitle}>{plan.title}</Text>
-              {isOfflinePlan && <Text style={styles.offlineLabel}>Using saved plan</Text>}
-              {plan.plan?.map((phase: any, i: number) => (
-                <View key={i} style={[styles.planPhaseRow, i < (plan.plan?.length ?? 0) - 1 && styles.planPhaseBorder]}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.planPhaseName}>{phase.phase} · {phase.drill}</Text>
+            <Text style={[styles.cardLabel, { marginBottom: 0 }]}>Practice plan · AI generated</Text>
+          </View>
+          {/* Body */}
+          <View style={styles.practicePlanBody}>
+            {planLoading ? (
+              <View style={styles.planLoadingRow}>
+                <ActivityIndicator color={tc} size="small" />
+                <Text style={styles.planLoadingText}>Building your plan...</Text>
+              </View>
+            ) : plan ? (
+              <>
+                <Text style={styles.cardTitle}>{plan.title}</Text>
+                {isOfflinePlan && <Text style={styles.offlineLabel}>Using saved plan</Text>}
+                {plan.plan?.map((phase: any, i: number) => (
+                  <View key={i} style={[styles.planPhaseRow, i < (plan.plan?.length ?? 0) - 1 && styles.planPhaseBorder]}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.planPhaseName}>{phase.phase} · {phase.drill}</Text>
+                    </View>
+                    <Text style={styles.planPhaseDur}>{phase.duration}</Text>
                   </View>
-                  <Text style={styles.planPhaseDur}>{phase.duration}</Text>
-                </View>
-              ))}
-            </>
-          ) : (
-            <TouchableOpacity onPress={() => nextEvent && autoGeneratePlan(nextEvent, team)}>
-              <Text style={styles.planTapHint}>Tap to generate →</Text>
+                ))}
+              </>
+            ) : (
+              <TouchableOpacity onPress={() => nextEvent && autoGeneratePlan(nextEvent, team)}>
+                <Text style={styles.planTapHint}>Tap to generate →</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity onPress={() => router.push('/practice')}>
+              <Text style={[styles.viewLink, { color: tc }]}>View full plan →</Text>
             </TouchableOpacity>
-          )}
-          <TouchableOpacity onPress={() => router.push('/practice')}>
-            <Text style={[styles.viewLink, { color: tc }]}>View full plan →</Text>
-          </TouchableOpacity>
+          </View>
         </View>
 
         {/* 3. Upcoming module */}
@@ -373,7 +383,9 @@ export default function HomeScreen() {
         <View style={styles.card}>
           <Text style={styles.cardLabel}>Your team</Text>
           <View style={styles.teamRow}>
-            <View style={[styles.teamSwatch, { backgroundColor: tc }]} />
+            <View style={[styles.teamAvatar, { backgroundColor: tc, shadowColor: tc }]}>
+              <Text style={styles.teamAvatarLetter}>{team?.name?.[0] ?? 'T'}</Text>
+            </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.teamName}>{team?.name}</Text>
               <Text style={styles.teamMeta}>{team?.age_group} · {team?.gender} · {playerCount} players</Text>
@@ -385,49 +397,72 @@ export default function HomeScreen() {
         </View>
 
         {/* 5. Snack schedule */}
-        <TouchableOpacity style={styles.card} onPress={() => router.push('/games')} activeOpacity={0.85}>
-          <Text style={styles.cardLabel}>Snack schedule</Text>
-          {snacks.slice(0, 2).map((item, i) => (
-            <View key={i} style={[styles.snackRow, i < 1 && styles.snackBorder]}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.snackDate}>{item.date} · {item.type}</Text>
-                <Text style={[styles.snackName, { color: item.claimed ? '#1a1a1a' : '#888' }]}>
-                  {item.claimed ? item.name : 'Open'}
-                </Text>
+        <TouchableOpacity
+          style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#F59E0B', padding: 0, overflow: 'hidden' }]}
+          onPress={() => router.push('/games')}
+          activeOpacity={0.85}
+        >
+          <View style={styles.snackCardHeader}>
+            <Text style={styles.cardLabel}>🥤 Snack schedule</Text>
+          </View>
+          <View style={styles.cardBody}>
+            {snacks.slice(0, 2).map((item, i) => (
+              <View key={i} style={[styles.snackRow, i < 1 && styles.snackBorder]}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.snackDate}>{item.date} · {item.type}</Text>
+                  <Text style={[styles.snackName, { color: item.claimed ? '#1a1a1a' : '#888' }]}>
+                    {item.claimed ? item.name : 'Open'}
+                  </Text>
+                </View>
               </View>
-            </View>
-          ))}
-          <Text style={[styles.viewLink, { color: tc }]}>View schedule →</Text>
+            ))}
+            <Text style={[styles.viewLink, { color: tc }]}>View schedule →</Text>
+          </View>
         </TouchableOpacity>
 
         {/* 6. Team poll */}
-        <TouchableOpacity style={styles.card} onPress={() => router.push('/games')} activeOpacity={0.85}>
-          <Text style={styles.cardLabel}>Team poll</Text>
-          <Text style={styles.pollQuestion}>What should our team cheer be?</Text>
-          {(() => {
-            const leading = [...pollOptions].sort((a, b) => b.votes - a.votes)[0]
-            return (
-              <View style={styles.pollLeadRow}>
-                <Text style={styles.pollLeadLabel}>{leading.label}</Text>
-                <Text style={styles.pollLeadVotes}>{leading.votes} votes</Text>
-              </View>
-            )
-          })()}
-          <Text style={[styles.viewLink, { color: tc }]}>See results →</Text>
+        <TouchableOpacity
+          style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#8B5CF6', padding: 0, overflow: 'hidden' }]}
+          onPress={() => router.push('/games')}
+          activeOpacity={0.85}
+        >
+          <View style={styles.pollCardHeader}>
+            <Text style={styles.cardLabel}>🗳️ Team poll</Text>
+          </View>
+          <View style={styles.cardBody}>
+            <Text style={styles.pollQuestion}>What should our team cheer be?</Text>
+            {(() => {
+              const leading = [...pollOptions].sort((a, b) => b.votes - a.votes)[0]
+              return (
+                <View style={styles.pollLeadRow}>
+                  <Text style={styles.pollLeadLabel}>{leading.label}</Text>
+                  <Text style={styles.pollLeadVotes}>{leading.votes} votes</Text>
+                </View>
+              )
+            })()}
+            <Text style={[styles.viewLink, { color: tc }]}>See results →</Text>
+          </View>
         </TouchableOpacity>
 
         {/* 7. Chat preview */}
         {lastMessage && (
-          <TouchableOpacity style={styles.card} onPress={() => router.push('/chat')}>
-            <Text style={styles.cardLabel}>Team chat</Text>
-            <View style={styles.chatPreviewRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.chatSender}>{getSenderName(lastMessage)}</Text>
-                <Text style={styles.chatPreviewBody} numberOfLines={2}>{lastMessage.body}</Text>
-              </View>
-              <Text style={styles.chatPreviewTime}>{formatMsgTime(lastMessage.created_at)}</Text>
+          <TouchableOpacity
+            style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#10B981', padding: 0, overflow: 'hidden' }]}
+            onPress={() => router.push('/chat')}
+          >
+            <View style={styles.chatCardHeader}>
+              <Text style={styles.cardLabel}>💬 Team chat</Text>
             </View>
-            <Text style={[styles.viewLink, { color: tc }]}>Open chat →</Text>
+            <View style={styles.cardBody}>
+              <View style={styles.chatPreviewRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.chatSender}>{getSenderName(lastMessage)}</Text>
+                  <Text style={styles.chatPreviewBody} numberOfLines={2}>{lastMessage.body}</Text>
+                </View>
+                <Text style={styles.chatPreviewTime}>{formatMsgTime(lastMessage.created_at)}</Text>
+              </View>
+              <Text style={[styles.viewLink, { color: tc }]}>Open chat →</Text>
+            </View>
           </TouchableOpacity>
         )}
 
@@ -472,12 +507,16 @@ const styles = StyleSheet.create({
   emptySub: { fontSize: 13, color: '#888', textAlign: 'center' },
   card: { backgroundColor: '#fff', borderRadius: 18, padding: 16, marginBottom: 12, borderWidth: 0.5, borderColor: '#eee' },
   cardLabel: { fontSize: 10, fontWeight: '700', color: '#aaa', textTransform: 'uppercase', letterSpacing: 0.7 },
-  cardTitle: { fontSize: 16, fontWeight: '800', color: '#1a1a1a', marginBottom: 2 },
-  practicePreviewHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
-  practiceIcon: { fontSize: 14 },
+  cardTitle: { fontSize: 16, fontWeight: '800', color: '#1a1a1a', marginBottom: 2, marginTop: 2 },
+  cardBody: { paddingHorizontal: 16, paddingBottom: 14, paddingTop: 10 },
+  // Practice plan card
+  practicePlanHeader: { backgroundColor: '#F0F4FF', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  practicePlanBody: { paddingHorizontal: 16, paddingBottom: 14, paddingTop: 10 },
+  practiceIcon: { fontSize: 16 },
+  shuffleLabel: { fontSize: 9, fontWeight: '700', color: '#1A56DB', letterSpacing: 0.3, marginTop: 1 },
   offlineLabel: { fontSize: 11, color: '#aaa', marginBottom: 4 },
   planTapHint: { fontSize: 14, color: '#aaa', marginBottom: 6 },
-  planLoadingRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginVertical: 6 },
+  planLoadingRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginVertical: 8 },
   planLoadingText: { fontSize: 13, color: '#888' },
   planPhaseRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 7 },
   planPhaseBorder: { borderBottomWidth: 0.5, borderBottomColor: '#f5f5f5' },
@@ -492,22 +531,34 @@ const styles = StyleSheet.create({
   eventSub: { fontSize: 12, color: '#888', marginTop: 1 },
   eventTime: { fontSize: 11, color: '#bbb', marginTop: 1 },
   eventDays: { fontSize: 11, fontWeight: '700', marginTop: 3 },
-  teamRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 6 },
-  teamSwatch: { width: 34, height: 34, borderRadius: 9 },
+  // Team card
+  teamRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 6, marginTop: 8 },
+  teamAvatar: {
+    width: 52, height: 52, borderRadius: 26,
+    alignItems: 'center', justifyContent: 'center',
+    shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 3,
+  },
+  teamAvatarLetter: { fontSize: 22, fontWeight: '900', color: '#fff' },
   teamName: { fontSize: 17, fontWeight: '800', color: '#1a1a1a' },
   teamMeta: { fontSize: 12, color: '#888', marginTop: 1 },
   viewRosterBtn: { borderRadius: 10, paddingVertical: 10, alignItems: 'center', borderWidth: 1.5 },
   viewRosterText: { fontSize: 13, fontWeight: '700' },
-  chatPreviewRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginTop: 6, marginBottom: 6 },
-  chatSender: { fontSize: 12, fontWeight: '700', color: '#1a1a1a', marginBottom: 2 },
-  chatPreviewBody: { fontSize: 13, color: '#555', lineHeight: 18 },
-  chatPreviewTime: { fontSize: 11, color: '#bbb', marginTop: 2 },
+  // Snack card
+  snackCardHeader: { backgroundColor: '#FFFBEB', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 },
   snackRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10 },
   snackBorder: { borderBottomWidth: 0.5, borderBottomColor: '#f5f5f5' },
   snackDate: { fontSize: 11, color: '#aaa', fontWeight: '600', marginBottom: 2 },
   snackName: { fontSize: 14, fontWeight: '600' },
+  // Poll card
+  pollCardHeader: { backgroundColor: '#F5F3FF', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 },
   pollQuestion: { fontSize: 15, fontWeight: '700', color: '#1a1a1a', marginBottom: 10 },
   pollLeadRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F7F7F5', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 2 },
   pollLeadLabel: { fontSize: 14, fontWeight: '600', color: '#1a1a1a', flex: 1 },
   pollLeadVotes: { fontSize: 12, color: '#888', fontWeight: '600' },
+  // Chat card
+  chatCardHeader: { backgroundColor: '#F0FDF4', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 },
+  chatPreviewRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginBottom: 2 },
+  chatSender: { fontSize: 12, fontWeight: '700', color: '#1a1a1a', marginBottom: 2 },
+  chatPreviewBody: { fontSize: 13, color: '#555', lineHeight: 18 },
+  chatPreviewTime: { fontSize: 11, color: '#bbb', marginTop: 2 },
 })

@@ -8,6 +8,12 @@ import { AppHeader } from '../lib/header'
 const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl2c3B5d21od3FkYXB4ZW14bHVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMDIwMjksImV4cCI6MjA5MDY3ODAyOX0.HXsFNltsIhtL0S2tLtzFK55lbQX6GMFQKxw-U3OY6KQ'
 const SUPABASE_URL = 'https://yvspywmhwqdapxemxlug.supabase.co'
 
+const SUB_PLAN = [
+  { time: '15 min', on: 'Amelia', off: 'Isabella' },
+  { time: '30 min', on: 'Harper', off: 'Charlotte' },
+  { time: '45 min', on: 'Evelyn', off: 'Emma' },
+]
+
 const FORMATION_737 = [
   { position: 'GK', x: 50, y: 85 },
   { position: 'LB', x: 15, y: 65 },
@@ -463,18 +469,18 @@ Slots: 0=GK, 1=LB, 2=CB, 3=RB, 4=MF, 5=LW, 6=RW`
           {nextGame && (
             <View style={[
               styles.gameCard,
-              { backgroundColor: '#1C1C1E' },
+              { backgroundColor: '#fff', borderWidth: 1.5, borderColor: '#E5E7EB', borderLeftWidth: 4, borderLeftColor: '#1A56DB' },
               lineupGenerated && { marginBottom: 0, borderBottomLeftRadius: 0, borderBottomRightRadius: 0 },
             ]}>
-              <Text style={styles.gameCardLabel}>Next game</Text>
-              <Text style={styles.gameCardTitle}>vs {nextGame.opponent}</Text>
-              <Text style={styles.gameCardSub}>
+              <Text style={[styles.gameCardLabel, { color: '#1A56DB' }]}>NEXT GAME</Text>
+              <Text style={[styles.gameCardTitle, { color: '#111827' }]}>vs {nextGame.opponent}</Text>
+              <Text style={[styles.gameCardSub, { color: '#6B7280' }]}>
                 {new Date(nextGame.starts_at).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
               </Text>
             </View>
           )}
           {nextGame && lineupGenerated && (
-            <View style={{ height: 1, backgroundColor: 'rgba(255,255,255,0.08)' }} />
+            <View style={{ height: 1, backgroundColor: '#E5E7EB' }} />
           )}
 
           {!lineupGenerated ? (
@@ -522,32 +528,32 @@ Slots: 0=GK, 1=LB, 2=CB, 3=RB, 4=MF, 5=LW, 6=RW`
               {/* Timer */}
               <View style={[
                 styles.timerCard,
-                { backgroundColor: '#1C1C1E' },
+                { backgroundColor: '#fff', borderWidth: 1.5, borderColor: '#E5E7EB', borderLeftWidth: 4, borderLeftColor: '#1A56DB' },
                 nextGame && { borderTopLeftRadius: 0, borderTopRightRadius: 0 },
               ]}>
                 <View style={styles.timerRow}>
                   <View>
-                    <Text style={styles.timerLabel}>Half {period}</Text>
-                    <Text style={styles.timerTime}>{formatTime(gameTime)}</Text>
+                    <Text style={[styles.timerLabel, { color: '#6B7280' }]}>Half {period}</Text>
+                    <Text style={[styles.timerTime, { color: '#111827' }]}>{formatTime(gameTime)}</Text>
                   </View>
                   <View style={styles.timerActions}>
-                    <TouchableOpacity style={[styles.timerBtn, { backgroundColor: gameRunning ? '#E24B4A' : 'rgba(255,255,255,0.12)' }]} onPress={toggleTimer}>
-                      <Text style={[styles.timerBtnText, { color: '#fff' }]}>{gameRunning ? 'Pause' : 'Start'}</Text>
+                    <TouchableOpacity style={[styles.timerBtn, { backgroundColor: gameRunning ? '#E24B4A' : '#F3F4F6', borderRadius: 10 }]} onPress={toggleTimer}>
+                      <Text style={[styles.timerBtnText, { color: gameRunning ? '#fff' : '#111827', fontWeight: '600' }]}>{gameRunning ? 'Pause' : 'Start'}</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={[styles.timerBtnOutline, { backgroundColor: 'rgba(255,255,255,0.12)' }]} onPress={() => setPeriod(p => p === 1 ? 2 : 1)}>
-                      <Text style={[styles.timerBtnOutlineText, { color: '#fff' }]}>2nd half →</Text>
+                    <TouchableOpacity style={[styles.timerBtnOutline, { backgroundColor: '#F3F4F6', borderRadius: 10 }]} onPress={() => setPeriod(p => p === 1 ? 2 : 1)}>
+                      <Text style={[styles.timerBtnOutlineText, { color: '#111827', fontWeight: '600' }]}>2nd half →</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={[styles.timerBtnOutline, { backgroundColor: 'rgba(255,255,255,0.12)' }]} onPress={resetGame}>
-                      <Text style={[styles.timerBtnOutlineText, { color: '#fff' }]}>Reset</Text>
+                    <TouchableOpacity style={[styles.timerBtnOutline, { backgroundColor: '#F3F4F6', borderRadius: 10 }]} onPress={resetGame}>
+                      <Text style={[styles.timerBtnOutlineText, { color: '#111827', fontWeight: '600' }]}>Reset</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
                 <View style={styles.viewToggle}>
-                  <TouchableOpacity onPress={() => setViewMode('field')} style={[styles.viewToggleBtn, viewMode === 'field' ? { backgroundColor: '#fff' } : { backgroundColor: 'transparent' }]}>
-                    <Text style={[styles.viewToggleText, { color: viewMode === 'field' ? '#1C1C1E' : 'rgba(255,255,255,0.5)', fontWeight: viewMode === 'field' ? '700' : '500' }]}>Field</Text>
+                  <TouchableOpacity onPress={() => setViewMode('field')} style={[styles.viewToggleBtn, viewMode === 'field' ? { backgroundColor: '#1A56DB' } : { backgroundColor: '#F3F4F6' }]}>
+                    <Text style={[styles.viewToggleText, { color: viewMode === 'field' ? '#fff' : '#6B7280', fontWeight: viewMode === 'field' ? '700' : '500' }]}>Field</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={() => setViewMode('list')} style={[styles.viewToggleBtn, viewMode === 'list' ? { backgroundColor: '#fff' } : { backgroundColor: 'transparent' }]}>
-                    <Text style={[styles.viewToggleText, { color: viewMode === 'list' ? '#1C1C1E' : 'rgba(255,255,255,0.5)', fontWeight: viewMode === 'list' ? '700' : '500' }]}>Roster</Text>
+                  <TouchableOpacity onPress={() => setViewMode('list')} style={[styles.viewToggleBtn, viewMode === 'list' ? { backgroundColor: '#1A56DB' } : { backgroundColor: '#F3F4F6' }]}>
+                    <Text style={[styles.viewToggleText, { color: viewMode === 'list' ? '#fff' : '#6B7280', fontWeight: viewMode === 'list' ? '700' : '500' }]}>Roster</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -675,6 +681,22 @@ Slots: 0=GK, 1=LB, 2=CB, 3=RB, 4=MF, 5=LW, 6=RW`
                 </>
               )}
 
+              {/* Substitution plan */}
+              <View style={styles.subPlanCard}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                  <Text style={styles.subPlanTitle}>Sub plan · AI suggested</Text>
+                  <TouchableOpacity onPress={() => Alert.alert('Custom sub planner', 'Custom sub planner coming soon')}>
+                    <Text style={[styles.subPlanAdjust, { color: tc }]}>Adjust →</Text>
+                  </TouchableOpacity>
+                </View>
+                {SUB_PLAN.map((sub, i) => (
+                  <View key={i} style={[styles.subPlanRow, i < SUB_PLAN.length - 1 && styles.subPlanBorder]}>
+                    <Text style={styles.subPlanTime}>{sub.time}</Text>
+                    <Text style={styles.subPlanText}>{sub.on} on for {sub.off}</Text>
+                  </View>
+                ))}
+              </View>
+
               {gameTime > 120 && players.some(p => p.minutes < fairShare * 0.7) && (
                 <View style={styles.fairPlayCard}>
                   <Text style={styles.fairPlayTitle}>⚠ Playing time alert</Text>
@@ -708,7 +730,7 @@ const styles = StyleSheet.create({
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   subTabsScroll: { backgroundColor: '#fff', borderBottomWidth: 0.5, borderBottomColor: '#eee', maxHeight: 46 },
   subTabsContent: { flexDirection: 'row' },
-  subTab: { paddingHorizontal: 16, paddingVertical: 12, alignItems: 'center', borderBottomWidth: 2.5, borderBottomColor: 'transparent', minWidth: 80 },
+  subTab: { paddingHorizontal: 20, paddingVertical: 12, alignItems: 'center', borderBottomWidth: 2.5, borderBottomColor: 'transparent' },
   subTabText: { fontSize: 13 },
   content: { padding: 16 },
   emptyState: { alignItems: 'center', paddingVertical: 60 },
@@ -811,4 +833,11 @@ const styles = StyleSheet.create({
   pollBarFill: { height: 6, borderRadius: 3 },
   newPollBtn: { borderRadius: 12, paddingVertical: 11, alignItems: 'center', borderWidth: 1.5, marginTop: 8 },
   newPollBtnText: { fontSize: 13, fontWeight: '700' },
+  subPlanCard: { backgroundColor: '#fff', borderRadius: 16, padding: 14, marginBottom: 14, borderWidth: 0.5, borderColor: '#E5E7EB' },
+  subPlanTitle: { fontSize: 13, fontWeight: '700', color: '#1a1a1a' },
+  subPlanAdjust: { fontSize: 12, fontWeight: '700' },
+  subPlanRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, gap: 12 },
+  subPlanBorder: { borderBottomWidth: 0.5, borderBottomColor: '#f5f5f5' },
+  subPlanTime: { fontSize: 12, fontWeight: '700', color: '#6B7280', minWidth: 48 },
+  subPlanText: { fontSize: 13, color: '#1a1a1a', flex: 1 },
 })

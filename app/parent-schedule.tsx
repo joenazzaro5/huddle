@@ -133,6 +133,14 @@ export default function ParentScheduleScreen() {
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
+        {events.length > 0 && (
+          <View style={styles.seasonSummary}>
+            <Text style={styles.seasonSummaryText}>
+              {events.length} events · {events.filter(e => e.type === 'practice').length} practices · {events.filter(e => e.type === 'game').length} games
+            </Text>
+          </View>
+        )}
+
         {events.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyEmoji}>📅</Text>
@@ -214,4 +222,6 @@ const styles = StyleSheet.create({
   rsvpChipText: { fontSize: 12, fontWeight: '700' },
   calBtn: { padding: 4 },
   calBtnText: { fontSize: 16 },
+  seasonSummary: { backgroundColor: '#fff', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 14, borderWidth: 0.5, borderColor: '#eee' },
+  seasonSummaryText: { fontSize: 13, fontWeight: '700', color: '#6B7280', textAlign: 'center' },
 })

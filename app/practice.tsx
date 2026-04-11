@@ -317,6 +317,20 @@ export default function PracticeScreen() {
               </TouchableOpacity>
             </View>
 
+            {selectedFocuses.length > 0 && (
+              <TouchableOpacity
+                style={[styles.generateFullBtn, { backgroundColor: teamColor }]}
+                onPress={handleGenerate}
+                disabled={aiLoading}
+                activeOpacity={0.85}
+              >
+                {aiLoading
+                  ? <ActivityIndicator color="#fff" size="small" />
+                  : <Text style={styles.generateFullBtnText}>Generate plan →</Text>
+                }
+              </TouchableOpacity>
+            )}
+
             {aiLoading && (
               <View style={styles.loadingBox}>
                 <ActivityIndicator color={teamColor} size="small" />
@@ -566,6 +580,8 @@ const styles = StyleSheet.create({
   playOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
   playCircle: { width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(0,0,0,0.7)', alignItems: 'center', justifyContent: 'center' },
   playIcon: { color: '#fff', fontSize: 18 },
+  generateFullBtn: { borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginTop: 14 },
+  generateFullBtnText: { fontSize: 16, fontWeight: '800', color: '#fff', letterSpacing: 0.2 },
   practicedBtn: { borderWidth: 1.5, borderColor: '#1A56DB', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 7, alignSelf: 'flex-start', marginTop: 10 },
   practicedBtnDone: { backgroundColor: '#1A56DB' },
   practicedBtnText: { fontSize: 13, fontWeight: '600', color: '#1A56DB' },

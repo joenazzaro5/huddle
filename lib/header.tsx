@@ -1,4 +1,6 @@
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native'
+import { useRef } from 'react'
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Animated } from 'react-native'
+import { useRouter } from 'expo-router'
 import { useRole } from './roleStore.tsx'
 
 type Props = {
@@ -14,6 +16,8 @@ export function AppHeader({ teamColor = '#1A56DB', teamName, onTeamPress, showTe
   const hasMultiple = (allTeams?.length ?? 0) > 1
   const { currentRole, setRole } = useRole()
   const isParent = currentRole === 'parent'
+  const fadeAnim = useRef(new Animated.Value(1)).current
+  const router = useRouter()
 
   const handleTeamPress = () => {
     if (onTeamPress) { onTeamPress(); return }
@@ -32,12 +36,28 @@ export function AppHeader({ teamColor = '#1A56DB', teamName, onTeamPress, showTe
     }
   }
 
+  const switchRoleWithAnimation = (newRole: 'coach' | 'parent') => {
+    Animated.timing(fadeAnim, {
+      toValue: 0,
+      duration: 150,
+      useNativeDriver: true,
+    }).start(() => {
+      setRole(newRole)
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 150,
+        useNativeDriver: true,
+      }).start()
+      router.replace(newRole === 'parent' ? '/parent-home' : '/')
+    })
+  }
+
   const handleRolePress = () => {
     if (isParent) {
       Alert.alert('Switch role', 'You are viewing as Parent.', [
         {
           text: 'Switch to Coach view',
-          onPress: () => setRole('coach'),
+          onPress: () => switchRoleWithAnimation('coach'),
         },
         { text: 'Stay as Parent', style: 'cancel' },
       ])
@@ -45,7 +65,7 @@ export function AppHeader({ teamColor = '#1A56DB', teamName, onTeamPress, showTe
       Alert.alert('Switch role', 'You are viewing as Coach.', [
         {
           text: 'Switch to Parent view',
-          onPress: () => setRole('parent'),
+          onPress: () => switchRoleWithAnimation('parent'),
         },
         { text: 'Stay as Coach', style: 'cancel' },
       ])
@@ -57,7 +77,7 @@ export function AppHeader({ teamColor = '#1A56DB', teamName, onTeamPress, showTe
   const chipLabel = isParent ? 'Parent' : 'Coach'
 
   return (
-    <View style={styles.header}>
+    <Animated.View style={[styles.header, { opacity: fadeAnim }]}>
       <TouchableOpacity style={styles.left} onPress={handleTeamPress} disabled={!onTeamPress && !hasMultiple}>
         <View style={[styles.dot, { backgroundColor: teamColor }]} />
         <View>
@@ -80,7 +100,7 @@ export function AppHeader({ teamColor = '#1A56DB', teamName, onTeamPress, showTe
           <Text style={[styles.roleText, { color: chipText }]}>{chipLabel}</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </Animated.View>
   )
 }
 

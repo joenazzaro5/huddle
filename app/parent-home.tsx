@@ -213,8 +213,8 @@ export default function ParentHomeScreen() {
 
         {/* 2. Practice preview card */}
         {nextEvent?.type === 'practice' && (
-          <View style={styles.card}>
-            <View style={styles.practicePreviewHeader}>
+          <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: tc, padding: 0, overflow: 'hidden' }]}>
+            <View style={{ backgroundColor: '#F0F4FF', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <Text style={styles.cardLabel}>This week's practice</Text>
               <TouchableOpacity
                 onPress={() =>
@@ -227,15 +227,17 @@ export default function ParentHomeScreen() {
                 <Text style={styles.bellIcon}>🔔</Text>
               </TouchableOpacity>
             </View>
-            <Text style={styles.practiceFocus}>
-              Focus: {nextEvent.focus ?? 'General skills'}
-            </Text>
-            <Text style={styles.practiceDate}>
-              {formatDay(nextEvent.starts_at)} · {nextEvent.duration_min ?? 60} min
-            </Text>
-            <Text style={styles.practicePlanNote}>
-              Coach will share the full plan soon
-            </Text>
+            <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
+              <Text style={styles.practiceFocus}>
+                Focus: {nextEvent.focus ?? 'General skills'}
+              </Text>
+              <Text style={styles.practiceDate}>
+                {formatDay(nextEvent.starts_at)} · {nextEvent.duration_min ?? 60} min
+              </Text>
+              <Text style={styles.practicePlanNote}>
+                Coach will share the full plan soon
+              </Text>
+            </View>
           </View>
         )}
 
@@ -273,18 +275,40 @@ export default function ParentHomeScreen() {
           </View>
         )}
 
-        {/* 4. Chat preview */}
+        {/* 4. Snack duty card */}
+        <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#F59E0B', padding: 0, overflow: 'hidden' }]}>
+          <View style={{ backgroundColor: '#FFFBEB', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 }}>
+            <Text style={styles.cardLabel}>🥤 Snack schedule</Text>
+          </View>
+          <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
+            <Text style={{ fontSize: 14, fontWeight: '600', color: '#1a1a1a' }}>
+              You're on snacks for Apr 26 🥤
+            </Text>
+            <Text style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
+              Bring enough for {'\u007E'}12 players + coaches
+            </Text>
+          </View>
+        </View>
+
+        {/* 5. Chat preview */}
         {lastMessage && (
-          <TouchableOpacity style={styles.card} onPress={() => router.push('/chat')}>
-            <Text style={styles.cardLabel}>Team chat</Text>
-            <View style={styles.chatPreviewRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.chatSender}>{getSenderName(lastMessage)}</Text>
-                <Text style={styles.chatPreviewBody} numberOfLines={2}>{lastMessage.body}</Text>
-              </View>
-              <Text style={styles.chatPreviewTime}>{formatMsgTime(lastMessage.created_at)}</Text>
+          <TouchableOpacity
+            style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#10B981', padding: 0, overflow: 'hidden' }]}
+            onPress={() => router.push('/chat')}
+          >
+            <View style={{ backgroundColor: '#F0FDF4', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 }}>
+              <Text style={styles.cardLabel}>💬 Team chat</Text>
             </View>
-            <Text style={[styles.viewLink, { color: tc }]}>Open chat →</Text>
+            <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
+              <View style={styles.chatPreviewRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.chatSender}>{getSenderName(lastMessage)}</Text>
+                  <Text style={styles.chatPreviewBody} numberOfLines={2}>{lastMessage.body}</Text>
+                </View>
+                <Text style={styles.chatPreviewTime}>{formatMsgTime(lastMessage.created_at)}</Text>
+              </View>
+              <Text style={[styles.viewLink, { color: tc }]}>Open chat →</Text>
+            </View>
           </TouchableOpacity>
         )}
 
