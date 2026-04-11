@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native'
-import { useRole } from './roleStore'
+import { useRole } from './roleStore.tsx'
 
 type Props = {
   teamColor?: string

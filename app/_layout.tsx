@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { Tabs, useRouter } from 'expo-router'
 import { View, Text, StyleSheet } from 'react-native'
-import { RoleProvider, useRole } from '../lib/roleStore'
+import { RoleProvider, useRole } from '../lib/roleStore.tsx'
 
 function TabIcon({ label, focused }: { label: string; focused: boolean }) {
   const color = '#1A56DB'

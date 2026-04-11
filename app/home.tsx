@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router'
 import { AppHeader } from '../lib/header'
 import { supabase } from '../lib/supabase'
 import { generatePracticePlan } from '../lib/ai'
-import { useRole } from '../lib/roleStore'
+import { useRole } from '../lib/roleStore.tsx'
 
 const SNACK_DATA = [
   { date: 'Apr 5', type: 'Practice', name: 'Sarah M', claimed: true },
