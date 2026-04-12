@@ -4,8 +4,28 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { AppHeader } from '../lib/header'
 import { supabase } from '../lib/supabase'
+import { getScheduleEvents } from '../lib/season'
 
 const tc = '#1A56DB'
+
+const FALLBACK_PLAN = {
+  title: 'Dribbling Focus',
+  plan: [
+    { phase: 'Opening Play',   duration: '15 min', drill: 'Dribble Tag',     desc: 'Players dribble freely. Coach calls out a color cone to dribble to.' },
+    { phase: 'Practice Phase', duration: '30 min', drill: 'Cone Weaving',    desc: 'Dribble through a line of cones using both feet. Focus on soft touches.' },
+    { phase: 'Final Play',     duration: '15 min', drill: '3v3 Small Sided', desc: 'Free play. Let them express themselves.' },
+  ],
+}
+const PHASE_COLORS = ['#4CAF50', '#1A56DB', '#FF6B35']
+
+const STANDINGS = [
+  { team: 'Marin Cheetahs', w: 4, l: 1, d: 1, pts: 13, isUs: true },
+  { team: 'Tiburon FC',     w: 3, l: 2, d: 1, pts: 10 },
+  { team: 'Mill Valley SC', w: 3, l: 2, d: 0, pts: 9  },
+  { team: 'Novato United',  w: 2, l: 2, d: 2, pts: 8  },
+  { team: 'San Anselmo FC', w: 1, l: 4, d: 1, pts: 4  },
+  { team: 'Fairfax FC',     w: 0, l: 5, d: 1, pts: 1  },
+]
 
 export default function ParentHomeScreen() {
   const router = useRouter()
@@ -16,6 +36,7 @@ export default function ParentHomeScreen() {
   const [myRsvp, setMyRsvp] = useState<'yes' | 'no' | 'maybe' | null>(null)
   const [rsvpCounts, setRsvpCounts] = useState({ yes: 0, no: 0, maybe: 0 })
   const [eventRsvps, setEventRsvps] = useState<Record<string, 'yes' | 'no' | 'maybe'>>({})
+  const [players, setPlayers] = useState<any[]>([])
   const [lastMessage, setLastMessage] = useState<any>(null)
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -43,47 +64,58 @@ export default function ParentHomeScreen() {
   }
 
   const loadTeamData = async (teamId: string, userId: string) => {
-    const { data: eventData } = await supabase
-      .from('events')
-      .select('*')
-      .eq('team_id', teamId)
-      .gte('starts_at', new Date().toISOString())
-      .order('starts_at', { ascending: true })
-      .limit(10)
-
-    if (!eventData || eventData.length === 0) return
-
-    setNextEvent(eventData[0])
-    setUpcomingEvents(eventData.slice(1, 4))
-
-    // My RSVP for next event
-    const { data: myRsvpData } = await supabase
-      .from('rsvps')
-      .select('status')
-      .eq('event_id', eventData[0].id)
-      .eq('user_id', userId)
-      .maybeSingle()
-    setMyRsvp(myRsvpData?.status ?? null)
-
-    // RSVP counts for next event
-    const [{ count: yes }, { count: no }, { count: maybe }] = await Promise.all([
-      supabase.from('rsvps').select('*', { count: 'exact', head: true }).eq('event_id', eventData[0].id).eq('status', 'yes'),
-      supabase.from('rsvps').select('*', { count: 'exact', head: true }).eq('event_id', eventData[0].id).eq('status', 'no'),
-      supabase.from('rsvps').select('*', { count: 'exact', head: true }).eq('event_id', eventData[0].id).eq('status', 'maybe'),
+    const [{ data: eventData }, { data: playerData }] = await Promise.all([
+      supabase
+        .from('events')
+        .select('*')
+        .eq('team_id', teamId)
+        .gte('starts_at', new Date().toISOString())
+        .order('starts_at', { ascending: true })
+        .limit(10),
+      supabase
+        .from('players')
+        .select('*')
+        .eq('team_id', teamId)
+        .eq('is_active', true)
+        .order('number', { ascending: true }),
     ])
-    setRsvpCounts({ yes: yes ?? 0, no: no ?? 0, maybe: maybe ?? 0 })
+    setPlayers(playerData ?? [])
 
-    // RSVPs for upcoming events
-    if (eventData.length > 1) {
-      const upcomingIds = eventData.slice(1, 4).map(e => e.id)
-      const { data: upRsvps } = await supabase
+    // Fall back to static schedule if Supabase has no events
+    const schedEvents = (eventData && eventData.length > 0)
+      ? eventData
+      : getScheduleEvents().map(e => ({ ...e, team_id: teamId }))
+
+    setNextEvent(schedEvents[0])
+    setUpcomingEvents(schedEvents.slice(1, 4))
+
+    // Only fetch RSVPs for real Supabase events (static schedule IDs start with 'ss-')
+    const firstEvent = schedEvents[0]
+    const isRealEvent = firstEvent?.id && !firstEvent.id.startsWith('ss-')
+    if (isRealEvent) {
+      const { data: myRsvpData } = await supabase
         .from('rsvps')
-        .select('event_id, status')
+        .select('status')
+        .eq('event_id', firstEvent.id)
         .eq('user_id', userId)
-        .in('event_id', upcomingIds)
-      const map: Record<string, 'yes' | 'no' | 'maybe'> = {}
-      upRsvps?.forEach(r => { map[r.event_id] = r.status })
-      setEventRsvps(map)
+        .maybeSingle()
+      setMyRsvp(myRsvpData?.status ?? null)
+
+      const [{ count: yes }, { count: no }, { count: maybe }] = await Promise.all([
+        supabase.from('rsvps').select('*', { count: 'exact', head: true }).eq('event_id', firstEvent.id).eq('status', 'yes'),
+        supabase.from('rsvps').select('*', { count: 'exact', head: true }).eq('event_id', firstEvent.id).eq('status', 'no'),
+        supabase.from('rsvps').select('*', { count: 'exact', head: true }).eq('event_id', firstEvent.id).eq('status', 'maybe'),
+      ])
+      setRsvpCounts({ yes: yes ?? 0, no: no ?? 0, maybe: maybe ?? 0 })
+
+      const upcomingIds = schedEvents.slice(1, 4).map(e => e.id).filter(id => !id.startsWith('ss-'))
+      if (upcomingIds.length > 0) {
+        const { data: upRsvps } = await supabase
+          .from('rsvps').select('event_id, status').eq('user_id', userId).in('event_id', upcomingIds)
+        const map: Record<string, 'yes' | 'no' | 'maybe'> = {}
+        upRsvps?.forEach(r => { map[r.event_id] = r.status })
+        setEventRsvps(map)
+      }
     }
 
     // Last chat message
@@ -211,35 +243,39 @@ export default function ParentHomeScreen() {
           </View>
         )}
 
-        {/* 2. Practice preview card */}
-        {nextEvent?.type === 'practice' && (
-          <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: tc, padding: 0, overflow: 'hidden' }]}>
-            <View style={{ backgroundColor: '#F0F4FF', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Text style={styles.cardLabel}>This week's practice</Text>
-              <TouchableOpacity
-                onPress={() =>
-                  Alert.alert(
-                    'Practice notifications',
-                    `You'll be notified when ${team?.name ?? 'your'} coach updates the practice plan. Make sure notifications are enabled in Settings.`
-                  )
-                }
+        {/* 2. Practice plan card — read only */}
+        <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: tc, padding: 0, overflow: 'hidden' }]}>
+          <View style={{ backgroundColor: '#F0F4FF', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text style={styles.cardLabel}>This week's plan</Text>
+            <Text style={{ fontSize: 11, fontWeight: '600', color: tc + 'aa' }}>Read only</Text>
+          </View>
+          <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4 }}>
+            <Text style={styles.practiceFocus}>{FALLBACK_PLAN.title}</Text>
+          </View>
+          <View style={{ paddingHorizontal: 16, paddingBottom: 12 }}>
+            {FALLBACK_PLAN.plan.map((item, i) => (
+              <View
+                key={i}
+                style={[
+                  styles.planPhaseRow,
+                  i < FALLBACK_PLAN.plan.length - 1 && styles.planPhaseBorder,
+                ]}
               >
-                <Text style={styles.bellIcon}>🔔</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
-              <Text style={styles.practiceFocus}>
-                This week: {nextEvent.focus ?? 'General skills'} focus
-              </Text>
-              <Text style={styles.practiceDate}>
-                {formatDay(nextEvent.starts_at)} · {nextEvent.duration_min ?? 60} min
-              </Text>
-              <Text style={styles.practicePlanNote}>
-                Coach will share the full plan soon
-              </Text>
+                <View style={[styles.phaseAccent, { backgroundColor: PHASE_COLORS[i] }]} />
+                <View style={{ flex: 1, paddingLeft: 10 }}>
+                  <Text style={[styles.planPhaseLabel, { color: PHASE_COLORS[i] }]}>{item.phase}</Text>
+                  <Text style={styles.planPhaseDrill}>{item.drill}</Text>
+                </View>
+                <Text style={styles.planPhaseDur}>{item.duration}</Text>
+              </View>
+            ))}
+          </View>
+          <View style={{ paddingHorizontal: 16, paddingBottom: 14 }}>
+            <View style={styles.practiceStreakNote}>
+              <Text style={styles.practiceStreakText}>Practice at home to build your streak! 🔥</Text>
             </View>
           </View>
-        )}
+        </View>
 
         {/* 3. Upcoming events */}
         {upcomingEvents.length > 0 && (
@@ -265,13 +301,80 @@ export default function ParentHomeScreen() {
                 </View>
               )
             })}
-            <TouchableOpacity onPress={() => router.push('/parent-schedule')}>
+            <TouchableOpacity onPress={() => router.push('/team')}>
               <Text style={[styles.viewLink, { color: tc }]}>View full schedule →</Text>
             </TouchableOpacity>
           </View>
         )}
 
-        {/* 4. Snack duty card */}
+        {/* 4. Roster card */}
+        <View style={styles.card}>
+          <Text style={styles.cardLabel}>The squad 👟</Text>
+          {players.length === 0 ? (
+            <Text style={{ fontSize: 13, color: '#aaa' }}>Roster not available yet</Text>
+          ) : (
+            players.slice(0, 6).map((player, i) => (
+              <View
+                key={player.id ?? i}
+                style={[styles.rosterRow, i < Math.min(players.length, 6) - 1 && styles.rosterBorder]}
+              >
+                <View style={[styles.rosterNumBadge, { backgroundColor: tc + '18' }]}>
+                  <Text style={[styles.rosterNum, { color: tc }]}>{player.number ?? player.jersey_number ?? '—'}</Text>
+                </View>
+                <Text style={styles.rosterName}>
+                  {player.name ?? `${player.first_name ?? ''} ${player.last_name ?? ''}`.trim()}
+                </Text>
+                {(player.positions?.[0] ?? player.position) ? (
+                  <Text style={styles.rosterPos}>
+                    {player.positions?.[0] ?? player.position}
+                  </Text>
+                ) : null}
+              </View>
+            ))
+          )}
+          {players.length > 6 && (
+            <Text style={{ fontSize: 12, color: '#aaa', marginTop: 8 }}>
+              +{players.length - 6} more players
+            </Text>
+          )}
+          <TouchableOpacity onPress={() => router.push('/team')}>
+            <Text style={[styles.viewLink, { color: tc }]}>View full roster →</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* 5. Standings card */}
+        <View style={styles.card}>
+          <Text style={styles.cardLabel}>Division standings 🏆</Text>
+          {/* Header */}
+          <View style={styles.standingsHeader}>
+            <Text style={[styles.standingsCell, { flex: 1 }]}>Team</Text>
+            <Text style={styles.standingsHdr}>W</Text>
+            <Text style={styles.standingsHdr}>L</Text>
+            <Text style={[styles.standingsHdr, { color: tc }]}>Pts</Text>
+          </View>
+          {STANDINGS.map((row, i) => (
+            <View
+              key={i}
+              style={[
+                styles.standingsRow,
+                row.isUs && { backgroundColor: tc + '12', borderRadius: 8, paddingHorizontal: 6, marginHorizontal: -6 },
+                i < STANDINGS.length - 1 && !row.isUs && styles.standingsBorder,
+              ]}
+            >
+              <Text style={[styles.standingsTeam, row.isUs && { fontWeight: '800', color: tc }]} numberOfLines={1}>
+                {row.isUs ? '⭐ ' : ''}{row.team}
+              </Text>
+              <Text style={styles.standingsVal}>{row.w}</Text>
+              <Text style={styles.standingsVal}>{row.l}</Text>
+              <Text style={[styles.standingsVal, row.isUs && { fontWeight: '800', color: tc }]}>{row.pts}</Text>
+            </View>
+          ))}
+          <TouchableOpacity onPress={() => router.push('/team')}>
+            <Text style={[styles.viewLink, { color: tc }]}>Full standings →</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* 6. Snack duty card */}
         <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#F59E0B', padding: 0, overflow: 'hidden' }]}>
           <View style={{ backgroundColor: '#FFFBEB', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 }}>
             <Text style={styles.cardLabel}>🥤 Snack schedule</Text>
@@ -375,4 +478,31 @@ const styles = StyleSheet.create({
   chatSender: { fontSize: 12, fontWeight: '700', color: '#1a1a1a', marginBottom: 2 },
   chatPreviewBody: { fontSize: 13, color: '#555', lineHeight: 18 },
   chatPreviewTime: { fontSize: 11, color: '#bbb', marginTop: 2 },
+
+  // Practice plan card
+  planPhaseRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10 },
+  planPhaseBorder: { borderBottomWidth: 0.5, borderBottomColor: '#f5f5f5' },
+  phaseAccent: { width: 4, height: 40, borderRadius: 2 },
+  planPhaseLabel: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 },
+  planPhaseDrill: { fontSize: 14, fontWeight: '700', color: '#1a1a1a' },
+  planPhaseDur: { fontSize: 12, fontWeight: '600', color: '#888' },
+  practiceStreakNote: { backgroundColor: '#FFF7ED', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 },
+  practiceStreakText: { fontSize: 12, fontWeight: '600', color: '#D97706' },
+
+  // Roster card
+  rosterRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 9 },
+  rosterBorder: { borderBottomWidth: 0.5, borderBottomColor: '#f5f5f5' },
+  rosterNumBadge: { width: 30, height: 30, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  rosterNum: { fontSize: 13, fontWeight: '800' },
+  rosterName: { flex: 1, fontSize: 14, fontWeight: '600', color: '#1a1a1a' },
+  rosterPos: { fontSize: 12, color: '#888', fontWeight: '500' },
+
+  // Standings card
+  standingsHeader: { flexDirection: 'row', alignItems: 'center', paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: '#f0f0f0', marginBottom: 4 },
+  standingsHdr: { width: 32, textAlign: 'center', fontSize: 11, fontWeight: '700', color: '#aaa' },
+  standingsCell: { fontSize: 11, fontWeight: '700', color: '#aaa' },
+  standingsRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
+  standingsBorder: { borderBottomWidth: 0.5, borderBottomColor: '#f5f5f5' },
+  standingsTeam: { flex: 1, fontSize: 14, fontWeight: '600', color: '#1a1a1a' },
+  standingsVal: { width: 32, textAlign: 'center', fontSize: 13, fontWeight: '600', color: '#444' },
 })
