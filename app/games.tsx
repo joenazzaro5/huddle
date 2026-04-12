@@ -4,39 +4,10 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { supabase } from '../lib/supabase'
 import { AppHeader } from '../lib/header'
+import { SEASON_SCHEDULE } from '../lib/season'
 
 const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl2c3B5d21od3FkYXB4ZW14bHVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMDIwMjksImV4cCI6MjA5MDY3ODAyOX0.HXsFNltsIhtL0S2tLtzFK55lbQX6GMFQKxw-U3OY6KQ'
 const SUPABASE_URL = 'https://yvspywmhwqdapxemxlug.supabase.co'
-
-const SEASON_SCHEDULE = [
-  { id:'ss-1',  type:'practice',    starts_at:'2025-09-03T16:00:00', location:'Marin Community Fields' },
-  { id:'ss-2',  type:'practice',    starts_at:'2025-09-05T16:00:00', location:'Marin Community Fields' },
-  { id:'ss-3',  type:'game',        starts_at:'2025-09-07T10:00:00', opponent:'Tiburon FC' },
-  { id:'ss-4',  type:'practice',    starts_at:'2025-09-10T16:00:00', location:'Marin Community Fields' },
-  { id:'ss-5',  type:'practice',    starts_at:'2025-09-12T16:00:00', location:'Marin Community Fields' },
-  { id:'ss-6',  type:'game',        starts_at:'2025-09-14T10:00:00', opponent:'Mill Valley SC' },
-  { id:'ss-7',  type:'practice',    starts_at:'2025-09-17T16:00:00', location:'Marin Community Fields' },
-  { id:'ss-8',  type:'practice',    starts_at:'2025-09-19T16:00:00', location:'Marin Community Fields' },
-  { id:'ss-9',  type:'game',        starts_at:'2025-09-21T10:00:00', opponent:'Novato United' },
-  { id:'ss-10', type:'practice',    starts_at:'2025-09-24T16:00:00', location:'Marin Community Fields' },
-  { id:'ss-11', type:'practice',    starts_at:'2025-09-26T16:00:00', location:'Marin Community Fields' },
-  { id:'ss-12', type:'game',        starts_at:'2025-09-28T10:00:00', opponent:'San Anselmo FC' },
-  { id:'ss-13', type:'practice',    starts_at:'2025-10-01T16:00:00', location:'Marin Community Fields' },
-  { id:'ss-14', type:'practice',    starts_at:'2025-10-03T16:00:00', location:'Marin Community Fields' },
-  { id:'ss-15', type:'picture_day', starts_at:'2025-10-04T09:00:00', title:'Picture Day', location:'Marin Community Fields' },
-  { id:'ss-16', type:'game',        starts_at:'2025-10-05T10:00:00', opponent:'Fairfax FC' },
-  { id:'ss-17', type:'practice',    starts_at:'2025-10-08T16:00:00', location:'Marin Community Fields' },
-  { id:'ss-18', type:'practice',    starts_at:'2025-10-10T16:00:00', location:'Marin Community Fields' },
-  { id:'ss-19', type:'game',        starts_at:'2025-10-12T10:00:00', opponent:'Corte Madera FC' },
-  { id:'ss-20', type:'practice',    starts_at:'2025-10-15T16:00:00', location:'Marin Community Fields' },
-  { id:'ss-21', type:'practice',    starts_at:'2025-10-17T16:00:00', location:'Marin Community Fields' },
-  { id:'ss-22', type:'game',        starts_at:'2025-10-19T10:00:00', opponent:'Larkspur SC' },
-  { id:'ss-23', type:'practice',    starts_at:'2025-10-22T16:00:00', location:'Marin Community Fields' },
-  { id:'ss-24', type:'practice',    starts_at:'2025-10-24T16:00:00', location:'Marin Community Fields' },
-  { id:'ss-25', type:'game',        starts_at:'2025-10-26T10:00:00', opponent:'Greenbrae United' },
-  { id:'ss-26', type:'practice',    starts_at:'2025-10-29T16:00:00', location:'Marin Community Fields' },
-  { id:'ss-27', type:'practice',    starts_at:'2025-10-31T16:00:00', location:'Marin Community Fields' },
-]
 
 const STANDINGS = [
   { team:'Marin Cheetahs', w:4, l:1, d:1, pts:13, isUs:true },
@@ -332,6 +303,9 @@ Slots: 0=GK, 1=LB, 2=CB, 3=RB, 4=MF, 5=LW, 6=RW`
                   const d = new Date(event.starts_at)
                   const isGame = event.type === 'game'
                   const isPictureDay = event.type === 'picture_day'
+                  const isParty = event.type === 'party'
+                  const typeColor = isGame ? '#FF8C42' : isPictureDay ? '#9C27B0' : isParty ? '#7C3AED' : tc
+                  const typeLabel = isGame ? '⚽ Game' : isPictureDay ? '📸 Picture Day' : isParty ? '🎉 Party' : '🏃 Practice'
                   return (
                     <View
                       key={event.id}
@@ -346,11 +320,11 @@ Slots: 0=GK, 1=LB, 2=CB, 3=RB, 4=MF, 5=LW, 6=RW`
                         <Text style={styles.scheduleDOW}>{d.toLocaleDateString('en-US', { weekday: 'short' })}</Text>
                       </View>
                       <View style={{ flex: 1 }}>
-                        <Text style={[styles.scheduleType, { color: isGame ? '#FF8C42' : isPictureDay ? '#9C27B0' : tc }]}>
-                          {isGame ? '⚽ Game' : isPictureDay ? '📸 Picture Day' : '🏃 Practice'}
-                        </Text>
+                        <Text style={[styles.scheduleType, { color: typeColor }]}>{typeLabel}</Text>
                         <Text style={styles.scheduleTitle}>
-                          {isGame ? `vs ${event.opponent}` : (event.focus ?? event.title ?? '')}
+                          {isGame
+                            ? `vs ${event.opponent}${event.home != null ? (event.home ? ' · Home' : ' · Away') : ''}`
+                            : (event.focus ?? event.title ?? event.location ?? '')}
                         </Text>
                       </View>
                       <View style={{ alignItems: 'flex-end' }}>

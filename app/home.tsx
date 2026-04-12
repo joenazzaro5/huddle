@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router'
 import { AppHeader } from '../lib/header'
 import { supabase } from '../lib/supabase'
 import { generatePracticePlan } from '../lib/ai'
+import { getScheduleEvents } from '../lib/season'
 
 const SNACK_DATA = [
   { date: 'Apr 5', type: 'Practice', name: 'Sarah M', claimed: true },
@@ -182,9 +183,9 @@ export default function HomeScreen() {
 
   const daysUntil = (dateStr: string) => {
     const days = Math.ceil((new Date(dateStr).getTime() - new Date().getTime()) / 86400000)
-    if (days === 0) return 'Today'
+    if (days <= 0) return 'Season ended'
     if (days === 1) return 'Tomorrow'
-    return `${days} days`
+    return `In ${days} days`
   }
 
   const openDirections = (addr: string) =>
@@ -204,7 +205,9 @@ export default function HomeScreen() {
     return msg.sender.display_name || msg.sender.email?.split('@')[0] || 'Team'
   }
 
-  const nextEvent = events[0]
+  const scheduleEvents = events.length > 0 ? events : getScheduleEvents()
+  const nextEvent = scheduleEvents[0] ?? null
+  const upcomingEvents = events.length > 0 ? events.slice(1, 4) : getScheduleEvents().slice(1, 4)
   const tc = '#1A56DB'
   const pending = Math.max(0, playerCount - rsvpYes - rsvpNo)
 
@@ -267,14 +270,21 @@ export default function HomeScreen() {
         {nextEvent ? (
           <View style={[styles.heroCard, { backgroundColor: tc }]}>
             <View style={styles.heroTopRow}>
-              <Text style={styles.heroMeta}>{nextEvent.type === 'practice' ? 'Next practice' : 'Next game'}</Text>
+              <Text style={styles.heroMeta}>
+                {nextEvent.type === 'practice' ? 'Next practice'
+                  : nextEvent.type === 'game' ? 'Next game'
+                  : nextEvent.type === 'picture_day' ? '📸 Picture Day'
+                  : '🎉 End of Season Party'}
+              </Text>
               <Text style={styles.heroMeta}>{daysUntil(nextEvent.starts_at)}</Text>
             </View>
             <Text style={styles.heroDay}>{formatDay(nextEvent.starts_at)}</Text>
             <Text style={styles.heroTitle}>
               {nextEvent.type === 'practice'
                 ? `Focus: ${nextEvent.focus ?? 'General skills'}`
-                : `vs ${nextEvent.opponent}`}
+                : nextEvent.type === 'game'
+                ? `vs ${nextEvent.opponent}${nextEvent.home != null ? (nextEvent.home ? ' · Home' : ' · Away') : ''}`
+                : nextEvent.title ?? nextEvent.type}
             </Text>
             <Text style={styles.heroTime}>{formatTimeRange(nextEvent.starts_at, nextEvent.duration_min ?? 60)}</Text>
             {nextEvent.location && (
@@ -352,18 +362,23 @@ export default function HomeScreen() {
         </View>
 
         {/* 3. Upcoming module */}
-        {events.length > 1 && (
+        {upcomingEvents.length > 0 && (
           <View style={styles.card}>
             <Text style={styles.cardLabel}>Upcoming</Text>
-            {events.slice(1, 4).map((event, i) => {
+            {upcomingEvents.map((event, i) => {
               const isGame = event.type === 'game'
-              const dotColor = isGame ? '#F59E0B' : '#1A56DB'
+              const isParty = event.type === 'party'
+              const isPicDay = event.type === 'picture_day'
+              const dotColor = isGame ? '#F59E0B' : isParty ? '#8B5CF6' : isPicDay ? '#9C27B0' : '#1A56DB'
               return (
-                <View key={event.id} style={[styles.eventRow, i < events.slice(1, 4).length - 1 && styles.eventBorder]}>
+                <View key={event.id} style={[styles.eventRow, i < upcomingEvents.length - 1 && styles.eventBorder]}>
                   <View style={[styles.upcomingDot, { backgroundColor: dotColor }]} />
                   <View style={{ flex: 1 }}>
                     <Text style={styles.eventTitle}>
-                      {isGame ? `Game vs ${event.opponent}` : `Practice · ${event.focus ?? 'General skills'}`}
+                      {isGame ? `Game vs ${event.opponent}${event.home != null ? (event.home ? ' · Home' : ' · Away') : ''}`
+                        : isPicDay ? '📸 Picture Day'
+                        : isParty ? `🎉 ${event.title ?? 'End of Season Party'}`
+                        : `Practice · ${event.focus ?? 'General skills'}`}
                     </Text>
                     <Text style={styles.eventSub}>{formatDay(event.starts_at)}</Text>
                     <Text style={styles.eventTime}>{formatTimeRange(event.starts_at, event.duration_min ?? 60)}</Text>
