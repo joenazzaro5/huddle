@@ -52,7 +52,21 @@ Phase colors are intentionally distinct — do not change them to match brand bl
 - Field view with player positions working on games tab
 - Standalone build deployed to iPhone via EAS preview
 
-## Open feedback / next fixes
+## Open issues — critical fixes needed
+1. **Home hero card empty state** — hero card shows empty/placeholder; needs full season schedule data. Season: practices Wed + Fri, games Sunday, late August through first week of November.
+2. **Practice plan default state** — practice plan module on both home screen and practice tab must show a default plan immediately on load; never show an empty state.
+3. **Team tab sub-tab labels cut off** — sub-tab labels are being clipped; must render as horizontally scrollable tabs with full untruncated words.
+4. **Team tab full season schedule** — team tab schedule must show the complete season (same data as home screen: Wed/Fri practices + Sunday games).
+5. **Games tab inline lineup builder** — AI lineup builder must live inline on the games tab, not on a separate screen.
+6. **Formation changer on field view** — games tab field view needs a formation selector so coaches can switch formations without leaving the screen.
+7. **Parent home completeness** — parent home screen needs: practice plan visible, roster section, standings section.
+8. **Shuffle button discoverability** — shuffle button on practice plan has no label; must show a visible text label so it is not an easter egg.
+9. **Drill library picker** — coaches need the ability to pick individual drills from the drill library and insert them into their practice plan.
+10. **Post-practice feedback loop** — after practice, coach should be able to rate each drill: too easy / just right / too hard. Drives future AI plan personalization.
+11. **Snacks tab personality** — snacks tab needs more fun and personality in its design and copy.
+12. **Season stats redesign** — season stats section needs a full visual redesign.
+
+## Open feedback / lower priority
 - Drill presentation needs upgrade — should feel like best-in-class content app
 - Athlete section should feel like a game, not a list
 - Button naming inconsistent between Home and Practice tabs
