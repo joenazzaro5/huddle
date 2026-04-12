@@ -40,6 +40,8 @@ export default function ParentHomeScreen() {
   const [lastMessage, setLastMessage] = useState<any>(null)
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [practiceStreak, setPracticeStreak] = useState(0)
+  const [practicedDays, setPracticedDays] = useState<number[]>([])
 
   useEffect(() => { loadData() }, [])
 
@@ -176,6 +178,8 @@ export default function ParentHomeScreen() {
     return '#9CA3AF'
   }
 
+  const todayDayIdx = (new Date().getDay() + 6) % 7
+
   if (loading) return <View style={styles.loading}><ActivityIndicator color={tc} size="large" /></View>
 
   return (
@@ -243,36 +247,80 @@ export default function ParentHomeScreen() {
           </View>
         )}
 
-        {/* 2. Practice plan card — read only */}
+        {/* 2. Practice plan card — full plan with streak */}
         <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: tc, padding: 0, overflow: 'hidden' }]}>
           <View style={{ backgroundColor: '#F0F4FF', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <Text style={styles.cardLabel}>This week's plan</Text>
             <Text style={{ fontSize: 11, fontWeight: '600', color: tc + 'aa' }}>Read only</Text>
           </View>
-          <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4 }}>
+          <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8 }}>
             <Text style={styles.practiceFocus}>{FALLBACK_PLAN.title}</Text>
           </View>
-          <View style={{ paddingHorizontal: 16, paddingBottom: 12 }}>
+          <View style={{ paddingHorizontal: 16, paddingBottom: 4 }}>
             {FALLBACK_PLAN.plan.map((item, i) => (
               <View
                 key={i}
                 style={[
-                  styles.planPhaseRow,
+                  { paddingVertical: 10 },
                   i < FALLBACK_PLAN.plan.length - 1 && styles.planPhaseBorder,
                 ]}
               >
-                <View style={[styles.phaseAccent, { backgroundColor: PHASE_COLORS[i] }]} />
-                <View style={{ flex: 1, paddingLeft: 10 }}>
-                  <Text style={[styles.planPhaseLabel, { color: PHASE_COLORS[i] }]}>{item.phase}</Text>
-                  <Text style={styles.planPhaseDrill}>{item.drill}</Text>
-                </View>
-                <Text style={styles.planPhaseDur}>{item.duration}</Text>
+                <Text style={[styles.planPhaseLabel, { color: PHASE_COLORS[i], marginBottom: 3 }]}>
+                  {item.phase} · {item.duration}
+                </Text>
+                <Text style={styles.planPhaseDrill}>{item.drill}</Text>
+                <Text style={{ fontSize: 12, color: '#555', marginTop: 4, lineHeight: 17 }}>{item.desc}</Text>
+                <Text style={{ fontSize: 11, color: '#aaa', marginTop: 6 }}>Practice at home 🏠</Text>
               </View>
             ))}
           </View>
-          <View style={{ paddingHorizontal: 16, paddingBottom: 14 }}>
-            <View style={styles.practiceStreakNote}>
-              <Text style={styles.practiceStreakText}>Practice at home to build your streak! 🔥</Text>
+
+          {/* Streak section */}
+          <View style={{ paddingHorizontal: 16, paddingTop: 14, paddingBottom: 16, borderTopWidth: 0.5, borderTopColor: '#eee' }}>
+            <Text style={{ fontSize: 13, fontWeight: '800', color: '#1a1a1a', marginBottom: 12 }}>Your practice streak 🔥</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
+              {(['M', 'T', 'W', 'T', 'F', 'S', 'S'] as const).map((label, idx) => {
+                const filled = practicedDays.includes(idx)
+                const isToday = idx === todayDayIdx
+                return (
+                  <View key={idx} style={{ alignItems: 'center' }}>
+                    <View style={{
+                      width: 34, height: 34, borderRadius: 17,
+                      backgroundColor: filled ? tc : '#F3F4F6',
+                      alignItems: 'center', justifyContent: 'center',
+                      borderWidth: isToday && !filled ? 2 : 0,
+                      borderColor: tc,
+                    }}>
+                      <Text style={{ fontSize: 11, fontWeight: '700', color: filled ? '#fff' : isToday ? tc : '#aaa' }}>{label}</Text>
+                    </View>
+                  </View>
+                )
+              })}
+            </View>
+            <Text style={{ fontSize: 28, fontWeight: '900', color: '#F59E0B', marginBottom: 14 }}>
+              {practiceStreak} day{practiceStreak !== 1 ? 's' : ''} streak
+            </Text>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <TouchableOpacity
+                style={{ flex: 1, backgroundColor: '#EEF4FF', borderRadius: 12, paddingVertical: 11, alignItems: 'center' }}
+                onPress={() => {
+                  setPracticeStreak(s => s + 1)
+                  setPracticedDays(prev => prev.includes(todayDayIdx) ? prev : [...prev, todayDayIdx])
+                }}
+                activeOpacity={0.75}
+              >
+                <Text style={{ fontSize: 12, fontWeight: '700', color: tc }}>✓ I watched a drill</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{ flex: 1, backgroundColor: tc, borderRadius: 12, paddingVertical: 11, alignItems: 'center' }}
+                onPress={() => {
+                  setPracticeStreak(s => s + 1)
+                  setPracticedDays(prev => prev.includes(todayDayIdx) ? prev : [...prev, todayDayIdx])
+                }}
+                activeOpacity={0.75}
+              >
+                <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }}>✓ I practiced today</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </View>
@@ -308,70 +356,78 @@ export default function ParentHomeScreen() {
         )}
 
         {/* 4. Roster card */}
-        <View style={styles.card}>
-          <Text style={styles.cardLabel}>The squad 👟</Text>
-          {players.length === 0 ? (
-            <Text style={{ fontSize: 13, color: '#aaa' }}>Roster not available yet</Text>
-          ) : (
-            players.slice(0, 6).map((player, i) => (
-              <View
-                key={player.id ?? i}
-                style={[styles.rosterRow, i < Math.min(players.length, 6) - 1 && styles.rosterBorder]}
-              >
-                <View style={[styles.rosterNumBadge, { backgroundColor: tc + '18' }]}>
-                  <Text style={[styles.rosterNum, { color: tc }]}>{player.number ?? player.jersey_number ?? '—'}</Text>
-                </View>
-                <Text style={styles.rosterName}>
-                  {player.name ?? `${player.first_name ?? ''} ${player.last_name ?? ''}`.trim()}
-                </Text>
-                {(player.positions?.[0] ?? player.position) ? (
-                  <Text style={styles.rosterPos}>
-                    {player.positions?.[0] ?? player.position}
+        <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#1A56DB', padding: 0, overflow: 'hidden' }]}>
+          <View style={{ backgroundColor: '#F0F4FF', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 }}>
+            <Text style={styles.cardLabel}>The squad 👟</Text>
+          </View>
+          <View style={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: 12 }}>
+            {players.length === 0 ? (
+              <Text style={{ fontSize: 13, color: '#aaa', marginTop: 8 }}>Roster not available yet</Text>
+            ) : (
+              players.slice(0, 6).map((player, i) => (
+                <View
+                  key={player.id ?? i}
+                  style={[styles.rosterRow, i < Math.min(players.length, 6) - 1 && styles.rosterBorder]}
+                >
+                  <View style={[styles.rosterNumBadge, { backgroundColor: tc + '18' }]}>
+                    <Text style={[styles.rosterNum, { color: tc }]}>{player.number ?? player.jersey_number ?? '—'}</Text>
+                  </View>
+                  <Text style={styles.rosterName}>
+                    {player.name ?? `${player.first_name ?? ''} ${player.last_name ?? ''}`.trim()}
                   </Text>
-                ) : null}
-              </View>
-            ))
-          )}
-          {players.length > 6 && (
-            <Text style={{ fontSize: 12, color: '#aaa', marginTop: 8 }}>
-              +{players.length - 6} more players
-            </Text>
-          )}
-          <TouchableOpacity onPress={() => router.push('/team')}>
-            <Text style={[styles.viewLink, { color: tc }]}>View full roster →</Text>
-          </TouchableOpacity>
+                  {(player.positions?.[0] ?? player.position) ? (
+                    <Text style={styles.rosterPos}>
+                      {player.positions?.[0] ?? player.position}
+                    </Text>
+                  ) : null}
+                </View>
+              ))
+            )}
+            {players.length > 6 && (
+              <Text style={{ fontSize: 12, color: '#aaa', marginTop: 8 }}>
+                +{players.length - 6} more players
+              </Text>
+            )}
+            <TouchableOpacity onPress={() => router.push('/team')}>
+              <Text style={[styles.viewLink, { color: tc }]}>View full roster →</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* 5. Standings card */}
-        <View style={styles.card}>
-          <Text style={styles.cardLabel}>Division standings 🏆</Text>
-          {/* Header */}
-          <View style={styles.standingsHeader}>
-            <Text style={[styles.standingsCell, { flex: 1 }]}>Team</Text>
-            <Text style={styles.standingsHdr}>W</Text>
-            <Text style={styles.standingsHdr}>L</Text>
-            <Text style={[styles.standingsHdr, { color: tc }]}>Pts</Text>
+        <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#F59E0B', padding: 0, overflow: 'hidden' }]}>
+          <View style={{ backgroundColor: '#FFFBEB', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 }}>
+            <Text style={styles.cardLabel}>Division standings 🏆</Text>
           </View>
-          {STANDINGS.map((row, i) => (
-            <View
-              key={i}
-              style={[
-                styles.standingsRow,
-                row.isUs && { backgroundColor: tc + '12', borderRadius: 8, paddingHorizontal: 6, marginHorizontal: -6 },
-                i < STANDINGS.length - 1 && !row.isUs && styles.standingsBorder,
-              ]}
-            >
-              <Text style={[styles.standingsTeam, row.isUs && { fontWeight: '800', color: tc }]} numberOfLines={1}>
-                {row.isUs ? '⭐ ' : ''}{row.team}
-              </Text>
-              <Text style={styles.standingsVal}>{row.w}</Text>
-              <Text style={styles.standingsVal}>{row.l}</Text>
-              <Text style={[styles.standingsVal, row.isUs && { fontWeight: '800', color: tc }]}>{row.pts}</Text>
+          <View style={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12 }}>
+            {/* Header */}
+            <View style={styles.standingsHeader}>
+              <Text style={[styles.standingsCell, { flex: 1 }]}>Team</Text>
+              <Text style={styles.standingsHdr}>W</Text>
+              <Text style={styles.standingsHdr}>L</Text>
+              <Text style={[styles.standingsHdr, { color: tc }]}>Pts</Text>
             </View>
-          ))}
-          <TouchableOpacity onPress={() => router.push('/team')}>
-            <Text style={[styles.viewLink, { color: tc }]}>Full standings →</Text>
-          </TouchableOpacity>
+            {STANDINGS.map((row, i) => (
+              <View
+                key={i}
+                style={[
+                  styles.standingsRow,
+                  row.isUs && { backgroundColor: tc + '12', borderRadius: 8, paddingHorizontal: 6, marginHorizontal: -6 },
+                  i < STANDINGS.length - 1 && !row.isUs && styles.standingsBorder,
+                ]}
+              >
+                <Text style={[styles.standingsTeam, row.isUs && { fontWeight: '800', color: tc }]} numberOfLines={1}>
+                  {row.isUs ? '⭐ ' : ''}{row.team}
+                </Text>
+                <Text style={styles.standingsVal}>{row.w}</Text>
+                <Text style={styles.standingsVal}>{row.l}</Text>
+                <Text style={[styles.standingsVal, row.isUs && { fontWeight: '800', color: tc }]}>{row.pts}</Text>
+              </View>
+            ))}
+            <TouchableOpacity onPress={() => router.push('/team')}>
+              <Text style={[styles.viewLink, { color: tc }]}>Full standings →</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* 6. Snack duty card */}
