@@ -1,16 +1,20 @@
 import { useEffect, useState } from 'react'
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Image } from 'react-native'
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Image, Modal } from 'react-native'
 import * as WebBrowser from 'expo-web-browser'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { supabase } from '../lib/supabase'
 import { generatePracticePlan } from '../lib/ai'
 import { AppHeader } from '../lib/header'
 
-const FALLBACK_PLAN = [
-  { phase: 'Opening Play', duration: '15 min', drill: 'Small-sided free play', desc: 'Players arrive and jump straight in. Coach observes.' },
-  { phase: 'Practice Phase', duration: '30 min', drill: 'Skill exercise', desc: 'Coach-guided skill practice with repetition and cues.' },
-  { phase: 'Final Play', duration: '15 min', drill: '7v7 full game', desc: 'Full game. Let them play.' },
-]
+const FALLBACK_PLAN = {
+  title: 'Dribbling Focus',
+  plan: [
+    { phase: 'Opening Play',    duration: '15 min', drill: 'Dribble Tag',     desc: 'Players dribble freely. Coach calls out a color cone to dribble to.' },
+    { phase: 'Practice Phase',  duration: '30 min', drill: 'Cone Weaving',    desc: 'Dribble through a line of cones using both feet. Focus on soft touches.' },
+    { phase: 'Final Play',      duration: '15 min', drill: '3v3 Small Sided', desc: 'Free play. Let them express themselves.' },
+  ],
+  coachTip: 'Encourage players to use their weaker foot.',
+}
 
 const PHASE_COLORS = ['#4CAF50', '#1A56DB', '#FF6B35']
 
@@ -101,9 +105,12 @@ export default function PracticeScreen() {
   const [prompt, setPrompt] = useState('')
   const [selectedFocuses, setSelectedFocuses] = useState<string[]>([])
   const [aiLoading, setAiLoading] = useState(false)
-  const [plan, setPlan] = useState<any>(null)
+  const [plan, setPlan] = useState<any>(FALLBACK_PLAN)
   const [planLoading, setPlanLoading] = useState(false)
   const [isOfflinePlan, setIsOfflinePlan] = useState(false)
+  const [isAiPlan, setIsAiPlan] = useState(false)
+  const [showDrillPicker, setShowDrillPicker] = useState(false)
+  const [selectedPickDrills, setSelectedPickDrills] = useState<Set<string>>(new Set())
   const [activeFilter, setActiveFilter] = useState('All')
   const [activeTab, setActiveTab] = useState<'planner' | 'drills' | 'rules'>('planner')
   const [expandedDrill, setExpandedDrill] = useState<number | null>(null)
@@ -137,39 +144,31 @@ export default function PracticeScreen() {
         .limit(1)
         .maybeSingle()
       setNextEvent(eventData)
-      if (eventData) autoGenerate(eventData, membership.team)
+      autoGenerate(eventData ?? null, membership.team)
     }
   }
 
   const autoGenerate = async (event: any, teamData: any) => {
     setPlanLoading(true)
     setIsOfflinePlan(false)
-    const focus = event.focus ?? 'general skills'
-    const fallback = {
-      title: `${focus} Practice`,
-      plan: [
-        { phase: 'Opening Play', duration: '15 min', drill: 'Small-sided free play', desc: 'Players arrive and jump into a game. Coach observes.' },
-        { phase: 'Practice Phase', duration: '30 min', drill: `${focus} drills`, desc: 'Coach-guided skill work with positive cues.' },
-        { phase: 'Final Play', duration: '15 min', drill: '7v7 full game', desc: 'Full game. Let them play.' },
-      ],
-      coachTip: 'Keep energy high. Every player should touch the ball often.'
-    }
+    const focus = event?.focus ?? 'general skills'
     try {
       const timeoutPromise = new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error('timeout')), 8000)
       )
       const result = await Promise.race([
         generatePracticePlan(
-          `${event.duration_min ?? 60} minute ${focus} session`,
-          teamData.name,
-          teamData.age_group
+          `${event?.duration_min ?? 60} minute ${focus} session`,
+          teamData?.name,
+          teamData?.age_group
         ),
         timeoutPromise
       ])
       setPlan(result)
+      setIsAiPlan(true)
     } catch {
-      setPlan(fallback)
       setIsOfflinePlan(true)
+      // keep current plan (FALLBACK_PLAN or last AI plan)
     }
     setPlanLoading(false)
   }
@@ -204,8 +203,34 @@ export default function PracticeScreen() {
         timeoutPromise
       ])
       setPlan(result)
+      setIsAiPlan(true)
     } catch {
-      setPlan({ title: 'Practice Plan', plan: FALLBACK_PLAN, coachTip: 'Keep energy high.' })
+      setIsOfflinePlan(true)
+      // keep current plan
+    }
+    setAiLoading(false)
+  }
+
+  const handleGenerateWithDrills = async () => {
+    setShowDrillPicker(false)
+    const drillNames = DRILLS.filter(d => selectedPickDrills.has(d.id)).map(d => d.title)
+    const basePrompt = buildPrompt() || 'general skills'
+    const finalPrompt = drillNames.length > 0
+      ? `${basePrompt} — include these drills: ${drillNames.join(', ')}`
+      : basePrompt
+    setAiLoading(true)
+    setIsOfflinePlan(false)
+    try {
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('timeout')), 8000)
+      )
+      const result = await Promise.race([
+        generatePracticePlan(finalPrompt, team?.name, team?.age_group),
+        timeoutPromise
+      ])
+      setPlan(result)
+      setIsAiPlan(true)
+    } catch {
       setIsOfflinePlan(true)
     }
     setAiLoading(false)
@@ -267,13 +292,76 @@ export default function PracticeScreen() {
             </View>
           )}
 
+          {/* Current plan — always visible */}
+          <View style={styles.card}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.cardLabel}>Current plan</Text>
+                {!planLoading && <Text style={[styles.planTitle, { marginBottom: 0 }]}>{plan.title}</Text>}
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+                  {planLoading ? (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <ActivityIndicator color={teamColor} size="small" />
+                      <Text style={{ fontSize: 12, color: '#888' }}>Building your plan...</Text>
+                    </View>
+                  ) : (
+                    <View style={{
+                      paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10,
+                      backgroundColor: isAiPlan ? '#D1FAE5' : '#F3F4F6',
+                    }}>
+                      <Text style={{ fontSize: 10, fontWeight: '700', color: isAiPlan ? '#065F46' : '#6B7280' }}>
+                        {isAiPlan ? '✨ AI Generated' : '📋 Default plan'}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+              {!planLoading && (
+                <TouchableOpacity
+                  onPress={() => autoGenerate(nextEvent, team)}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 4, padding: 6 }}
+                >
+                  <Text style={{ fontSize: 18 }}>🔀</Text>
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: teamColor }}>New plan</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            {!planLoading && plan.plan?.map((item: any, i: number) => (
+              <TouchableOpacity
+                key={i}
+                style={styles.phaseCard}
+                onPress={() => setExpandedDrill(expandedDrill === i ? null : i)}
+                activeOpacity={0.8}
+              >
+                <View style={[styles.phaseHeader, { backgroundColor: PHASE_COLORS[i] ?? '#888' }]}>
+                  <Text style={styles.phaseLabel}>{item.phase}</Text>
+                  <Text style={styles.phaseDuration}>{item.duration}</Text>
+                </View>
+                <View style={styles.phaseBody}>
+                  <View style={styles.drillRow}>
+                    <Text style={styles.phaseDrill}>{item.drill}</Text>
+                    <Text style={styles.expandHint}>{expandedDrill === i ? '▲' : '▼'}</Text>
+                  </View>
+                  {expandedDrill === i && <Text style={styles.phaseDesc}>{item.desc}</Text>}
+                </View>
+              </TouchableOpacity>
+            ))}
+            {!planLoading && plan.coachTip && (
+              <View style={styles.tipBox}>
+                <Text style={styles.tipLabel}>💡 Coach tip</Text>
+                <Text style={styles.tipText}>{plan.coachTip}</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Plan builder — below current plan */}
           <View style={styles.card}>
             <View style={styles.aiHeader}>
               <View style={styles.aiIcon}>
                 <Text style={styles.aiIconText}>⚡</Text>
               </View>
               <View>
-                <Text style={styles.cardTitle}>{plan ? 'Adjust your plan' : 'Build a practice plan'}</Text>
+                <Text style={styles.cardTitle}>Adjust your plan</Text>
                 <Text style={styles.cardSub}>{team?.age_group ?? 'U10'} · Play-Practice-Play · 60 min</Text>
               </View>
             </View>
@@ -300,7 +388,7 @@ export default function PracticeScreen() {
             <View style={[styles.inputRow, { marginTop: 12 }]}>
               <TextInput
                 style={[styles.input, { borderColor: inputFocused ? teamColor : '#E5E7EB' }]}
-                placeholder={plan ? 'Add any extra details or changes...' : 'Any extra details? (optional)'}
+                placeholder="Any extra details? (optional)"
                 placeholderTextColor="#bbb"
                 value={prompt}
                 onChangeText={setPrompt}
@@ -317,19 +405,28 @@ export default function PracticeScreen() {
               </TouchableOpacity>
             </View>
 
-            {selectedFocuses.length > 0 && (
+            <View style={{ flexDirection: 'row', gap: 8, marginTop: 14 }}>
               <TouchableOpacity
-                style={[styles.generateFullBtn, { backgroundColor: teamColor }]}
-                onPress={handleGenerate}
-                disabled={aiLoading}
+                style={styles.pickDrillsBtn}
+                onPress={() => setShowDrillPicker(true)}
                 activeOpacity={0.85}
               >
-                {aiLoading
-                  ? <ActivityIndicator color="#fff" size="small" />
-                  : <Text style={styles.generateFullBtnText}>Generate plan →</Text>
-                }
+                <Text style={styles.pickDrillsBtnText}>🎯 Pick drills</Text>
               </TouchableOpacity>
-            )}
+              {selectedFocuses.length > 0 && (
+                <TouchableOpacity
+                  style={[styles.generateFullBtn, { flex: 1, marginTop: 0 }]}
+                  onPress={handleGenerate}
+                  disabled={aiLoading}
+                  activeOpacity={0.85}
+                >
+                  {aiLoading
+                    ? <ActivityIndicator color="#fff" size="small" />
+                    : <Text style={styles.generateFullBtnText}>Generate plan →</Text>
+                  }
+                </TouchableOpacity>
+              )}
+            </View>
 
             {aiLoading && (
               <View style={styles.loadingBox}>
@@ -338,54 +435,6 @@ export default function PracticeScreen() {
               </View>
             )}
           </View>
-
-          {planLoading && (
-            <View style={{ alignItems: 'center', paddingVertical: 20 }}>
-              <ActivityIndicator color={teamColor} size="small" />
-              <Text style={{ fontSize: 13, color: '#888', marginTop: 8 }}>Shuffling your plan...</Text>
-            </View>
-          )}
-
-          {plan && !planLoading && (
-            <View style={styles.card}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.cardLabel}>Current plan</Text>
-                  <Text style={[styles.planTitle, { marginBottom: 0 }]}>{plan.title}</Text>
-                  {isOfflinePlan && <Text style={styles.offlineLabel}>Using saved plan</Text>}
-                </View>
-                <TouchableOpacity onPress={() => nextEvent && autoGenerate(nextEvent, team)} style={{ padding: 6 }}>
-                  <Text style={{ fontSize: 20 }}>🔀</Text>
-                </TouchableOpacity>
-              </View>
-              {plan.plan?.map((item: any, i: number) => (
-                <TouchableOpacity
-                  key={i}
-                  style={styles.phaseCard}
-                  onPress={() => setExpandedDrill(expandedDrill === i ? null : i)}
-                  activeOpacity={0.8}
-                >
-                  <View style={[styles.phaseHeader, { backgroundColor: PHASE_COLORS[i] ?? '#888' }]}>
-                    <Text style={styles.phaseLabel}>{item.phase}</Text>
-                    <Text style={styles.phaseDuration}>{item.duration}</Text>
-                  </View>
-                  <View style={styles.phaseBody}>
-                    <View style={styles.drillRow}>
-                      <Text style={styles.phaseDrill}>{item.drill}</Text>
-                      <Text style={styles.expandHint}>{expandedDrill === i ? '▲' : '▼'}</Text>
-                    </View>
-                    {expandedDrill === i && <Text style={styles.phaseDesc}>{item.desc}</Text>}
-                  </View>
-                </TouchableOpacity>
-              ))}
-              {plan.coachTip && (
-                <View style={styles.tipBox}>
-                  <Text style={styles.tipLabel}>💡 Coach tip</Text>
-                  <Text style={styles.tipText}>{plan.coachTip}</Text>
-                </View>
-              )}
-            </View>
-          )}
 
         </ScrollView>
       ) : activeTab === 'drills' ? (
@@ -521,6 +570,63 @@ export default function PracticeScreen() {
         </ScrollView>
       )}
 
+      {/* Drill picker modal */}
+      <Modal visible={showDrillPicker} animationType="slide" presentationStyle="pageSheet">
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }} edges={['top']}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 0.5, borderBottomColor: '#eee' }}>
+            <Text style={{ fontSize: 17, fontWeight: '800', color: '#1a1a1a' }}>Pick drills to include</Text>
+            <TouchableOpacity onPress={() => setShowDrillPicker(false)}>
+              <Text style={{ fontSize: 15, color: '#888', fontWeight: '600' }}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+          <ScrollView contentContainerStyle={{ padding: 16 }}>
+            {DRILLS.map(drill => {
+              const isSelected = selectedPickDrills.has(drill.id)
+              return (
+                <TouchableOpacity
+                  key={drill.id}
+                  onPress={() => setSelectedPickDrills(prev => {
+                    const next = new Set(prev)
+                    if (next.has(drill.id)) next.delete(drill.id)
+                    else next.add(drill.id)
+                    return next
+                  })}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 13, borderBottomWidth: 0.5, borderBottomColor: '#f5f5f5' }}
+                  activeOpacity={0.7}
+                >
+                  <View style={{
+                    width: 24, height: 24, borderRadius: 6, borderWidth: 2,
+                    borderColor: isSelected ? teamColor : '#ddd',
+                    backgroundColor: isSelected ? teamColor : '#fff',
+                    alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    {isSelected && <Text style={{ color: '#fff', fontSize: 12, fontWeight: '800' }}>✓</Text>}
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 14, fontWeight: '700', color: '#1a1a1a' }}>{drill.title}</Text>
+                    <Text style={{ fontSize: 12, color: '#888', marginTop: 1 }}>{drill.focus} · {drill.duration} · {drill.level}</Text>
+                  </View>
+                </TouchableOpacity>
+              )
+            })}
+          </ScrollView>
+          <View style={{ padding: 16, paddingBottom: 28, borderTopWidth: 0.5, borderTopColor: '#eee' }}>
+            <TouchableOpacity
+              style={{ backgroundColor: teamColor, borderRadius: 14, paddingVertical: 14, alignItems: 'center' }}
+              onPress={handleGenerateWithDrills}
+              disabled={aiLoading}
+              activeOpacity={0.85}
+            >
+              <Text style={{ fontSize: 16, fontWeight: '800', color: '#fff' }}>
+                {selectedPickDrills.size > 0
+                  ? `Generate with ${selectedPickDrills.size} drill${selectedPickDrills.size > 1 ? 's' : ''} →`
+                  : 'Generate plan →'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
+      </Modal>
+
     </SafeAreaView>
   )
 }
@@ -580,8 +686,10 @@ const styles = StyleSheet.create({
   playOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
   playCircle: { width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(0,0,0,0.7)', alignItems: 'center', justifyContent: 'center' },
   playIcon: { color: '#fff', fontSize: 18 },
-  generateFullBtn: { borderRadius: 14, paddingVertical: 14, alignItems: 'center', marginTop: 14 },
+  generateFullBtn: { borderRadius: 14, paddingVertical: 14, alignItems: 'center', marginTop: 14, backgroundColor: '#1A56DB' },
   generateFullBtnText: { fontSize: 16, fontWeight: '800', color: '#fff', letterSpacing: 0.2 },
+  pickDrillsBtn: { paddingVertical: 14, paddingHorizontal: 18, borderRadius: 14, borderWidth: 1.5, borderColor: '#1A56DB', alignItems: 'center', justifyContent: 'center' },
+  pickDrillsBtnText: { fontSize: 14, fontWeight: '700', color: '#1A56DB' },
   practicedBtn: { borderWidth: 1.5, borderColor: '#1A56DB', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 7, alignSelf: 'flex-start', marginTop: 10 },
   practicedBtnDone: { backgroundColor: '#1A56DB' },
   practicedBtnText: { fontSize: 13, fontWeight: '600', color: '#1A56DB' },

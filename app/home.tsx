@@ -7,6 +7,16 @@ import { supabase } from '../lib/supabase'
 import { generatePracticePlan } from '../lib/ai'
 import { getScheduleEvents } from '../lib/season'
 
+const FALLBACK_PLAN = {
+  title: 'Dribbling Focus',
+  plan: [
+    { phase: 'Opening Play',    duration: '15 min', drill: 'Dribble Tag',     desc: 'Players dribble freely. Coach calls out a color cone to dribble to.' },
+    { phase: 'Practice Phase',  duration: '30 min', drill: 'Cone Weaving',    desc: 'Dribble through a line of cones using both feet. Focus on soft touches.' },
+    { phase: 'Final Play',      duration: '15 min', drill: '3v3 Small Sided', desc: 'Free play. Let them express themselves.' },
+  ],
+  coachTip: 'Encourage players to use their weaker foot.',
+}
+
 const SNACK_DATA = [
   { date: 'Apr 5', type: 'Practice', name: 'Sarah M', claimed: true },
   { date: 'Apr 12', type: 'Practice', name: null as string | null, claimed: false },
@@ -25,9 +35,10 @@ export default function HomeScreen() {
   const [team, setTeam] = useState<any>(null)
   const [events, setEvents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [plan, setPlan] = useState<any>(null)
+  const [plan, setPlan] = useState<any>(FALLBACK_PLAN)
   const [planLoading, setPlanLoading] = useState(false)
   const [isOfflinePlan, setIsOfflinePlan] = useState(false)
+  const [isAiPlan, setIsAiPlan] = useState(false)
   const [rsvpYes, setRsvpYes] = useState(0)
   const [rsvpNo, setRsvpNo] = useState(0)
   const [playerCount, setPlayerCount] = useState(0)
@@ -79,7 +90,9 @@ export default function HomeScreen() {
         .eq('event_id', eventData[0].id).eq('status', 'no')
       setRsvpYes(yes ?? 0)
       setRsvpNo(no ?? 0)
-      if (eventData[0].type === 'practice') autoGeneratePlan(eventData[0], teamData)
+      autoGeneratePlan(eventData[0], teamData)
+    } else {
+      autoGeneratePlan(getScheduleEvents()[0] ?? null, teamData)
     }
 
     const { data: msgData } = await supabase
@@ -97,31 +110,23 @@ export default function HomeScreen() {
   const autoGeneratePlan = async (event: any, teamData: any) => {
     setPlanLoading(true)
     setIsOfflinePlan(false)
-    const focus = event.focus ?? 'general skills'
-    const fallback = {
-      title: `${focus} Practice`,
-      plan: [
-        { phase: 'Opening Play', duration: '15 min', drill: 'Small-sided free play', desc: 'Players arrive and jump into a game. Coach observes.' },
-        { phase: 'Practice Phase', duration: '30 min', drill: `${focus} drills`, desc: 'Coach-guided skill work with positive cues and repetition.' },
-        { phase: 'Final Play', duration: '15 min', drill: '7v7 full game', desc: 'Full game. Let them play.' },
-      ],
-      coachTip: 'Keep energy high. Every player should touch the ball often.'
-    }
+    const focus = event?.focus ?? 'general skills'
     try {
       const timeoutPromise = new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error('timeout')), 8000)
       )
       const result = await Promise.race([
         generatePracticePlan(
-          `${event.duration_min ?? 60} minute ${focus} session`,
-          teamData.name, teamData.age_group
+          `${event?.duration_min ?? 60} minute ${focus} session`,
+          teamData?.name, teamData?.age_group
         ),
         timeoutPromise
       ])
       setPlan(result)
+      setIsAiPlan(true)
     } catch {
-      setPlan(fallback)
       setIsOfflinePlan(true)
+      // keep current plan (FALLBACK_PLAN or last AI plan)
     }
     setPlanLoading(false)
   }
@@ -155,10 +160,11 @@ export default function HomeScreen() {
         .eq('event_id', eventData[0].id).eq('status', 'no')
       setRsvpYes(yes ?? 0)
       setRsvpNo(no ?? 0)
-      if (eventData[0].type === 'practice') autoGeneratePlan(eventData[0], teamData)
+      autoGeneratePlan(eventData[0], teamData)
     } else {
       setRsvpYes(0)
       setRsvpNo(0)
+      autoGeneratePlan(getScheduleEvents()[0] ?? null, teamData)
     }
 
     const { data: msgData } = await supabase
@@ -316,45 +322,45 @@ export default function HomeScreen() {
         <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#1A56DB', padding: 0, overflow: 'hidden' }]}>
           {/* Header strip */}
           <View style={styles.practicePlanHeader}>
-            <Text style={[styles.cardLabel, { marginBottom: 0, flex: 1 }]}>Practice plan · AI generated</Text>
+            <Text style={[styles.cardLabel, { marginBottom: 0, flex: 1 }]}>Practice plan</Text>
             <TouchableOpacity
-              onPress={() => nextEvent && autoGeneratePlan(nextEvent, team)}
-              onLongPress={() => Alert.alert('🔀 Shuffle plan', 'Shuffle to generate a fresh practice plan')}
+              onPress={() => autoGeneratePlan(nextEvent ?? getScheduleEvents()[0] ?? null, team)}
               activeOpacity={0.6}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}
             >
-              <Text style={styles.practiceIcon}>🔀</Text>
+              {planLoading
+                ? <ActivityIndicator color={tc} size="small" />
+                : <Text style={styles.practiceIcon}>🔀</Text>
+              }
+              <Text style={{ fontSize: 12, fontWeight: '700', color: tc }}>New plan</Text>
             </TouchableOpacity>
           </View>
           {/* Body */}
           <View style={styles.practicePlanBody}>
-            {planLoading ? (
-              <View style={styles.planLoadingRow}>
-                <ActivityIndicator color={tc} size="small" />
-                <Text style={styles.planLoadingText}>Building your plan...</Text>
+            <Text style={styles.cardTitle}>{plan.title}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+              <View style={{
+                paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10,
+                backgroundColor: isAiPlan ? '#D1FAE5' : '#F3F4F6',
+              }}>
+                <Text style={{ fontSize: 10, fontWeight: '700', color: isAiPlan ? '#065F46' : '#6B7280' }}>
+                  {planLoading ? '⏳ Generating...' : isAiPlan ? '✨ AI Generated' : '📋 Default plan'}
+                </Text>
               </View>
-            ) : plan ? (
-              <>
-                <Text style={styles.cardTitle}>{plan.title}</Text>
-                {isOfflinePlan && <Text style={styles.offlineLabel}>Using saved plan</Text>}
-                {plan.plan?.map((phase: any, i: number) => {
-                  const phaseColors = ['#10B981', '#1A56DB', '#F59E0B']
-                  const phaseColor = phaseColors[i % phaseColors.length]
-                  return (
-                    <View key={i} style={[styles.planPhaseRow, i < (plan.plan?.length ?? 0) - 1 && styles.planPhaseBorder]}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={[styles.planPhaseHeader, { color: phaseColor }]}>{phase.phase}</Text>
-                        <Text style={styles.planPhaseName}>{phase.drill}</Text>
-                      </View>
-                      <Text style={styles.planPhaseDur}>{phase.duration}</Text>
-                    </View>
-                  )
-                })}
-              </>
-            ) : (
-              <TouchableOpacity onPress={() => nextEvent && autoGeneratePlan(nextEvent, team)}>
-                <Text style={styles.planTapHint}>Tap to generate →</Text>
-              </TouchableOpacity>
-            )}
+            </View>
+            {plan.plan?.map((phase: any, i: number) => {
+              const phaseColors = ['#10B981', '#1A56DB', '#F59E0B']
+              const phaseColor = phaseColors[i % phaseColors.length]
+              return (
+                <View key={i} style={[styles.planPhaseRow, i < (plan.plan?.length ?? 0) - 1 && styles.planPhaseBorder]}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.planPhaseHeader, { color: phaseColor }]}>{phase.phase}</Text>
+                    <Text style={styles.planPhaseName}>{phase.drill}</Text>
+                  </View>
+                  <Text style={styles.planPhaseDur}>{phase.duration}</Text>
+                </View>
+              )
+            })}
             <TouchableOpacity onPress={() => router.push('/practice')}>
               <Text style={[styles.viewLink, { color: tc }]}>View full plan →</Text>
             </TouchableOpacity>
