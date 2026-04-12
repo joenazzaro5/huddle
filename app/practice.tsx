@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Image, Modal } from 'react-native'
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Image, Modal, Alert } from 'react-native'
 import * as WebBrowser from 'expo-web-browser'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { supabase } from '../lib/supabase'
@@ -119,6 +119,14 @@ export default function PracticeScreen() {
   const [drillStreak, setDrillStreak] = useState(0)
   const [lastDrillDate, setLastDrillDate] = useState('')
   const [practicedDrills, setPracticedDrills] = useState<Set<string>>(new Set())
+  const [drillFeedback, setDrillFeedback] = useState<Record<string, string>>({})
+
+  const appendFeedback = (base: string) => {
+    const entries = Object.entries(drillFeedback)
+    if (entries.length === 0) return base
+    const feedbackText = entries.map(([drill, rating]) => `${drill} was ${rating}`).join(', ')
+    return base ? `${base}. Previous feedback: ${feedbackText}` : `Previous feedback: ${feedbackText}`
+  }
 
   useEffect(() => { loadTeam() }, [])
 
@@ -151,7 +159,7 @@ export default function PracticeScreen() {
   const autoGenerate = async (event: any, teamData: any) => {
     setPlanLoading(true)
     setIsOfflinePlan(false)
-    const focus = event?.focus ?? 'general skills'
+    const focus = appendFeedback(event?.focus ?? 'general skills')
     try {
       const timeoutPromise = new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error('timeout')), 8000)
@@ -189,7 +197,7 @@ export default function PracticeScreen() {
   }
 
   const handleGenerate = async () => {
-    const finalPrompt = buildPrompt()
+    const finalPrompt = appendFeedback(buildPrompt())
     if (!finalPrompt || !team) return
     setAiLoading(true)
     setIsOfflinePlan(false)
@@ -215,9 +223,9 @@ export default function PracticeScreen() {
     setShowDrillPicker(false)
     const drillNames = DRILLS.filter(d => selectedPickDrills.has(d.id)).map(d => d.title)
     const basePrompt = buildPrompt() || 'general skills'
-    const finalPrompt = drillNames.length > 0
+    const finalPrompt = appendFeedback(drillNames.length > 0
       ? `${basePrompt} — include these drills: ${drillNames.join(', ')}`
-      : basePrompt
+      : basePrompt)
     setAiLoading(true)
     setIsOfflinePlan(false)
     try {
@@ -327,25 +335,51 @@ export default function PracticeScreen() {
               )}
             </View>
             {!planLoading && plan.plan?.map((item: any, i: number) => (
-              <TouchableOpacity
-                key={i}
-                style={styles.phaseCard}
-                onPress={() => setExpandedDrill(expandedDrill === i ? null : i)}
-                activeOpacity={0.8}
-              >
-                <View style={[styles.phaseHeader, { backgroundColor: PHASE_COLORS[i] ?? '#888' }]}>
-                  <Text style={styles.phaseLabel}>{item.phase}</Text>
-                  <Text style={styles.phaseDuration}>{item.duration}</Text>
-                </View>
-                <View style={styles.phaseBody}>
-                  <View style={styles.drillRow}>
-                    <Text style={styles.phaseDrill}>{item.drill}</Text>
-                    <Text style={styles.expandHint}>{expandedDrill === i ? '▲' : '▼'}</Text>
+              <View key={i}>
+                <TouchableOpacity
+                  style={styles.phaseCard}
+                  onPress={() => setExpandedDrill(expandedDrill === i ? null : i)}
+                  activeOpacity={0.8}
+                >
+                  <View style={[styles.phaseHeader, { backgroundColor: PHASE_COLORS[i] ?? '#888' }]}>
+                    <Text style={styles.phaseLabel}>{item.phase}</Text>
+                    <Text style={styles.phaseDuration}>{item.duration}</Text>
                   </View>
-                  {expandedDrill === i && <Text style={styles.phaseDesc}>{item.desc}</Text>}
+                  <View style={styles.phaseBody}>
+                    <View style={styles.drillRow}>
+                      <Text style={styles.phaseDrill}>{item.drill}</Text>
+                      <Text style={styles.expandHint}>{expandedDrill === i ? '▲' : '▼'}</Text>
+                    </View>
+                    {expandedDrill === i && <Text style={styles.phaseDesc}>{item.desc}</Text>}
+                  </View>
+                </TouchableOpacity>
+                <View style={styles.feedbackRow}>
+                  {(['😓 Hard', '👍 Good', '😴 Easy'] as const).map((label) => {
+                    const rating = label.split(' ')[1]
+                    const isSelected = drillFeedback[item.drill] === rating
+                    return (
+                      <TouchableOpacity
+                        key={label}
+                        style={[styles.feedbackBtn, isSelected && styles.feedbackBtnSelected]}
+                        onPress={() => setDrillFeedback(prev => ({ ...prev, [item.drill]: rating }))}
+                      >
+                        <Text style={[styles.feedbackBtnText, isSelected && styles.feedbackBtnTextSelected]}>
+                          {label}
+                        </Text>
+                      </TouchableOpacity>
+                    )
+                  })}
                 </View>
-              </TouchableOpacity>
+              </View>
             ))}
+            {!planLoading && Object.keys(drillFeedback).length > 0 && (
+              <TouchableOpacity
+                style={styles.submitFeedbackBtn}
+                onPress={() => Alert.alert('Thanks!', 'Your feedback helps improve future plans.')}
+              >
+                <Text style={styles.submitFeedbackBtnText}>Submit feedback</Text>
+              </TouchableOpacity>
+            )}
             {!planLoading && plan.coachTip && (
               <View style={styles.tipBox}>
                 <Text style={styles.tipLabel}>💡 Coach tip</Text>
@@ -694,6 +728,13 @@ const styles = StyleSheet.create({
   practicedBtnDone: { backgroundColor: '#1A56DB' },
   practicedBtnText: { fontSize: 13, fontWeight: '600', color: '#1A56DB' },
   practicedBtnTextDone: { color: '#fff' },
+  feedbackRow: { flexDirection: 'row', gap: 8, marginBottom: 10, marginTop: 2 },
+  feedbackBtn: { flex: 1, paddingVertical: 7, borderRadius: 10, alignItems: 'center', backgroundColor: '#F7F7F5', borderWidth: 1, borderColor: '#eee' },
+  feedbackBtnSelected: { backgroundColor: '#EEF4FF', borderColor: '#1A56DB' },
+  feedbackBtnText: { fontSize: 12, fontWeight: '600', color: '#888' },
+  feedbackBtnTextSelected: { color: '#1A56DB' },
+  submitFeedbackBtn: { backgroundColor: '#F0F4FF', borderRadius: 12, paddingVertical: 12, alignItems: 'center', marginBottom: 10, borderWidth: 1, borderColor: '#C7D7FD' },
+  submitFeedbackBtnText: { fontSize: 13, fontWeight: '700', color: '#1A56DB' },
   ageGroupLabel: { fontSize: 12, color: '#aaa', fontWeight: '600', marginBottom: 12 },
   ruleCard: { backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 0.5, borderColor: '#eee' },
   ruleName: { fontSize: 17, fontWeight: '800', color: '#1a1a1a', marginBottom: 6 },
