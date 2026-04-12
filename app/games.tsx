@@ -321,13 +321,19 @@ Slots: ${formationSlots}`
       <AppHeader teamColor={tc} teamName={team?.name} />
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.subTabsScroll} contentContainerStyle={styles.subTabsContent}>
-        {(['schedule', 'games', 'roster', 'standings', 'snacks', 'polls'] as const).map(tab => {
+        {(['schedule', 'games', 'roster', 'standings', 'snacks', 'polls'] as const).map((tab, tabIdx) => {
+          const TOTAL_TABS = 6
           const labels: Record<string, string> = { schedule: 'Schedule', games: 'Games', roster: 'Roster', standings: 'Standings', snacks: 'Snacks', polls: 'Polls' }
           const isActive = activeTab === tab
+          const tabPadding = tabIdx === 0
+            ? { paddingLeft: 16, paddingRight: 16 }
+            : tabIdx === TOTAL_TABS - 1
+            ? { paddingLeft: 16, paddingRight: 16 }
+            : { paddingHorizontal: 16 }
           return (
             <TouchableOpacity
               key={tab}
-              style={[styles.subTab, isActive && { borderBottomColor: tc, borderBottomWidth: 2.5 }]}
+              style={[styles.subTab, tabPadding, isActive && { borderBottomColor: tc, borderBottomWidth: 2.5 }]}
               onPress={() => setActiveTab(tab)}
             >
               <Text style={[styles.subTabText, { color: isActive ? tc : '#999', fontWeight: isActive ? '700' : '500' }]}>
@@ -543,7 +549,7 @@ Slots: ${formationSlots}`
 
           {/* Season stats — horizontal scroll */}
           <Text style={[styles.cardLabel, { marginBottom: 8, marginLeft: 2 }]}>Season stats</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
             <View style={{ flexDirection: 'row', gap: 10, paddingRight: 4 }}>
               {[
                 { label: 'Goals',        value: '12', color: '#1A56DB' },
@@ -559,7 +565,7 @@ Slots: ${formationSlots}`
             </View>
           </ScrollView>
           {/* Win/loss sparkline */}
-          <View style={[styles.card, { marginBottom: 14, paddingVertical: 12 }]}>
+          <View style={[styles.card, { marginBottom: 12, paddingVertical: 12 }]}>
             <Text style={[styles.cardLabel, { marginBottom: 10 }]}>Recent results</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               {['W','W','L','W','W'].map((r, i) => (
@@ -878,11 +884,11 @@ Slots: ${formationSlots}`
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F7F7F5' },
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  subTabsScroll: { backgroundColor: '#fff', borderBottomWidth: 0.5, borderBottomColor: '#eee' },
+  subTabsScroll: { backgroundColor: '#fff', borderBottomWidth: 0.5, borderBottomColor: '#eee', paddingHorizontal: 0 },
   subTabsContent: { flexDirection: 'row', alignItems: 'center' },
-  subTab: { paddingHorizontal: 16, paddingVertical: 12, alignItems: 'center', borderBottomWidth: 2.5, borderBottomColor: 'transparent' },
+  subTab: { paddingVertical: 12, alignItems: 'center', borderBottomWidth: 2.5, borderBottomColor: 'transparent' },
   subTabText: { fontSize: 13, includeFontPadding: false },
-  content: { padding: 16 },
+  content: { paddingTop: 12, paddingHorizontal: 16, paddingBottom: 32 },
   emptyState: { alignItems: 'center', paddingVertical: 60 },
   emptyText: { fontSize: 14, color: '#aaa' },
   monthHeader: { fontSize: 12, fontWeight: '700', color: '#aaa', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8, marginTop: 4 },
@@ -896,10 +902,10 @@ const styles = StyleSheet.create({
   scheduleTitle: { fontSize: 13, fontWeight: '600', color: '#1a1a1a' },
   scheduleTime: { fontSize: 12, fontWeight: '600', color: '#555' },
   scheduleLoc: { fontSize: 11, color: '#aaa', maxWidth: 90 },
-  teamCard: { borderRadius: 20, padding: 18, marginBottom: 14 },
+  teamCard: { borderRadius: 20, padding: 18, marginBottom: 12 },
   teamCardName: { fontSize: 20, fontWeight: '800', color: '#fff', marginBottom: 4 },
   teamCardSub: { fontSize: 13, color: 'rgba(255,255,255,0.8)' },
-  card: { backgroundColor: '#fff', borderRadius: 18, padding: 16, marginBottom: 14, borderWidth: 0.5, borderColor: '#eee' },
+  card: { backgroundColor: '#fff', borderRadius: 18, padding: 16, marginBottom: 12, borderWidth: 0.5, borderColor: '#eee' },
   cardLabel: { fontSize: 10, fontWeight: '700', color: '#aaa', textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 8 },
   cardTitle: { fontSize: 15, fontWeight: '800', color: '#1a1a1a' },
   cardSub: { fontSize: 12, color: '#888' },
@@ -910,7 +916,7 @@ const styles = StyleSheet.create({
   starterChip: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
   starterText: { fontSize: 11, fontWeight: '700' },
   chevron: { fontSize: 18, color: '#ccc', marginLeft: 4 },
-  gameCard: { borderRadius: 20, padding: 16, marginBottom: 14 },
+  gameCard: { borderRadius: 20, padding: 16, marginBottom: 12 },
   gameCardLabel: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 },
   gameCardTitle: { fontSize: 26, fontWeight: '900', color: '#fff', marginBottom: 2 },
   gameCardSub: { fontSize: 14, color: 'rgba(255,255,255,0.7)' },
@@ -922,7 +928,7 @@ const styles = StyleSheet.create({
   generateBtnText: { fontSize: 15, fontWeight: '700', color: '#fff' },
   skipBtn: { padding: 12, alignItems: 'center' },
   skipBtnText: { fontSize: 13, color: '#aaa' },
-  timerCard: { borderRadius: 16, padding: 16, marginBottom: 14 },
+  timerCard: { borderRadius: 16, padding: 16, marginBottom: 12 },
   timerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
   timerLabel: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 0.5 },
   timerTime: { fontSize: 52, fontWeight: '900', color: '#fff', letterSpacing: -1 },
@@ -952,7 +958,7 @@ const styles = StyleSheet.create({
   benchPlayerNumText: { fontSize: 13, fontWeight: '800' },
   benchPlayerName: { fontSize: 10, fontWeight: '600', color: '#555', maxWidth: 56, textAlign: 'center' },
   benchPlayerMins: { fontSize: 10, fontWeight: '600', marginTop: 2 },
-  section: { marginBottom: 14 },
+  section: { marginBottom: 12 },
   sectionLabel: { fontSize: 10, fontWeight: '700', color: '#aaa', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
   playerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 14, marginBottom: 6, backgroundColor: '#fff', borderWidth: 0.5, borderColor: '#eee' },
   playerRowBench: { backgroundColor: '#F7F7F5' },
@@ -961,7 +967,7 @@ const styles = StyleSheet.create({
   playerName: { fontSize: 15, fontWeight: '600', color: '#1a1a1a' },
   playerPos: { fontSize: 11, color: '#aaa', marginTop: 1 },
   playerMins: { fontSize: 13, fontWeight: '600', minWidth: 28, textAlign: 'right' },
-  fairPlayCard: { backgroundColor: '#FFF0F0', borderRadius: 14, padding: 14, marginBottom: 14, borderWidth: 1, borderColor: '#FFCCCC' },
+  fairPlayCard: { backgroundColor: '#FFF0F0', borderRadius: 14, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: '#FFCCCC' },
   fairPlayTitle: { fontSize: 14, fontWeight: '800', color: '#E24B4A', marginBottom: 6 },
   fairPlayAlert: { fontSize: 13, color: '#E24B4A', marginBottom: 3 },
   resetLineupBtn: { borderRadius: 14, paddingVertical: 13, alignItems: 'center', borderWidth: 1.5, marginBottom: 14 },
@@ -989,7 +995,7 @@ const styles = StyleSheet.create({
   pollBarFill: { height: 6, borderRadius: 3 },
   newPollBtn: { borderRadius: 12, paddingVertical: 11, alignItems: 'center', borderWidth: 1.5, marginTop: 8 },
   newPollBtnText: { fontSize: 13, fontWeight: '700' },
-  subPlanCard: { backgroundColor: '#fff', borderRadius: 16, padding: 14, marginBottom: 14, borderWidth: 0.5, borderColor: '#E5E7EB' },
+  subPlanCard: { backgroundColor: '#fff', borderRadius: 16, padding: 14, marginBottom: 12, borderWidth: 0.5, borderColor: '#E5E7EB' },
   subPlanTitle: { fontSize: 13, fontWeight: '700', color: '#1a1a1a', marginBottom: 10 },
   subPlanRow: { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 8, gap: 12 },
   subPlanBorder: { borderBottomWidth: 0.5, borderBottomColor: '#f5f5f5' },
