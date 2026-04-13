@@ -65,8 +65,17 @@ const FORMATIONS: Record<string, { position: string; x: number; y: number }[]> =
     { position: 'RW', x: 80, y: 32 },
     { position: 'ST', x: 50, y: 15 },
   ],
+  '3-1-2': [
+    { position: 'GK', x: 50, y: 85 },
+    { position: 'LB', x: 22, y: 67 },
+    { position: 'CB', x: 50, y: 67 },
+    { position: 'RB', x: 78, y: 67 },
+    { position: 'CM', x: 50, y: 44 },
+    { position: 'CF', x: 32, y: 18 },
+    { position: 'ST', x: 68, y: 18 },
+  ],
 }
-const FORMATION_NAMES = ['4-3-3', '4-4-2', '3-4-3', '3-5-2', '4-2-3-1'] as const
+const FORMATION_NAMES = ['3-1-2', '4-3-3', '4-4-2', '3-4-3', '3-5-2', '4-2-3-1'] as const
 
 type Player = {
   id: string
@@ -89,7 +98,7 @@ export default function GamesScreen() {
   const [lineupPrompt, setLineupPrompt] = useState('')
   const [lineupLoading, setLineupLoading] = useState(false)
   const [lineupGenerated, setLineupGenerated] = useState(true)
-  const [activeFormation, setActiveFormation] = useState<string>('4-3-3')
+  const [activeFormation, setActiveFormation] = useState<string>('3-1-2')
   const [lineupBuilderOpen, setLineupBuilderOpen] = useState(false)
   const [lineupFocusPills, setLineupFocusPills] = useState<string[]>([])
   const [gameRunning, setGameRunning] = useState(false)
@@ -345,7 +354,7 @@ Slots: ${formationSlots}`
 
       {activeTab === 'schedule' ? (
         <ScrollView contentContainerStyle={styles.content}>
-          {groupEventsByMonth(events.length > 0 ? events : SEASON_SCHEDULE).map(({ month, events: monthEvents }) => (
+          {groupEventsByMonth(SEASON_SCHEDULE).map(({ month, events: monthEvents }) => (
             <View key={month}>
               <Text style={styles.monthHeader}>{month}</Text>
               <View style={styles.card}>
@@ -497,7 +506,12 @@ Slots: ${formationSlots}`
         </ScrollView>
       ) : activeTab === 'polls' ? (
         <ScrollView contentContainerStyle={styles.content}>
-          <View style={styles.card}>
+          <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#8B5CF6' }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+              <View style={{ backgroundColor: '#F3E8FF', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 }}>
+                <Text style={{ fontSize: 11, fontWeight: '800', color: '#7C3AED' }}>Active poll 🗳️</Text>
+              </View>
+            </View>
             <Text style={styles.pollClosesLabel}>Poll closes in 3 days</Text>
             <Text style={styles.pollQuestion}>What should our team cheer be?</Text>
             {pollOptions.map((option, i) => {
@@ -615,7 +629,7 @@ Slots: ${formationSlots}`
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
           {nextGame && (
-            <View style={[styles.gameCard, { backgroundColor: '#fff', borderWidth: 1.5, borderColor: '#E5E7EB', borderLeftWidth: 4, borderLeftColor: tc }]}>
+            <View style={[styles.gameCard, { backgroundColor: '#fff', borderWidth: 0.5, borderColor: '#eee', borderLeftWidth: 4, borderLeftColor: tc }]}>
               <Text style={[styles.gameCardLabel, { color: tc }]}>NEXT GAME</Text>
               <Text style={[styles.gameCardTitle, { color: '#111827' }]}>vs {nextGame.opponent}</Text>
               <Text style={[styles.gameCardSub, { color: '#6B7280' }]}>
@@ -625,7 +639,7 @@ Slots: ${formationSlots}`
           )}
 
           {/* Timer */}
-          <View style={[styles.timerCard, { backgroundColor: '#fff', borderWidth: 1.5, borderColor: '#E5E7EB', borderLeftWidth: 4, borderLeftColor: tc }]}>
+          <View style={[styles.timerCard, { backgroundColor: '#fff', borderWidth: 0.5, borderColor: '#eee', borderLeftWidth: 4, borderLeftColor: tc }]}>
             <View style={styles.timerRow}>
               <View>
                 <Text style={[styles.timerLabel, { color: '#6B7280' }]}>Half {period}</Text>
@@ -653,74 +667,23 @@ Slots: ${formationSlots}`
             </View>
           </View>
 
-          {/* AI Lineup Builder — collapsible */}
-          <TouchableOpacity
-            style={styles.lineupBuilderToggle}
-            onPress={() => setLineupBuilderOpen(v => !v)}
-            activeOpacity={0.8}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Text style={{ fontSize: 14 }}>⚡</Text>
-              <Text style={styles.lineupBuilderToggleText}>AI Lineup Builder</Text>
+          {/* Formation pills */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 10 }}>
+            <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 2 }}>
+              {FORMATION_NAMES.map(f => (
+                <TouchableOpacity
+                  key={f}
+                  onPress={() => setActiveFormation(f)}
+                  style={[styles.formationPill, activeFormation === f && { backgroundColor: tc, borderColor: tc }]}
+                >
+                  <Text style={[styles.formationPillText, { color: activeFormation === f ? '#fff' : '#555' }]}>{f}</Text>
+                </TouchableOpacity>
+              ))}
             </View>
-            <Text style={{ color: '#6B7280', fontSize: 13 }}>{lineupBuilderOpen ? '▲' : '▼'}</Text>
-          </TouchableOpacity>
-
-          {lineupBuilderOpen && (
-            <View style={[styles.card, { marginTop: 0, borderTopLeftRadius: 0, borderTopRightRadius: 0, borderTopWidth: 0 }]}>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
-                {['Strongest lineup', 'Equal playing time', 'Hide injured'].map(pill => {
-                  const active = lineupFocusPills.includes(pill)
-                  return (
-                    <TouchableOpacity
-                      key={pill}
-                      onPress={() => setLineupFocusPills(prev => active ? prev.filter(p => p !== pill) : [...prev, pill])}
-                      style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1.5, backgroundColor: active ? tc : '#F3F4F6', borderColor: active ? tc : '#E5E7EB' }}
-                    >
-                      <Text style={{ fontSize: 12, fontWeight: '600', color: active ? '#fff' : '#555' }}>{pill}</Text>
-                    </TouchableOpacity>
-                  )
-                })}
-              </View>
-              <TextInput
-                style={styles.promptInput}
-                placeholder={`e.g. #1 Sofia in goal all game, rotate everyone equally`}
-                placeholderTextColor="#bbb"
-                value={lineupPrompt}
-                onChangeText={setLineupPrompt}
-                multiline
-                numberOfLines={3}
-              />
-              <TouchableOpacity
-                style={[styles.generateBtn, { backgroundColor: (lineupPrompt.trim() || lineupFocusPills.length > 0) ? tc : '#E0E0E0' }]}
-                onPress={generateLineup}
-                disabled={lineupLoading || (!lineupPrompt.trim() && lineupFocusPills.length === 0)}
-              >
-                {lineupLoading
-                  ? <ActivityIndicator color="#fff" size="small" />
-                  : <Text style={styles.generateBtnText}>Generate lineup</Text>
-                }
-              </TouchableOpacity>
-            </View>
-          )}
+          </ScrollView>
 
           {viewMode === 'field' ? (
             <View style={styles.fieldContainer}>
-              {/* Formation selector */}
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 10 }}>
-                <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 2 }}>
-                  {FORMATION_NAMES.map(f => (
-                    <TouchableOpacity
-                      key={f}
-                      onPress={() => setActiveFormation(f)}
-                      style={[styles.formationPill, activeFormation === f && { backgroundColor: tc, borderColor: tc }]}
-                    >
-                      <Text style={[styles.formationPillText, { color: activeFormation === f ? '#fff' : '#555' }]}>{f}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </ScrollView>
-
               {selectedPlayer && (
                 <Text style={styles.fieldHint}>Tap another player to swap · tap same to deselect</Text>
               )}
@@ -831,6 +794,57 @@ Slots: ${formationSlots}`
                 </View>
               )}
             </>
+          )}
+
+          {/* AI Lineup Builder */}
+          <TouchableOpacity
+            style={styles.lineupBuilderToggle}
+            onPress={() => setLineupBuilderOpen(v => !v)}
+            activeOpacity={0.8}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Text style={{ fontSize: 14 }}>⚡</Text>
+              <Text style={styles.lineupBuilderToggleText}>AI Lineup Builder</Text>
+            </View>
+            <Text style={{ color: '#6B7280', fontSize: 13 }}>{lineupBuilderOpen ? '▲' : '▼'}</Text>
+          </TouchableOpacity>
+
+          {lineupBuilderOpen && (
+            <View style={[styles.card, { marginTop: 0, borderTopLeftRadius: 0, borderTopRightRadius: 0, borderTopWidth: 0 }]}>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+                {['Strongest lineup', 'Equal playing time', 'Hide injured'].map(pill => {
+                  const active = lineupFocusPills.includes(pill)
+                  return (
+                    <TouchableOpacity
+                      key={pill}
+                      onPress={() => setLineupFocusPills(prev => active ? prev.filter(p => p !== pill) : [...prev, pill])}
+                      style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1.5, backgroundColor: active ? tc : '#F3F4F6', borderColor: active ? tc : '#E5E7EB' }}
+                    >
+                      <Text style={{ fontSize: 12, fontWeight: '600', color: active ? '#fff' : '#555' }}>{pill}</Text>
+                    </TouchableOpacity>
+                  )
+                })}
+              </View>
+              <TextInput
+                style={styles.promptInput}
+                placeholder={`e.g. #1 Sofia in goal all game, rotate everyone equally`}
+                placeholderTextColor="#bbb"
+                value={lineupPrompt}
+                onChangeText={setLineupPrompt}
+                multiline
+                numberOfLines={3}
+              />
+              <TouchableOpacity
+                style={[styles.generateBtn, { backgroundColor: (lineupPrompt.trim() || lineupFocusPills.length > 0) ? tc : '#E0E0E0' }]}
+                onPress={generateLineup}
+                disabled={lineupLoading || (!lineupPrompt.trim() && lineupFocusPills.length === 0)}
+              >
+                {lineupLoading
+                  ? <ActivityIndicator color="#fff" size="small" />
+                  : <Text style={styles.generateBtnText}>Generate lineup</Text>
+                }
+              </TouchableOpacity>
+            </View>
           )}
 
           {/* Substitution plan */}
