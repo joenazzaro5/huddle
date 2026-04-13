@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
   center: { position: 'absolute', left: 0, right: 0, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 4 },
   ball: { fontSize: 12, opacity: 0.4 },
   wordmark: { fontSize: 20, fontWeight: '900', letterSpacing: -0.5 },
-  right: { flex: 1, alignItems: 'flex-end' },
+  right: { flex: 1, alignItems: 'flex-end', zIndex: 10 },
   roleChip: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
   roleText: { fontSize: 12, fontWeight: '700' },
 })
