@@ -399,7 +399,7 @@ export default function HomeScreen() {
                   </View>
                 )
               })}
-              <TouchableOpacity onPress={() => router.push('/team')}>
+              <TouchableOpacity onPress={() => router.push('/games')}>
                 <Text style={[styles.viewLink, { color: tc }]}>View full schedule →</Text>
               </TouchableOpacity>
             </View>
@@ -452,11 +452,11 @@ export default function HomeScreen() {
         {/* 6. Snack schedule */}
         <TouchableOpacity
           style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#F59E0B', padding: 0, overflow: 'hidden' }]}
-          onPress={() => router.push({ pathname: '/team', params: { tab: 'snacks' } })}
+          onPress={() => router.push({ pathname: '/games', params: { tab: 'snacks' } })}
           activeOpacity={0.85}
         >
           <View style={styles.snackCardHeader}>
-            <Text style={styles.cardLabel}>🥤 Snack schedule</Text>
+            <Text style={styles.cardLabel}>🍊 Snack schedule</Text>
           </View>
           <View style={styles.cardBody}>
             {snacks.slice(0, 2).map((item, i) => (
@@ -476,7 +476,7 @@ export default function HomeScreen() {
         {/* 7. Team poll */}
         <TouchableOpacity
           style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#8B5CF6', padding: 0, overflow: 'hidden' }]}
-          onPress={() => router.push({ pathname: '/team', params: { tab: 'polls' } })}
+          onPress={() => router.push({ pathname: '/games', params: { tab: 'polls' } })}
           activeOpacity={0.85}
         >
           <View style={styles.pollCardHeader}>

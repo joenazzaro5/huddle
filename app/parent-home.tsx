@@ -351,7 +351,7 @@ export default function ParentHomeScreen() {
                   </View>
                 )
               })}
-              <TouchableOpacity onPress={() => router.push('/parent-schedule')}>
+              <TouchableOpacity onPress={() => router.push('/parent-team')}>
                 <Text style={[styles.viewLink, { color: tc }]}>View schedule →</Text>
               </TouchableOpacity>
             </View>
@@ -397,7 +397,7 @@ export default function ParentHomeScreen() {
         {/* 5. Snack duty card */}
         <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#F59E0B', padding: 0, overflow: 'hidden' }]}>
           <View style={{ backgroundColor: '#FFFBEB', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 }}>
-            <Text style={styles.cardLabel}>Snack duty 🥤</Text>
+            <Text style={styles.cardLabel}>Snack duty 🍊</Text>
           </View>
           <View style={{ paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center' }}>
             <View style={{ flex: 1 }}>
@@ -421,7 +421,7 @@ export default function ParentHomeScreen() {
         {/* 6. Team poll preview */}
         <TouchableOpacity
           style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#8B5CF6', padding: 0, overflow: 'hidden' }]}
-          onPress={() => router.push('/team')}
+          onPress={() => router.push('/parent-team')}
           activeOpacity={0.85}
         >
           <View style={{ backgroundColor: '#F5F3FF', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 }}>

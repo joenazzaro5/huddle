@@ -299,7 +299,7 @@ export default function ParentTeamScreen() {
         <ScrollView contentContainerStyle={{ paddingTop: 12, paddingHorizontal: 16 }}>
           <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#F59E0B', padding: 0, overflow: 'hidden' }]}>
             <View style={{ backgroundColor: '#FFFBEB', paddingHorizontal: 16, paddingTop: 14, paddingBottom: 12 }}>
-              <Text style={{ fontSize: 17, fontWeight: '900', color: '#92400E', marginBottom: 2 }}>🥤 Snack duty</Text>
+              <Text style={{ fontSize: 17, fontWeight: '900', color: '#92400E', marginBottom: 2 }}>🍊 Snack duty</Text>
               <Text style={{ fontSize: 13, color: '#B45309', fontWeight: '500' }}>Who's bringing the goods?</Text>
             </View>
             <View style={{ paddingHorizontal: 16 }}>

@@ -67,13 +67,10 @@ function TabsLayout() {
           tabBarIcon: ({ focused }) => <TabIcon label="Team" focused={focused} />,
         }}
       />
-      {/* Parent schedule — parent only */}
+      {/* Parent schedule — hidden (Schedule lives in parent-team sub-tab) */}
       <Tabs.Screen
         name="parent-schedule"
-        options={{
-          href: isParent ? undefined : null,
-          tabBarIcon: ({ focused }) => <TabIcon label="Schedule" focused={focused} />,
-        }}
+        options={{ href: null }}
       />
       {/* Chat — both roles */}
       <Tabs.Screen

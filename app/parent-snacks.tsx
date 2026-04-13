@@ -21,7 +21,7 @@ export default function ParentSnacksScreen() {
 
   const handleClaim = (id: string, date: string) => {
     setClaimed(prev => ({ ...prev, [id]: true }))
-    Alert.alert('Claimed! 🥤', `You signed up for snacks on ${date}. The team will be notified!`)
+    Alert.alert('Claimed! 🍊', `You signed up for snacks on ${date}. The team will be notified!`)
   }
 
   return (
@@ -35,7 +35,7 @@ export default function ParentSnacksScreen() {
 
         {/* Fun header */}
         <View style={styles.funHeader}>
-          <Text style={styles.funEmoji}>🥤</Text>
+          <Text style={styles.funEmoji}>🍊</Text>
           <Text style={styles.funTitle}>Snack duty</Text>
           <Text style={styles.funSub}>Who's bringing the goods?</Text>
         </View>
