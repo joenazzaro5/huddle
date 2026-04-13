@@ -59,6 +59,14 @@ function TabsLayout() {
           tabBarIcon: ({ focused }) => <TabIcon label="Team" focused={focused} />,
         }}
       />
+      {/* Parent team — parent only */}
+      <Tabs.Screen
+        name="parent-team"
+        options={{
+          href: isParent ? undefined : null,
+          tabBarIcon: ({ focused }) => <TabIcon label="Team" focused={focused} />,
+        }}
+      />
       {/* Parent schedule — parent only */}
       <Tabs.Screen
         name="parent-schedule"

@@ -1,0 +1,468 @@
+import { useEffect, useState } from 'react'
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import { AppHeader } from '../lib/header'
+import { supabase } from '../lib/supabase'
+import { SEASON_SCHEDULE } from '../lib/season'
+import { useRole } from '../lib/roleStore'
+
+const tc = '#1A56DB'
+
+const STANDINGS = [
+  { team: 'Marin Cheetahs', w: 4, l: 1, d: 1, pts: 13, isUs: true },
+  { team: 'Tiburon FC',     w: 3, l: 2, d: 1, pts: 10 },
+  { team: 'Mill Valley SC', w: 3, l: 2, d: 0, pts: 9  },
+  { team: 'Novato United',  w: 2, l: 2, d: 2, pts: 8  },
+  { team: 'San Anselmo FC', w: 1, l: 4, d: 1, pts: 4  },
+  { team: 'Fairfax FC',     w: 0, l: 5, d: 1, pts: 1  },
+]
+
+export default function ParentTeamScreen() {
+  const { currentRole } = useRole()
+  const isCoach = currentRole === 'coach'
+
+  const [team, setTeam] = useState<any>(null)
+  const [players, setPlayers] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState<'schedule' | 'roster' | 'standings' | 'snacks' | 'polls'>('schedule')
+  const [rsvpMap, setRsvpMap] = useState<Record<string, 'yes' | 'no' | 'maybe'>>({})
+  const [currentUser, setCurrentUser] = useState<any>(null)
+  const [snackData, setSnackData] = useState([
+    { date: 'Apr 5',  type: 'Practice', name: 'Sarah M',      claimed: true  },
+    { date: 'Apr 12', type: 'Practice', name: null as string | null, claimed: false },
+    { date: 'Apr 19', type: 'Game',     name: 'Tom K',         claimed: true  },
+    { date: 'Apr 26', type: 'Practice', name: null as string | null, claimed: false },
+    { date: 'May 3',  type: 'Practice', name: 'Lisa R',        claimed: true  },
+    { date: 'May 10', type: 'Game',     name: null as string | null, claimed: false },
+  ])
+  const [pollOptions, setPollOptions] = useState([
+    { label: "Let's go, team!", votes: 12 },
+    { label: 'Hustle hard!',    votes: 8  },
+    { label: 'All day, every day!', votes: 5 },
+  ])
+  const [votedOption, setVotedOption] = useState<number | null>(null)
+
+  useEffect(() => { loadData() }, [])
+
+  const loadData = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    setCurrentUser(user)
+
+    const { data: memberships } = await supabase
+      .from('team_members')
+      .select('team:teams(*), role')
+      .eq('user_id', user.id)
+
+    const membership = memberships?.find(m => m.role === 'parent') ?? memberships?.[0]
+    if (!membership?.team) { setLoading(false); return }
+
+    const teamData = membership.team
+    setTeam(teamData)
+
+    const { data: playerData } = await supabase
+      .from('players')
+      .select('*')
+      .eq('team_id', teamData.id)
+      .eq('is_active', true)
+      .order('number', { ascending: true })
+    setPlayers(playerData ?? [])
+
+    setLoading(false)
+  }
+
+  const submitRsvp = async (eventId: string, status: 'yes' | 'no' | 'maybe') => {
+    setRsvpMap(prev => ({ ...prev, [eventId]: status }))
+    if (!currentUser || eventId.startsWith('ss-')) return
+    await supabase.from('rsvps').upsert(
+      { user_id: currentUser.id, event_id: eventId, status },
+      { onConflict: 'user_id,event_id' }
+    )
+  }
+
+  const groupByMonth = (events: typeof SEASON_SCHEDULE) => {
+    const groups: { month: string; events: typeof SEASON_SCHEDULE }[] = []
+    events.forEach(evt => {
+      const month = new Date(evt.starts_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+      const existing = groups.find(g => g.month === month)
+      if (existing) existing.events.push(evt)
+      else groups.push({ month, events: [evt] })
+    })
+    return groups
+  }
+
+  if (loading) return <View style={styles.loading}><ActivityIndicator color={tc} size="large" /></View>
+
+  return (
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <AppHeader teamColor={tc} teamName={team?.name} />
+
+      {/* Sub-tab bar */}
+      <View style={{ height: 44, backgroundColor: '#fff', borderBottomWidth: 0.5, borderBottomColor: '#eee' }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingLeft: 0 }}>
+          {(['schedule', 'roster', 'standings', 'snacks', 'polls'] as const).map(tab => {
+            const labels = { schedule: 'Schedule', roster: 'Roster', standings: 'Standings', snacks: 'Snacks', polls: 'Polls' }
+            const isActive = activeTab === tab
+            return (
+              <TouchableOpacity
+                key={tab}
+                style={{ paddingHorizontal: 16, paddingVertical: 12 }}
+                onPress={() => setActiveTab(tab)}
+              >
+                <Text style={{ fontSize: 13, color: isActive ? tc : '#999', fontWeight: isActive ? '700' : '500' }}>
+                  {labels[tab]}
+                </Text>
+                {isActive && <View style={{ height: 2.5, backgroundColor: tc, borderRadius: 2, marginTop: 4 }} />}
+              </TouchableOpacity>
+            )
+          })}
+        </ScrollView>
+      </View>
+
+      {/* ── Schedule ─────────────────────────────────────────────── */}
+      {activeTab === 'schedule' && (
+        <ScrollView contentContainerStyle={styles.content}>
+          {groupByMonth(SEASON_SCHEDULE).map(({ month, events }) => (
+            <View key={month}>
+              <Text style={styles.monthHeader}>{month}</Text>
+              <View style={styles.card}>
+                {events.map((event, i) => {
+                  const d = new Date(event.starts_at)
+                  const isGame = event.type === 'game'
+                  const isPictureDay = event.type === 'picture_day'
+                  const isParty = event.type === 'party'
+                  const typeColor = isGame ? '#FF8C42' : isPictureDay ? '#9C27B0' : isParty ? '#7C3AED' : tc
+                  const typeLabel = isGame ? '⚽ Game' : isPictureDay ? '📸 Picture Day' : isParty ? '🎉 Party' : '🏃 Practice'
+                  const rsvp = rsvpMap[event.id]
+                  const rsvpColors: Record<string, string> = { yes: '#22C55E', no: '#EF4444', maybe: '#F59E0B' }
+                  const rsvpLabels: Record<string, string> = { yes: 'Going', no: 'Out', maybe: 'Maybe' }
+                  return (
+                    <View
+                      key={event.id}
+                      style={[
+                        styles.scheduleRow,
+                        i % 2 === 1 && styles.scheduleRowAlt,
+                        i < events.length - 1 && styles.scheduleBorder,
+                      ]}
+                    >
+                      <View style={styles.scheduleDateCol}>
+                        <Text style={styles.scheduleDay}>{d.getDate()}</Text>
+                        <Text style={styles.scheduleDOW}>{d.toLocaleDateString('en-US', { weekday: 'short' })}</Text>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.scheduleType, { color: typeColor }]}>{typeLabel}</Text>
+                        <Text style={styles.scheduleTitle}>
+                          {isGame
+                            ? `vs ${event.opponent}${event.home != null ? (event.home ? ' · Home' : ' · Away') : ''}`
+                            : (event.focus ?? event.title ?? event.location ?? '')}
+                        </Text>
+                      </View>
+                      <View style={{ alignItems: 'flex-end', gap: 4 }}>
+                        <Text style={styles.scheduleTime}>
+                          {d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                        </Text>
+                        <TouchableOpacity
+                          style={[
+                            styles.rsvpChip,
+                            rsvp && { backgroundColor: rsvpColors[rsvp] + '22', borderColor: rsvpColors[rsvp] },
+                          ]}
+                          onPress={() => {
+                            const next: 'yes' | 'no' | 'maybe' = rsvp === 'yes' ? 'no' : rsvp === 'no' ? 'maybe' : 'yes'
+                            submitRsvp(event.id, next)
+                          }}
+                        >
+                          <Text style={[styles.rsvpChipText, rsvp && { color: rsvpColors[rsvp] }]}>
+                            {rsvp ? rsvpLabels[rsvp] : 'RSVP'}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  )
+                })}
+              </View>
+            </View>
+          ))}
+        </ScrollView>
+      )}
+
+      {/* ── Roster ───────────────────────────────────────────────── */}
+      {activeTab === 'roster' && (
+        <ScrollView contentContainerStyle={styles.content}>
+          <View style={[styles.teamCard, { backgroundColor: tc }]}>
+            <Text style={styles.teamCardName}>{team?.name}</Text>
+            <Text style={styles.teamCardSub}>{team?.age_group} · {team?.gender} · {players.length} players</Text>
+          </View>
+
+          <View style={{ backgroundColor: '#EEF4FF', borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12, marginBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 0.5, borderColor: '#eee' }}>
+            <Text style={{ fontSize: 18 }}>🏆</Text>
+            <Text style={{ fontSize: 14, fontWeight: '800', color: tc }}>Team record:</Text>
+            <Text style={{ fontSize: 14, fontWeight: '700', color: '#111' }}>4W · 1L · 1D</Text>
+          </View>
+
+          <View style={styles.card}>
+            <Text style={styles.cardLabel}>Players · {players.length}</Text>
+            {players.map((player, i) => {
+              const firstPos = (player.positions?.[0] ?? '').toUpperCase()
+              const posColor = firstPos === 'GK' ? '#F59E0B'
+                : ['CB', 'LB', 'RB', 'LWB', 'RWB'].includes(firstPos) ? tc
+                : ['CM', 'LM', 'RM', 'DM', 'AM', 'CAM', 'CDM'].includes(firstPos) ? '#10B981'
+                : firstPos ? '#FF6B35' : null
+              return (
+                <View
+                  key={player.id}
+                  style={[styles.rosterRow, i < players.length - 1 && styles.rosterBorder]}
+                >
+                  <View style={[styles.numBadge, { backgroundColor: tc + '20' }]}>
+                    <Text style={[styles.numText, { color: tc }]}>{player.number ?? '—'}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.rosterName}>{player.name}</Text>
+                    {player.positions?.length > 0 && (
+                      <Text style={styles.rosterPos}>{player.positions.join(' · ')}</Text>
+                    )}
+                  </View>
+                  {posColor ? (
+                    <View style={{ backgroundColor: posColor + '22', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
+                      <Text style={{ fontSize: 10, fontWeight: '800', color: posColor }}>{firstPos}</Text>
+                    </View>
+                  ) : null}
+                </View>
+              )
+            })}
+          </View>
+        </ScrollView>
+      )}
+
+      {/* ── Standings ────────────────────────────────────────────── */}
+      {activeTab === 'standings' && (
+        <ScrollView contentContainerStyle={styles.content}>
+          <View style={styles.card}>
+            <Text style={styles.cardLabel}>League standings</Text>
+            <View style={styles.standingsHeaderRow}>
+              <Text style={[styles.standingsCell, { flex: 1 }]}>Team</Text>
+              <Text style={styles.standingsColHdr}>W</Text>
+              <Text style={styles.standingsColHdr}>L</Text>
+              <Text style={styles.standingsColHdr}>D</Text>
+              <Text style={[styles.standingsColHdr, { color: tc }]}>Pts</Text>
+            </View>
+            {STANDINGS.map((row, i) => (
+              <View
+                key={i}
+                style={[
+                  styles.standingsRow,
+                  row.isUs && styles.standingsRowUs,
+                  i < STANDINGS.length - 1 && styles.standingsBorder,
+                ]}
+              >
+                <Text style={[styles.standingsTeamName, row.isUs && { fontWeight: '800', color: tc }]} numberOfLines={1}>
+                  {row.isUs ? '⭐ ' : ''}{row.team}
+                </Text>
+                <Text style={styles.standingsVal}>{row.w}</Text>
+                <Text style={styles.standingsVal}>{row.l}</Text>
+                <Text style={styles.standingsVal}>{row.d}</Text>
+                <Text style={[styles.standingsVal, { fontWeight: '800', color: tc }]}>{row.pts}</Text>
+              </View>
+            ))}
+          </View>
+
+          <Text style={[styles.cardLabel, { marginBottom: 8, marginLeft: 2 }]}>Season stats</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 12 }}>
+            {[
+              { label: 'Goals',        value: '12',  color: tc        },
+              { label: 'Against',      value: '6',   color: '#EF4444' },
+              { label: 'Clean sheets', value: '2',   color: '#10B981' },
+              { label: 'Win rate',     value: '67%', color: '#F59E0B' },
+            ].map((stat, i) => (
+              <View key={i} style={[styles.statCard, { borderTopColor: stat.color, width: '48%', flexShrink: 1 }]}>
+                <Text style={[styles.statCardValue, { color: stat.color }]}>{stat.value}</Text>
+                <Text style={styles.statCardLabel}>{stat.label}</Text>
+              </View>
+            ))}
+          </View>
+
+          <View style={[styles.card, { paddingVertical: 12 }]}>
+            <Text style={[styles.cardLabel, { marginBottom: 10 }]}>Recent results</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              {['W', 'W', 'L', 'W', 'W'].map((r, i) => (
+                <View key={i} style={[styles.resultDot, { backgroundColor: r === 'W' ? '#10B981' : '#EF4444' }]}>
+                  <Text style={styles.resultDotText}>{r}</Text>
+                </View>
+              ))}
+              <Text style={{ fontSize: 12, color: '#aaa', marginLeft: 4 }}>4W · 1L this season</Text>
+            </View>
+          </View>
+        </ScrollView>
+      )}
+
+      {/* ── Snacks ───────────────────────────────────────────────── */}
+      {activeTab === 'snacks' && (
+        <ScrollView contentContainerStyle={{ paddingTop: 12, paddingHorizontal: 16 }}>
+          <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#F59E0B', padding: 0, overflow: 'hidden' }]}>
+            <View style={{ backgroundColor: '#FFFBEB', paddingHorizontal: 16, paddingTop: 14, paddingBottom: 12 }}>
+              <Text style={{ fontSize: 17, fontWeight: '900', color: '#92400E', marginBottom: 2 }}>🥤 Snack duty</Text>
+              <Text style={{ fontSize: 13, color: '#B45309', fontWeight: '500' }}>Who's bringing the goods?</Text>
+            </View>
+            <View style={{ paddingHorizontal: 16 }}>
+              {snackData.map((item, i) => (
+                <View key={i} style={[styles.snackListRow, i < snackData.length - 1 && styles.snackListBorder]}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.snackListDate}>{item.date} · {item.type}</Text>
+                    {item.claimed ? (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                        <Text style={{ fontSize: 14, fontWeight: '700', color: '#059669' }}>✓ {item.name}</Text>
+                        <Text style={{ fontSize: 14 }}>🎉</Text>
+                      </View>
+                    ) : (
+                      <Text style={{ fontSize: 13, color: '#888', marginTop: 2 }}>Nobody yet…</Text>
+                    )}
+                  </View>
+                  {!item.claimed && (
+                    <TouchableOpacity
+                      style={styles.snackClaimBtn}
+                      onPress={() => Alert.alert(
+                        'Sign up for snacks',
+                        `Claim snack duty for ${item.date}?`,
+                        [
+                          { text: 'Cancel', style: 'cancel' },
+                          {
+                            text: 'I got it! 🙌',
+                            onPress: () => setSnackData(prev => prev.map((s, idx) =>
+                              idx === i ? { ...s, claimed: true, name: 'You ✓' } : s
+                            )),
+                          },
+                        ]
+                      )}
+                      activeOpacity={0.75}
+                    >
+                      <Text style={styles.snackClaimBtnText}>Claim it! →</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              ))}
+            </View>
+            <View style={{ paddingHorizontal: 16, paddingVertical: 14, borderTopWidth: 0.5, borderTopColor: '#FDE68A' }}>
+              <Text style={{ fontSize: 13, color: '#92400E', fontWeight: '600', textAlign: 'center' }}>
+                Remember: orange slices &gt; juice boxes 🍊
+              </Text>
+            </View>
+          </View>
+        </ScrollView>
+      )}
+
+      {/* ── Polls ────────────────────────────────────────────────── */}
+      {activeTab === 'polls' && (
+        <ScrollView contentContainerStyle={styles.content}>
+          <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#8B5CF6' }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+              <View style={{ backgroundColor: '#F3E8FF', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 }}>
+                <Text style={{ fontSize: 11, fontWeight: '800', color: '#7C3AED' }}>Active poll 🗳️</Text>
+              </View>
+            </View>
+            <Text style={styles.pollClosesLabel}>Poll closes in 3 days</Text>
+            <Text style={styles.pollQuestion}>What should our team cheer be?</Text>
+            {pollOptions.map((option, i) => {
+              const total = pollOptions.reduce((sum, o) => sum + o.votes, 0)
+              const pct = total > 0 ? option.votes / total : 0
+              const isVoted = votedOption === i
+              return (
+                <TouchableOpacity
+                  key={i}
+                  style={[
+                    styles.pollRow,
+                    isVoted && { borderLeftWidth: 3, borderLeftColor: tc, backgroundColor: '#EEF4FF', borderRadius: 10, paddingLeft: 10 },
+                  ]}
+                  onPress={() => {
+                    setPollOptions(prev => prev.map((o, idx) => {
+                      if (idx === i) return { ...o, votes: o.votes + 1 }
+                      if (idx === votedOption) return { ...o, votes: Math.max(0, o.votes - 1) }
+                      return o
+                    }))
+                    setVotedOption(i)
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.pollLabelRow}>
+                    <Text style={[styles.pollOptionLabel, { fontWeight: isVoted ? '700' : '500', color: isVoted ? tc : '#1a1a1a' }]}>
+                      {option.label}
+                    </Text>
+                    <Text style={styles.pollVoteCount}>{option.votes}</Text>
+                  </View>
+                  <View style={styles.pollBarBg}>
+                    <View style={[styles.pollBarFill, { width: `${Math.round(pct * 100)}%` as any, backgroundColor: isVoted ? tc : tc + '40' }]} />
+                  </View>
+                </TouchableOpacity>
+              )
+            })}
+            {isCoach && (
+              <TouchableOpacity style={[styles.newPollBtn, { borderColor: tc }]}>
+                <Text style={[styles.newPollBtnText, { color: tc }]}>Create new poll +</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </ScrollView>
+      )}
+    </SafeAreaView>
+  )
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#F7F7F5' },
+  loading: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F7F7F5' },
+  content: { paddingTop: 12, paddingHorizontal: 16, paddingBottom: 32 },
+  monthHeader: { fontSize: 12, fontWeight: '700', color: '#aaa', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8, marginTop: 4 },
+  card: { backgroundColor: '#fff', borderRadius: 18, padding: 16, marginBottom: 12, borderWidth: 0.5, borderColor: '#eee' },
+  cardLabel: { fontSize: 10, fontWeight: '700', color: '#aaa', textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 8 },
+  // Schedule
+  scheduleRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, gap: 12 },
+  scheduleRowAlt: { backgroundColor: '#FAFAFA' },
+  scheduleBorder: { borderBottomWidth: 0.5, borderBottomColor: '#f0f0f0' },
+  scheduleDateCol: { width: 32, alignItems: 'center' },
+  scheduleDay: { fontSize: 16, fontWeight: '800', color: '#1a1a1a' },
+  scheduleDOW: { fontSize: 10, color: '#aaa', fontWeight: '600', textTransform: 'uppercase' },
+  scheduleType: { fontSize: 11, fontWeight: '700', marginBottom: 1 },
+  scheduleTitle: { fontSize: 13, fontWeight: '600', color: '#1a1a1a' },
+  scheduleTime: { fontSize: 12, fontWeight: '600', color: '#555' },
+  rsvpChip: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1, borderColor: '#ddd', backgroundColor: '#f5f5f5' },
+  rsvpChipText: { fontSize: 11, fontWeight: '700', color: '#aaa' },
+  // Roster
+  teamCard: { borderRadius: 20, padding: 18, marginBottom: 12 },
+  teamCardName: { fontSize: 20, fontWeight: '800', color: '#fff', marginBottom: 4 },
+  teamCardSub: { fontSize: 13, color: 'rgba(255,255,255,0.8)' },
+  rosterRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 },
+  rosterBorder: { borderBottomWidth: 0.5, borderBottomColor: '#f5f5f5' },
+  rosterName: { fontSize: 15, fontWeight: '600', color: '#1a1a1a' },
+  rosterPos: { fontSize: 12, color: '#888', marginTop: 1 },
+  numBadge: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  numText: { fontSize: 13, fontWeight: '800' },
+  // Standings
+  standingsHeaderRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: '#E5E7EB', marginBottom: 2 },
+  standingsColHdr: { fontSize: 11, fontWeight: '700', color: '#aaa', width: 30, textAlign: 'center' },
+  standingsRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10 },
+  standingsRowUs: { backgroundColor: '#EEF4FF', borderRadius: 8, paddingHorizontal: 6, marginHorizontal: -6 },
+  standingsBorder: { borderBottomWidth: 0.5, borderBottomColor: '#f5f5f5' },
+  standingsTeamName: { flex: 1, fontSize: 13, fontWeight: '600', color: '#1a1a1a' },
+  standingsCell: { fontSize: 13, fontWeight: '600', color: '#1a1a1a' },
+  standingsVal: { width: 30, textAlign: 'center', fontSize: 13, fontWeight: '600', color: '#555' },
+  statCard: { backgroundColor: '#fff', borderRadius: 14, padding: 16, borderWidth: 0.5, borderColor: '#eee', borderTopWidth: 3, alignItems: 'center' },
+  statCardValue: { fontSize: 30, fontWeight: '900', marginBottom: 4 },
+  statCardLabel: { fontSize: 11, fontWeight: '600', color: '#888', textAlign: 'center' },
+  resultDot: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  resultDotText: { fontSize: 12, fontWeight: '800', color: '#fff' },
+  // Snacks
+  snackListRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14 },
+  snackListBorder: { borderBottomWidth: 0.5, borderBottomColor: '#FDE68A' },
+  snackListDate: { fontSize: 11, color: '#aaa', fontWeight: '600', marginBottom: 1 },
+  snackClaimBtn: { backgroundColor: '#F59E0B', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 },
+  snackClaimBtnText: { fontSize: 13, fontWeight: '800', color: '#fff' },
+  // Polls
+  pollClosesLabel: { fontSize: 11, fontWeight: '700', color: '#888', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 },
+  pollQuestion: { fontSize: 16, fontWeight: '800', color: '#1a1a1a', marginBottom: 14 },
+  pollRow: { marginBottom: 12, paddingVertical: 4 },
+  pollLabelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
+  pollOptionLabel: { fontSize: 14 },
+  pollVoteCount: { fontSize: 12, color: '#aaa', fontWeight: '600' },
+  pollBarBg: { height: 6, backgroundColor: '#f0f0f0', borderRadius: 3, overflow: 'hidden' },
+  pollBarFill: { height: 6, borderRadius: 3 },
+  newPollBtn: { borderRadius: 12, paddingVertical: 11, alignItems: 'center', borderWidth: 1.5, marginTop: 8 },
+  newPollBtnText: { fontSize: 13, fontWeight: '700' },
+})
