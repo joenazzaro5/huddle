@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native'
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, Linking } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { AppHeader } from '../lib/header'
@@ -42,6 +42,9 @@ export default function ParentHomeScreen() {
   const [loading, setLoading] = useState(true)
   const [practiceStreak, setPracticeStreak] = useState(0)
   const [practicedDays, setPracticedDays] = useState<number[]>([])
+  const [watchedToday, setWatchedToday] = useState(false)
+  const [practicedToday, setPracticedToday] = useState(false)
+  const [snackSignedUp, setSnackSignedUp] = useState(false)
 
   useEffect(() => { loadData() }, [])
 
@@ -247,6 +250,37 @@ export default function ParentHomeScreen() {
           </View>
         )}
 
+        {/* Drill of the day */}
+        <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#F59E0B', padding: 0, overflow: 'hidden' }]}>
+          <View style={{ backgroundColor: '#FFFBEB', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 }}>
+            <Text style={styles.cardLabel}>Drill of the day 🎯</Text>
+          </View>
+          <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 14 }}>
+            <Text style={{ fontSize: 16, fontWeight: '800', color: '#1a1a1a', marginBottom: 6 }}>Cone Weaving</Text>
+            <View style={{ flexDirection: 'row', gap: 6, marginBottom: 8 }}>
+              <View style={{ backgroundColor: '#F0F4FF', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
+                <Text style={{ fontSize: 10, fontWeight: '700', color: tc }}>Dribbling</Text>
+              </View>
+              <View style={{ backgroundColor: '#F0FDF4', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
+                <Text style={{ fontSize: 10, fontWeight: '700', color: '#059669' }}>Beginner</Text>
+              </View>
+              <View style={{ backgroundColor: '#F5F3FF', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
+                <Text style={{ fontSize: 10, fontWeight: '700', color: '#7C3AED' }}>10 min</Text>
+              </View>
+            </View>
+            <Text style={{ fontSize: 13, color: '#555', lineHeight: 18, marginBottom: 12 }}>
+              Set up 6 cones in a line. Dribble through using both feet. Focus on soft touches.
+            </Text>
+            <TouchableOpacity
+              style={{ backgroundColor: '#F59E0B', borderRadius: 10, paddingVertical: 10, alignItems: 'center' }}
+              onPress={() => Linking.openURL('https://youtu.be/RukcQggHAZU')}
+              activeOpacity={0.8}
+            >
+              <Text style={{ fontSize: 13, fontWeight: '700', color: '#fff' }}>Watch drill →</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
         {/* 2. Practice plan card — full plan with streak */}
         <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: tc, padding: 0, overflow: 'hidden' }]}>
           <View style={{ backgroundColor: '#F0F4FF', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -302,24 +336,36 @@ export default function ParentHomeScreen() {
             </Text>
             <View style={{ flexDirection: 'row', gap: 10 }}>
               <TouchableOpacity
-                style={{ flex: 1, backgroundColor: '#EEF4FF', borderRadius: 12, paddingVertical: 11, alignItems: 'center' }}
+                style={{ flex: 1, backgroundColor: watchedToday ? '#F0FDF4' : '#EEF4FF', borderRadius: 12, paddingVertical: 11, alignItems: 'center' }}
                 onPress={() => {
-                  setPracticeStreak(s => s + 1)
-                  setPracticedDays(prev => prev.includes(todayDayIdx) ? prev : [...prev, todayDayIdx])
+                  if (!watchedToday) {
+                    setWatchedToday(true)
+                    setPracticeStreak(s => s + 1)
+                    setPracticedDays(prev => prev.includes(todayDayIdx) ? prev : [...prev, todayDayIdx])
+                  }
                 }}
-                activeOpacity={0.75}
+                disabled={watchedToday}
+                activeOpacity={watchedToday ? 1 : 0.75}
               >
-                <Text style={{ fontSize: 12, fontWeight: '700', color: tc }}>✓ I watched a drill</Text>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: watchedToday ? '#059669' : tc }}>
+                  {watchedToday ? '✓ Watched' : 'I watched a drill'}
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={{ flex: 1, backgroundColor: tc, borderRadius: 12, paddingVertical: 11, alignItems: 'center' }}
+                style={{ flex: 1, backgroundColor: practicedToday ? '#F0FDF4' : tc, borderRadius: 12, paddingVertical: 11, alignItems: 'center' }}
                 onPress={() => {
-                  setPracticeStreak(s => s + 1)
-                  setPracticedDays(prev => prev.includes(todayDayIdx) ? prev : [...prev, todayDayIdx])
+                  if (!practicedToday) {
+                    setPracticedToday(true)
+                    setPracticeStreak(s => s + 1)
+                    setPracticedDays(prev => prev.includes(todayDayIdx) ? prev : [...prev, todayDayIdx])
+                  }
                 }}
-                activeOpacity={0.75}
+                disabled={practicedToday}
+                activeOpacity={practicedToday ? 1 : 0.75}
               >
-                <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }}>✓ I practiced today</Text>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: practicedToday ? '#059669' : '#fff' }}>
+                  {practicedToday ? '✓ Practiced' : 'I practiced today'}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -355,46 +401,7 @@ export default function ParentHomeScreen() {
           </View>
         )}
 
-        {/* 4. Roster card */}
-        <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#1A56DB', padding: 0, overflow: 'hidden' }]}>
-          <View style={{ backgroundColor: '#F0F4FF', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 }}>
-            <Text style={styles.cardLabel}>The squad 👟</Text>
-          </View>
-          <View style={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: 12 }}>
-            {players.length === 0 ? (
-              <Text style={{ fontSize: 13, color: '#aaa', marginTop: 8 }}>Roster not available yet</Text>
-            ) : (
-              players.slice(0, 6).map((player, i) => (
-                <View
-                  key={player.id ?? i}
-                  style={[styles.rosterRow, i < Math.min(players.length, 6) - 1 && styles.rosterBorder]}
-                >
-                  <View style={[styles.rosterNumBadge, { backgroundColor: tc + '18' }]}>
-                    <Text style={[styles.rosterNum, { color: tc }]}>{player.number ?? player.jersey_number ?? '—'}</Text>
-                  </View>
-                  <Text style={styles.rosterName}>
-                    {player.name ?? `${player.first_name ?? ''} ${player.last_name ?? ''}`.trim()}
-                  </Text>
-                  {(player.positions?.[0] ?? player.position) ? (
-                    <Text style={styles.rosterPos}>
-                      {player.positions?.[0] ?? player.position}
-                    </Text>
-                  ) : null}
-                </View>
-              ))
-            )}
-            {players.length > 6 && (
-              <Text style={{ fontSize: 12, color: '#aaa', marginTop: 8 }}>
-                +{players.length - 6} more players
-              </Text>
-            )}
-            <TouchableOpacity onPress={() => router.push('/team')}>
-              <Text style={[styles.viewLink, { color: tc }]}>View full roster →</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* 5. Standings card */}
+        {/* 4. Standings card */}
         <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#F59E0B', padding: 0, overflow: 'hidden' }]}>
           <View style={{ backgroundColor: '#FFFBEB', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 }}>
             <Text style={styles.cardLabel}>Division standings 🏆</Text>
@@ -430,22 +437,34 @@ export default function ParentHomeScreen() {
           </View>
         </View>
 
-        {/* 6. Snack duty card */}
+        {/* 5. Snack duty card */}
         <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#F59E0B', padding: 0, overflow: 'hidden' }]}>
           <View style={{ backgroundColor: '#FFFBEB', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 }}>
-            <Text style={styles.cardLabel}>🥤 Snack schedule</Text>
+            <Text style={styles.cardLabel}>Snack duty 🥤</Text>
           </View>
-          <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
-            <Text style={{ fontSize: 14, fontWeight: '600', color: '#1a1a1a' }}>
-              You're on snacks for Apr 26 🥤
-            </Text>
-            <Text style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
-              Bring enough for {'\u007E'}12 players + coaches
-            </Text>
+          <View style={{ paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center' }}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 13, fontWeight: '600', color: '#1a1a1a' }}>Apr 26 · Practice</Text>
+              <Text style={{ fontSize: 12, color: snackSignedUp ? '#059669' : '#888', marginTop: 3, fontWeight: snackSignedUp ? '600' : '400' }}>
+                {snackSignedUp ? '✓ You signed up!' : 'Nobody signed up yet'}
+              </Text>
+            </View>
+            {!snackSignedUp && (
+              <TouchableOpacity
+                style={{ backgroundColor: '#F59E0B', borderRadius: 10, paddingHorizontal: 16, paddingVertical: 8 }}
+                onPress={() => {
+                  setSnackSignedUp(true)
+                  Alert.alert('Signed up! 🥤', "You're signed up for snacks on Apr 26! The team will be notified.")
+                }}
+                activeOpacity={0.8}
+              >
+                <Text style={{ fontSize: 13, fontWeight: '700', color: '#fff' }}>Sign up →</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
 
-        {/* 5. Team poll preview */}
+        {/* 6. Team poll preview */}
         <TouchableOpacity
           style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#8B5CF6', padding: 0, overflow: 'hidden' }]}
           onPress={() => router.push('/team')}
@@ -465,7 +484,41 @@ export default function ParentHomeScreen() {
           </View>
         </TouchableOpacity>
 
-        {/* 6. Chat preview */}
+        {/* 7. The Squad */}
+        <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#1A56DB', padding: 0, overflow: 'hidden' }]}>
+          <View style={{ backgroundColor: '#F0F4FF', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 }}>
+            <Text style={styles.cardLabel}>The squad 👟</Text>
+          </View>
+          <View style={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: 12 }}>
+            {players.length === 0 ? (
+              <Text style={{ fontSize: 13, color: '#aaa', marginTop: 8 }}>Roster not available yet</Text>
+            ) : (
+              players.slice(0, 3).map((player, i) => (
+                <View
+                  key={player.id ?? i}
+                  style={[styles.rosterRow, i < Math.min(players.length, 3) - 1 && styles.rosterBorder]}
+                >
+                  <View style={[styles.rosterNumBadge, { backgroundColor: tc + '18' }]}>
+                    <Text style={[styles.rosterNum, { color: tc }]}>{player.number ?? player.jersey_number ?? '—'}</Text>
+                  </View>
+                  <Text style={styles.rosterName}>
+                    {player.name ?? `${player.first_name ?? ''} ${player.last_name ?? ''}`.trim()}
+                  </Text>
+                  {(player.positions?.[0] ?? player.position) ? (
+                    <Text style={styles.rosterPos}>
+                      {player.positions?.[0] ?? player.position}
+                    </Text>
+                  ) : null}
+                </View>
+              ))
+            )}
+            <TouchableOpacity onPress={() => router.push('/team')}>
+              <Text style={[styles.viewLink, { color: tc }]}>View full roster →</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* 8. Chat preview */}
         {lastMessage && (
           <TouchableOpacity
             style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#10B981', padding: 0, overflow: 'hidden' }]}
