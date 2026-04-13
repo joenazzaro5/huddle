@@ -410,7 +410,7 @@ Slots: ${formationSlots}`
 
           <View style={{ backgroundColor: '#EEF4FF', borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12, marginBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 0.5, borderColor: '#eee' }}>
             <Text style={{ fontSize: 18 }}>🏆</Text>
-            <Text style={{ fontSize: 14, fontWeight: '800', color: tc }}>Team record:</Text>
+            <Text style={{ fontSize: 14, fontWeight: '700', color: tc }}>Team record:</Text>
             <Text style={{ fontSize: 14, fontWeight: '700', color: '#111' }}>4W · 1L · 1D</Text>
           </View>
 
@@ -443,7 +443,7 @@ Slots: ${formationSlots}`
                   </View>
                   {posColor ? (
                     <View style={{ backgroundColor: posColor + '22', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, marginRight: 6 }}>
-                      <Text style={{ fontSize: 10, fontWeight: '800', color: posColor }}>{firstPos}</Text>
+                      <Text style={{ fontSize: 10, fontWeight: '700', color: posColor }}>{firstPos}</Text>
                     </View>
                   ) : null}
                   <Text style={styles.chevron}>›</Text>
@@ -567,11 +567,11 @@ Slots: ${formationSlots}`
             </View>
             {STANDINGS.map((row, i) => (
               <View key={i} style={[styles.standingsRow, row.isUs && styles.standingsRowUs, i < STANDINGS.length - 1 && styles.standingsBorder]}>
-                <Text style={[styles.standingsTeamName, row.isUs && { fontWeight: '800', color: tc }]} numberOfLines={1}>{row.team}</Text>
+                <Text style={[styles.standingsTeamName, row.isUs && { fontWeight: '700', color: tc }]} numberOfLines={1}>{row.team}</Text>
                 <Text style={styles.standingsVal}>{row.w}</Text>
                 <Text style={styles.standingsVal}>{row.l}</Text>
                 <Text style={styles.standingsVal}>{row.d}</Text>
-                <Text style={[styles.standingsVal, { fontWeight: '800', color: tc }]}>{row.pts}</Text>
+                <Text style={[styles.standingsVal, { fontWeight: '700', color: tc }]}>{row.pts}</Text>
               </View>
             ))}
           </View>
@@ -618,7 +618,7 @@ Slots: ${formationSlots}`
                 <View style={{ backgroundColor: '#F3F4F6', borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 }}>
                   <Text style={{ fontSize: 10, fontWeight: '700', color: '#555' }}>{p.pos}</Text>
                 </View>
-                <Text style={{ fontSize: 20, fontWeight: '900', color: tc, minWidth: 24, textAlign: 'right' }}>{p.stat}</Text>
+                <Text style={{ fontSize: 20, fontWeight: '700', color: tc, minWidth: 24, textAlign: 'right' }}>{p.stat}</Text>
                 <Text style={{ fontSize: 12, color: '#888', minWidth: 80 }}>{p.type}</Text>
               </View>
             ))}
@@ -953,8 +953,8 @@ const styles = StyleSheet.create({
   teamCardName: { fontSize: 20, fontWeight: '800', color: '#fff', marginBottom: 4 },
   teamCardSub: { fontSize: 13, color: 'rgba(255,255,255,0.8)' },
   card: { backgroundColor: '#fff', borderRadius: 18, padding: 16, marginBottom: 12, borderWidth: 0.5, borderColor: '#eee' },
-  cardLabel: { fontSize: 10, fontWeight: '700', color: '#aaa', textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 8 },
-  cardTitle: { fontSize: 15, fontWeight: '800', color: '#1a1a1a' },
+  cardLabel: { fontSize: 10, fontWeight: '700', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 8 },
+  cardTitle: { fontSize: 16, fontWeight: '700', color: '#111827' },
   cardSub: { fontSize: 12, color: '#888' },
   rosterRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 },
   rosterBorder: { borderBottomWidth: 0.5, borderBottomColor: '#f5f5f5' },
@@ -999,23 +999,23 @@ const styles = StyleSheet.create({
   fieldPlayerName: { fontSize: 8, fontWeight: '600', maxWidth: 48 },
   fieldPlayerMins: { fontSize: 8 },
   benchArea: { backgroundColor: '#fff', borderRadius: 14, padding: 12, borderWidth: 0.5, borderColor: '#eee' },
-  benchLabel: { fontSize: 10, fontWeight: '700', color: '#aaa', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
+  benchLabel: { fontSize: 10, fontWeight: '700', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 8 },
   benchPlayer: { alignItems: 'center', width: 64, borderRadius: 10, padding: 8, backgroundColor: '#fff', borderWidth: 1, borderColor: '#E5E7EB' },
   benchPlayerNum: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
-  benchPlayerNumText: { fontSize: 13, fontWeight: '800' },
+  benchPlayerNumText: { fontSize: 13, fontWeight: '700' },
   benchPlayerName: { fontSize: 10, fontWeight: '600', color: '#555', maxWidth: 56, textAlign: 'center' },
   benchPlayerMins: { fontSize: 10, fontWeight: '600', marginTop: 2 },
   section: { marginBottom: 12 },
-  sectionLabel: { fontSize: 10, fontWeight: '700', color: '#aaa', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
+  sectionLabel: { fontSize: 10, fontWeight: '700', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 8 },
   playerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 14, marginBottom: 6, backgroundColor: '#fff', borderWidth: 0.5, borderColor: '#eee' },
   playerRowBench: { backgroundColor: '#F7F7F5' },
   numBadge: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  numText: { fontSize: 13, fontWeight: '800' },
+  numText: { fontSize: 13, fontWeight: '700' },
   playerName: { fontSize: 15, fontWeight: '600', color: '#1a1a1a' },
   playerPos: { fontSize: 11, color: '#aaa', marginTop: 1 },
   playerMins: { fontSize: 13, fontWeight: '600', minWidth: 28, textAlign: 'right' },
   fairPlayCard: { backgroundColor: '#FFF0F0', borderRadius: 14, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: '#FFCCCC' },
-  fairPlayTitle: { fontSize: 14, fontWeight: '800', color: '#E24B4A', marginBottom: 6 },
+  fairPlayTitle: { fontSize: 14, fontWeight: '700', color: '#E24B4A', marginBottom: 6 },
   fairPlayAlert: { fontSize: 13, color: '#E24B4A', marginBottom: 3 },
   resetLineupBtn: { borderRadius: 14, paddingVertical: 13, alignItems: 'center', borderWidth: 1.5, marginBottom: 14 },
   resetLineupText: { fontSize: 14, fontWeight: '700' },
@@ -1029,12 +1029,12 @@ const styles = StyleSheet.create({
   snackListDate: { fontSize: 11, color: '#aaa', fontWeight: '600', marginBottom: 1 },
   snackListName: { fontSize: 14, fontWeight: '600' },
   snackClaimBtn: { backgroundColor: '#F59E0B', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 },
-  snackClaimBtnText: { fontSize: 13, fontWeight: '800', color: '#fff' },
+  snackClaimBtnText: { fontSize: 13, fontWeight: '700', color: '#fff' },
   snackWarning: { fontSize: 11, color: '#FF8C42', fontWeight: '600', marginTop: 2 },
   snackPlusIcon: { fontSize: 20, fontWeight: '300', marginLeft: 8 },
   snackFootnote: { fontSize: 11, color: '#aaa', marginTop: 14, fontStyle: 'italic', textAlign: 'center' },
   pollClosesLabel: { fontSize: 11, fontWeight: '700', color: '#888', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 },
-  pollQuestion: { fontSize: 16, fontWeight: '800', color: '#1a1a1a', marginBottom: 14 },
+  pollQuestion: { fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 14 },
   pollRow: { marginBottom: 12, paddingVertical: 4 },
   pollLabelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
   pollOptionLabel: { fontSize: 14 },
@@ -1064,8 +1064,8 @@ const styles = StyleSheet.create({
   standingsVal: { width: 30, textAlign: 'center', fontSize: 13, fontWeight: '600', color: '#555' },
   // Season stats — horizontal scroll cards
   statCard: { backgroundColor: '#fff', borderRadius: 14, padding: 16, width: 100, borderWidth: 0.5, borderColor: '#eee', borderTopWidth: 3, alignItems: 'center' },
-  statCardValue: { fontSize: 30, fontWeight: '900', marginBottom: 4 },
+  statCardValue: { fontSize: 30, fontWeight: '800', marginBottom: 4 },
   statCardLabel: { fontSize: 11, fontWeight: '600', color: '#888', textAlign: 'center' },
   resultDot: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  resultDotText: { fontSize: 12, fontWeight: '800', color: '#fff' },
+  resultDotText: { fontSize: 12, fontWeight: '700', color: '#fff' },
 })
