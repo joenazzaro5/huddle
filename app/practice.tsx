@@ -120,6 +120,7 @@ export default function PracticeScreen() {
   const [lastDrillDate, setLastDrillDate] = useState('')
   const [practicedDrills, setPracticedDrills] = useState<Set<string>>(new Set())
   const [drillFeedback, setDrillFeedback] = useState<Record<string, string>>({})
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false)
 
   const appendFeedback = (base: string) => {
     const entries = Object.entries(drillFeedback)
@@ -301,7 +302,7 @@ export default function PracticeScreen() {
           )}
 
           {/* Current plan — always visible */}
-          <View style={styles.card}>
+          <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#4CAF50' }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.cardLabel}>Current plan</Text>
@@ -353,44 +354,28 @@ export default function PracticeScreen() {
                     {expandedDrill === i && <Text style={styles.phaseDesc}>{item.desc}</Text>}
                   </View>
                 </TouchableOpacity>
-                <View style={styles.feedbackRow}>
-                  {(['😓 Hard', '👍 Good', '😴 Easy'] as const).map((label) => {
-                    const rating = label.split(' ')[1]
-                    const isSelected = drillFeedback[item.drill] === rating
-                    return (
-                      <TouchableOpacity
-                        key={label}
-                        style={[styles.feedbackBtn, isSelected && styles.feedbackBtnSelected]}
-                        onPress={() => setDrillFeedback(prev => ({ ...prev, [item.drill]: rating }))}
-                      >
-                        <Text style={[styles.feedbackBtnText, isSelected && styles.feedbackBtnTextSelected]}>
-                          {label}
-                        </Text>
-                      </TouchableOpacity>
-                    )
-                  })}
-                </View>
               </View>
             ))}
-            {!planLoading && Object.keys(drillFeedback).length > 0 && (
-              <TouchableOpacity
-                style={styles.submitFeedbackBtn}
-                onPress={() => Alert.alert('Thanks!', 'Your feedback helps improve future plans.')}
-              >
-                <Text style={styles.submitFeedbackBtnText}>Submit feedback</Text>
-              </TouchableOpacity>
-            )}
             {!planLoading && plan.coachTip && (
               <View style={styles.tipBox}>
                 <Text style={styles.tipLabel}>💡 Coach tip</Text>
                 <Text style={styles.tipText}>{plan.coachTip}</Text>
               </View>
             )}
+            {!planLoading && (
+              <TouchableOpacity
+                style={{ borderWidth: 1.5, borderColor: '#1A56DB', borderRadius: 14, paddingVertical: 13, alignItems: 'center', marginTop: 10 }}
+                onPress={() => setShowFeedbackModal(true)}
+                activeOpacity={0.85}
+              >
+                <Text style={{ fontSize: 15, fontWeight: '700', color: '#1A56DB' }}>End practice</Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           {/* Plan builder — below current plan */}
-          <View style={styles.card}>
-            <View style={styles.aiHeader}>
+          <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#1A56DB' }]}>
+            <View style={[styles.aiHeader, { backgroundColor: '#F0F4FF', borderRadius: 10, padding: 10 }]}>
               <View style={styles.aiIcon}>
                 <Text style={styles.aiIconText}>⚡</Text>
               </View>
@@ -603,6 +588,44 @@ export default function PracticeScreen() {
           })()}
         </ScrollView>
       )}
+
+      {/* Post-practice feedback modal */}
+      <Modal visible={showFeedbackModal} transparent animationType="slide" onRequestClose={() => setShowFeedbackModal(false)}>
+        <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+          <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.3)' }} activeOpacity={1} onPress={() => setShowFeedbackModal(false)} />
+          <View style={{ backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 36 }}>
+            <Text style={{ fontSize: 20, fontWeight: '800', color: '#1a1a1a', marginBottom: 4 }}>How did practice go? 🏆</Text>
+            <Text style={{ fontSize: 13, color: '#888', marginBottom: 20 }}>Rate each drill so your next plan is even better.</Text>
+            {plan?.plan?.map((item: any, i: number) => (
+              <View key={i} style={{ marginBottom: 16 }}>
+                <Text style={{ fontSize: 14, fontWeight: '700', color: '#1a1a1a', marginBottom: 8 }}>{item.drill}</Text>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  {(['😓 Hard', '👍 Good', '😴 Easy'] as const).map((label) => {
+                    const rating = label.split(' ')[1]
+                    const isSelected = drillFeedback[item.drill] === rating
+                    return (
+                      <TouchableOpacity
+                        key={label}
+                        style={[styles.feedbackBtn, isSelected && styles.feedbackBtnSelected, { flex: 1 }]}
+                        onPress={() => setDrillFeedback(prev => ({ ...prev, [item.drill]: rating }))}
+                      >
+                        <Text style={[styles.feedbackBtnText, isSelected && styles.feedbackBtnTextSelected]}>{label}</Text>
+                      </TouchableOpacity>
+                    )
+                  })}
+                </View>
+              </View>
+            ))}
+            <TouchableOpacity
+              style={{ backgroundColor: '#1A56DB', borderRadius: 14, paddingVertical: 14, alignItems: 'center', marginTop: 4 }}
+              onPress={() => { setShowFeedbackModal(false); Alert.alert('Thanks!', 'Your next plan will be even better.') }}
+              activeOpacity={0.85}
+            >
+              <Text style={{ fontSize: 16, fontWeight: '800', color: '#fff' }}>Submit feedback</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       {/* Drill picker modal */}
       <Modal visible={showDrillPicker} animationType="slide" presentationStyle="pageSheet">
