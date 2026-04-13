@@ -320,29 +320,28 @@ Slots: ${formationSlots}`
     <SafeAreaView style={styles.container} edges={['top']}>
       <AppHeader teamColor={tc} teamName={team?.name} />
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.subTabsScroll} contentContainerStyle={styles.subTabsContent}>
-        {(['schedule', 'games', 'roster', 'standings', 'snacks', 'polls'] as const).map((tab, tabIdx) => {
-          const TOTAL_TABS = 6
-          const labels: Record<string, string> = { schedule: 'Schedule', games: 'Games', roster: 'Roster', standings: 'Standings', snacks: 'Snacks', polls: 'Polls' }
-          const isActive = activeTab === tab
-          const tabPadding = tabIdx === 0
-            ? { paddingLeft: 16, paddingRight: 16 }
-            : tabIdx === TOTAL_TABS - 1
-            ? { paddingLeft: 16, paddingRight: 16 }
-            : { paddingHorizontal: 16 }
-          return (
-            <TouchableOpacity
-              key={tab}
-              style={[styles.subTab, tabPadding, isActive && { borderBottomColor: tc, borderBottomWidth: 2.5 }]}
-              onPress={() => setActiveTab(tab)}
-            >
-              <Text style={[styles.subTabText, { color: isActive ? tc : '#999', fontWeight: isActive ? '700' : '500' }]}>
-                {labels[tab]}
-              </Text>
-            </TouchableOpacity>
-          )
-        })}
-      </ScrollView>
+      <View style={{ height: 44, backgroundColor: '#fff', borderBottomWidth: 0.5, borderBottomColor: '#eee' }}>
+        <ScrollView horizontal={true} showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingLeft: 0 }}>
+          {(['schedule', 'games', 'roster', 'standings', 'snacks', 'polls'] as const).map((tab) => {
+            const labels: Record<string, string> = { schedule: 'Schedule', games: 'Games', roster: 'Roster', standings: 'Standings', snacks: 'Snacks', polls: 'Polls' }
+            const isActive = activeTab === tab
+            return (
+              <TouchableOpacity
+                key={tab}
+                style={{ paddingHorizontal: 16, paddingVertical: 12 }}
+                onPress={() => setActiveTab(tab)}
+              >
+                <Text style={{ fontSize: 13, color: isActive ? '#1A56DB' : '#999', fontWeight: isActive ? '700' : '500' }}>
+                  {labels[tab]}
+                </Text>
+                {isActive && (
+                  <View style={{ height: 2.5, backgroundColor: '#1A56DB', borderRadius: 2, marginTop: 4 }} />
+                )}
+              </TouchableOpacity>
+            )
+          })}
+        </ScrollView>
+      </View>
 
       {activeTab === 'schedule' ? (
         <ScrollView contentContainerStyle={styles.content}>
@@ -429,7 +428,7 @@ Slots: ${formationSlots}`
           </View>
         </ScrollView>
       ) : activeTab === 'snacks' ? (
-        <ScrollView contentContainerStyle={styles.content}>
+        <ScrollView contentContainerStyle={{ paddingTop: 12, paddingHorizontal: 16 }}>
           <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#F59E0B', padding: 0, overflow: 'hidden' }]}>
             <View style={{ backgroundColor: '#FFFBEB', paddingHorizontal: 16, paddingTop: 14, paddingBottom: 12 }}>
               <Text style={{ fontSize: 17, fontWeight: '900', color: '#92400E', marginBottom: 2 }}>🥤 Snack duty</Text>
