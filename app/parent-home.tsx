@@ -271,12 +271,25 @@ export default function ParentHomeScreen() {
             <Text style={{ fontSize: 13, color: '#555', lineHeight: 18, marginBottom: 12 }}>
               Set up 6 cones in a line. Dribble through using both feet. Focus on soft touches.
             </Text>
+            {practiceStreak > 0 && (
+              <Text style={{ fontSize: 14, fontWeight: '800', color: '#F59E0B', marginBottom: 10 }}>
+                🔥 {practiceStreak} day{practiceStreak !== 1 ? 's' : ''} streak
+              </Text>
+            )}
             <TouchableOpacity
-              style={{ backgroundColor: '#F59E0B', borderRadius: 10, paddingVertical: 10, alignItems: 'center' }}
-              onPress={() => Linking.openURL('https://youtu.be/RukcQggHAZU')}
-              activeOpacity={0.8}
+              style={{ backgroundColor: practicedToday ? '#F0FDF4' : '#059669', borderRadius: 10, paddingVertical: 10, alignItems: 'center', borderWidth: practicedToday ? 1 : 0, borderColor: '#059669' }}
+              onPress={() => {
+                if (!practicedToday) {
+                  setPracticedToday(true)
+                  setPracticeStreak(s => s + 1)
+                }
+              }}
+              disabled={practicedToday}
+              activeOpacity={practicedToday ? 1 : 0.8}
             >
-              <Text style={{ fontSize: 13, fontWeight: '700', color: '#fff' }}>Watch drill →</Text>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: practicedToday ? '#059669' : '#fff' }}>
+                {practicedToday ? '✓ Done for today!' : '✓ I practiced this drill today'}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -309,66 +322,6 @@ export default function ParentHomeScreen() {
             ))}
           </View>
 
-          {/* Streak section */}
-          <View style={{ paddingHorizontal: 16, paddingTop: 14, paddingBottom: 16, borderTopWidth: 0.5, borderTopColor: '#eee' }}>
-            <Text style={{ fontSize: 13, fontWeight: '800', color: '#1a1a1a', marginBottom: 12 }}>Your practice streak 🔥</Text>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
-              {(['M', 'T', 'W', 'T', 'F', 'S', 'S'] as const).map((label, idx) => {
-                const filled = practicedDays.includes(idx)
-                const isToday = idx === todayDayIdx
-                return (
-                  <View key={idx} style={{ alignItems: 'center' }}>
-                    <View style={{
-                      width: 34, height: 34, borderRadius: 17,
-                      backgroundColor: filled ? tc : '#F3F4F6',
-                      alignItems: 'center', justifyContent: 'center',
-                      borderWidth: isToday && !filled ? 2 : 0,
-                      borderColor: tc,
-                    }}>
-                      <Text style={{ fontSize: 11, fontWeight: '700', color: filled ? '#fff' : isToday ? tc : '#aaa' }}>{label}</Text>
-                    </View>
-                  </View>
-                )
-              })}
-            </View>
-            <Text style={{ fontSize: 28, fontWeight: '900', color: '#F59E0B', marginBottom: 14 }}>
-              {practiceStreak} day{practiceStreak !== 1 ? 's' : ''} streak
-            </Text>
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              <TouchableOpacity
-                style={{ flex: 1, backgroundColor: watchedToday ? '#F0FDF4' : '#EEF4FF', borderRadius: 12, paddingVertical: 11, alignItems: 'center' }}
-                onPress={() => {
-                  if (!watchedToday) {
-                    setWatchedToday(true)
-                    setPracticeStreak(s => s + 1)
-                    setPracticedDays(prev => prev.includes(todayDayIdx) ? prev : [...prev, todayDayIdx])
-                  }
-                }}
-                disabled={watchedToday}
-                activeOpacity={watchedToday ? 1 : 0.75}
-              >
-                <Text style={{ fontSize: 12, fontWeight: '700', color: watchedToday ? '#059669' : tc }}>
-                  {watchedToday ? '✓ Watched' : 'I watched a drill'}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={{ flex: 1, backgroundColor: practicedToday ? '#F0FDF4' : tc, borderRadius: 12, paddingVertical: 11, alignItems: 'center' }}
-                onPress={() => {
-                  if (!practicedToday) {
-                    setPracticedToday(true)
-                    setPracticeStreak(s => s + 1)
-                    setPracticedDays(prev => prev.includes(todayDayIdx) ? prev : [...prev, todayDayIdx])
-                  }
-                }}
-                disabled={practicedToday}
-                activeOpacity={practicedToday ? 1 : 0.75}
-              >
-                <Text style={{ fontSize: 12, fontWeight: '700', color: practicedToday ? '#059669' : '#fff' }}>
-                  {practicedToday ? '✓ Practiced' : 'I practiced today'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
         </View>
 
         {/* 3. Upcoming events */}
@@ -395,8 +348,8 @@ export default function ParentHomeScreen() {
                 </View>
               )
             })}
-            <TouchableOpacity onPress={() => router.push('/team')}>
-              <Text style={[styles.viewLink, { color: tc }]}>View full schedule →</Text>
+            <TouchableOpacity onPress={() => router.push('/parent-schedule')}>
+              <Text style={[styles.viewLink, { color: tc }]}>View schedule →</Text>
             </TouchableOpacity>
           </View>
         )}

@@ -80,8 +80,8 @@ export function AppHeader({ teamColor = '#1A56DB', teamName, onTeamPress, showTe
     }
   }
 
-  const chipBg = isParent ? '#F3F4F620' : teamColor + '20'
-  const chipText = isParent ? '#6B7280' : teamColor
+  const chipBg = isParent ? '#F0FDF4' : teamColor + '20'
+  const chipText = isParent ? '#059669' : teamColor
   const chipLabel = isParent ? 'Parent' : 'Coach'
 
   return (
@@ -102,7 +102,7 @@ export function AppHeader({ teamColor = '#1A56DB', teamName, onTeamPress, showTe
 
       <View style={styles.right}>
         <TouchableOpacity
-          style={[styles.roleChip, { backgroundColor: chipBg }]}
+          style={[styles.roleChip, { backgroundColor: chipBg }, isParent && { borderWidth: 1, borderColor: '#059669' }]}
           onPress={handleRolePress}
         >
           <Text style={[styles.roleText, { color: chipText }]}>{chipLabel}</Text>
