@@ -408,7 +408,7 @@ Slots: ${formationSlots}`
             <Text style={styles.teamCardSub}>{team?.age_group} · {team?.gender} · {players.length} players</Text>
           </View>
 
-          <View style={{ backgroundColor: '#EEF4FF', borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, marginBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <View style={{ backgroundColor: '#EEF4FF', borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12, marginBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 0.5, borderColor: '#eee' }}>
             <Text style={{ fontSize: 18 }}>🏆</Text>
             <Text style={{ fontSize: 14, fontWeight: '800', color: tc }}>Team record:</Text>
             <Text style={{ fontSize: 14, fontWeight: '700', color: '#111' }}>4W · 1L · 1D</Text>
@@ -682,6 +682,57 @@ Slots: ${formationSlots}`
             </View>
           </ScrollView>
 
+          {/* AI Lineup Builder — prominent blue card */}
+          <TouchableOpacity
+            style={styles.lineupBuilderToggle}
+            onPress={() => setLineupBuilderOpen(v => !v)}
+            activeOpacity={0.85}
+          >
+            <View>
+              <Text style={styles.lineupBuilderTitle}>⚡ AI Lineup Builder</Text>
+              <Text style={styles.lineupBuilderSub}>Tap to generate your optimal lineup</Text>
+            </View>
+            <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 18 }}>{lineupBuilderOpen ? '▲' : '▼'}</Text>
+          </TouchableOpacity>
+
+          {lineupBuilderOpen && (
+            <View style={[styles.card, { marginBottom: 12 }]}>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+                {['Strongest lineup', 'Equal playing time', 'Hide injured'].map(pill => {
+                  const active = lineupFocusPills.includes(pill)
+                  return (
+                    <TouchableOpacity
+                      key={pill}
+                      onPress={() => setLineupFocusPills(prev => active ? prev.filter(p => p !== pill) : [...prev, pill])}
+                      style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1.5, backgroundColor: active ? tc : '#F3F4F6', borderColor: active ? tc : '#E5E7EB' }}
+                    >
+                      <Text style={{ fontSize: 12, fontWeight: '600', color: active ? '#fff' : '#555' }}>{pill}</Text>
+                    </TouchableOpacity>
+                  )
+                })}
+              </View>
+              <TextInput
+                style={styles.promptInput}
+                placeholder={`e.g. #1 Sofia in goal all game, rotate everyone equally`}
+                placeholderTextColor="#bbb"
+                value={lineupPrompt}
+                onChangeText={setLineupPrompt}
+                multiline
+                numberOfLines={3}
+              />
+              <TouchableOpacity
+                style={[styles.generateBtn, { backgroundColor: (lineupPrompt.trim() || lineupFocusPills.length > 0) ? tc : '#E0E0E0' }]}
+                onPress={generateLineup}
+                disabled={lineupLoading || (!lineupPrompt.trim() && lineupFocusPills.length === 0)}
+              >
+                {lineupLoading
+                  ? <ActivityIndicator color="#fff" size="small" />
+                  : <Text style={styles.generateBtnText}>Generate lineup</Text>
+                }
+              </TouchableOpacity>
+            </View>
+          )}
+
           {viewMode === 'field' ? (
             <View style={styles.fieldContainer}>
               {selectedPlayer && (
@@ -794,57 +845,6 @@ Slots: ${formationSlots}`
                 </View>
               )}
             </>
-          )}
-
-          {/* AI Lineup Builder */}
-          <TouchableOpacity
-            style={styles.lineupBuilderToggle}
-            onPress={() => setLineupBuilderOpen(v => !v)}
-            activeOpacity={0.8}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Text style={{ fontSize: 14 }}>⚡</Text>
-              <Text style={styles.lineupBuilderToggleText}>AI Lineup Builder</Text>
-            </View>
-            <Text style={{ color: '#6B7280', fontSize: 13 }}>{lineupBuilderOpen ? '▲' : '▼'}</Text>
-          </TouchableOpacity>
-
-          {lineupBuilderOpen && (
-            <View style={[styles.card, { marginTop: 0, borderTopLeftRadius: 0, borderTopRightRadius: 0, borderTopWidth: 0 }]}>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
-                {['Strongest lineup', 'Equal playing time', 'Hide injured'].map(pill => {
-                  const active = lineupFocusPills.includes(pill)
-                  return (
-                    <TouchableOpacity
-                      key={pill}
-                      onPress={() => setLineupFocusPills(prev => active ? prev.filter(p => p !== pill) : [...prev, pill])}
-                      style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1.5, backgroundColor: active ? tc : '#F3F4F6', borderColor: active ? tc : '#E5E7EB' }}
-                    >
-                      <Text style={{ fontSize: 12, fontWeight: '600', color: active ? '#fff' : '#555' }}>{pill}</Text>
-                    </TouchableOpacity>
-                  )
-                })}
-              </View>
-              <TextInput
-                style={styles.promptInput}
-                placeholder={`e.g. #1 Sofia in goal all game, rotate everyone equally`}
-                placeholderTextColor="#bbb"
-                value={lineupPrompt}
-                onChangeText={setLineupPrompt}
-                multiline
-                numberOfLines={3}
-              />
-              <TouchableOpacity
-                style={[styles.generateBtn, { backgroundColor: (lineupPrompt.trim() || lineupFocusPills.length > 0) ? tc : '#E0E0E0' }]}
-                onPress={generateLineup}
-                disabled={lineupLoading || (!lineupPrompt.trim() && lineupFocusPills.length === 0)}
-              >
-                {lineupLoading
-                  ? <ActivityIndicator color="#fff" size="small" />
-                  : <Text style={styles.generateBtnText}>Generate lineup</Text>
-                }
-              </TouchableOpacity>
-            </View>
           )}
 
           {/* Substitution plan */}
@@ -1019,8 +1019,9 @@ const styles = StyleSheet.create({
   fairPlayAlert: { fontSize: 13, color: '#E24B4A', marginBottom: 3 },
   resetLineupBtn: { borderRadius: 14, paddingVertical: 13, alignItems: 'center', borderWidth: 1.5, marginBottom: 14 },
   resetLineupText: { fontSize: 14, fontWeight: '700' },
-  lineupBuilderToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#fff', borderRadius: 14, padding: 14, marginBottom: 0, borderWidth: 0.5, borderColor: '#eee' },
-  lineupBuilderToggleText: { fontSize: 14, fontWeight: '700', color: '#111827' },
+  lineupBuilderToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#1A56DB', borderRadius: 16, padding: 16, marginBottom: 10 },
+  lineupBuilderTitle: { fontSize: 16, fontWeight: '800', color: '#fff', marginBottom: 3 },
+  lineupBuilderSub: { fontSize: 13, fontWeight: '500', color: 'rgba(255,255,255,0.7)' },
   formationPill: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5, borderColor: '#E5E7EB', backgroundColor: '#F9FAFB' },
   formationPillText: { fontSize: 13, fontWeight: '700' },
   snackListRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14 },
