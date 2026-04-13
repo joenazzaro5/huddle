@@ -84,6 +84,9 @@ function TabsLayout() {
       <Tabs.Screen name="player" options={{ href: null }} />
       <Tabs.Screen name="roster/index" options={{ href: null }} />
       <Tabs.Screen name="subs" options={{ href: null }} />
+      <Tabs.Screen name="parent-roster" options={{ href: null }} />
+      <Tabs.Screen name="parent-standings" options={{ href: null }} />
+      <Tabs.Screen name="parent-snacks" options={{ href: null }} />
     </Tabs>
   )
 }

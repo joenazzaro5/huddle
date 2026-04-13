@@ -384,8 +384,8 @@ export default function ParentHomeScreen() {
                 <Text style={[styles.standingsVal, row.isUs && { fontWeight: '800', color: tc }]}>{row.pts}</Text>
               </View>
             ))}
-            <TouchableOpacity onPress={() => router.push('/team')}>
-              <Text style={[styles.viewLink, { color: tc }]}>Full standings →</Text>
+            <TouchableOpacity onPress={() => router.push('/parent-standings')}>
+              <Text style={[styles.viewLink, { color: tc }]}>View standings →</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -405,10 +405,7 @@ export default function ParentHomeScreen() {
             {!snackSignedUp && (
               <TouchableOpacity
                 style={{ backgroundColor: '#F59E0B', borderRadius: 10, paddingHorizontal: 16, paddingVertical: 8 }}
-                onPress={() => {
-                  setSnackSignedUp(true)
-                  Alert.alert('Signed up! 🥤', "You're signed up for snacks on Apr 26! The team will be notified.")
-                }}
+                onPress={() => router.push('/parent-snacks')}
                 activeOpacity={0.8}
               >
                 <Text style={{ fontSize: 13, fontWeight: '700', color: '#fff' }}>Sign up →</Text>
@@ -465,7 +462,7 @@ export default function ParentHomeScreen() {
                 </View>
               ))
             )}
-            <TouchableOpacity onPress={() => router.push('/team')}>
+            <TouchableOpacity onPress={() => router.push('/parent-roster')}>
               <Text style={[styles.viewLink, { color: tc }]}>View full roster →</Text>
             </TouchableOpacity>
           </View>
