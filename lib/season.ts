@@ -52,7 +52,6 @@ export function getScheduleEvents(): SeasonEvent[] {
   const now = new Date()
   const upcoming = SEASON_SCHEDULE.filter(e => new Date(e.starts_at) >= now)
   if (upcoming.length > 0) return upcoming
-  // Season over — return just the last game so hero card is never empty
-  const games = SEASON_SCHEDULE.filter(e => e.type === 'game')
-  return games.slice(-1)
+  // Season over — return the first event of the season so hero card is never empty
+  return SEASON_SCHEDULE.slice(0, 1)
 }

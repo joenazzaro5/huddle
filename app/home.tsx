@@ -419,7 +419,29 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* 5. Snack schedule */}
+        {/* 5. Team chat */}
+        {lastMessage && (
+          <TouchableOpacity
+            style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#10B981', padding: 0, overflow: 'hidden' }]}
+            onPress={() => router.push('/chat')}
+          >
+            <View style={styles.chatCardHeader}>
+              <Text style={styles.cardLabel}>💬 Team chat</Text>
+            </View>
+            <View style={styles.cardBody}>
+              <View style={styles.chatPreviewRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.chatSender}>{getSenderName(lastMessage)}</Text>
+                  <Text style={styles.chatPreviewBody} numberOfLines={2}>{lastMessage.body}</Text>
+                </View>
+                <Text style={styles.chatPreviewTime}>{formatMsgTime(lastMessage.created_at)}</Text>
+              </View>
+              <Text style={[styles.viewLink, { color: tc }]}>Open chat →</Text>
+            </View>
+          </TouchableOpacity>
+        )}
+
+        {/* 6. Snack schedule */}
         <TouchableOpacity
           style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#F59E0B', padding: 0, overflow: 'hidden' }]}
           onPress={() => router.push('/games')}
@@ -443,7 +465,7 @@ export default function HomeScreen() {
           </View>
         </TouchableOpacity>
 
-        {/* 6. Team poll */}
+        {/* 7. Team poll */}
         <TouchableOpacity
           style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#8B5CF6', padding: 0, overflow: 'hidden' }]}
           onPress={() => router.push('/games')}
@@ -466,28 +488,6 @@ export default function HomeScreen() {
             <Text style={[styles.viewLink, { color: tc }]}>See results →</Text>
           </View>
         </TouchableOpacity>
-
-        {/* 7. Chat preview */}
-        {lastMessage && (
-          <TouchableOpacity
-            style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#10B981', padding: 0, overflow: 'hidden' }]}
-            onPress={() => router.push('/chat')}
-          >
-            <View style={styles.chatCardHeader}>
-              <Text style={styles.cardLabel}>💬 Team chat</Text>
-            </View>
-            <View style={styles.cardBody}>
-              <View style={styles.chatPreviewRow}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.chatSender}>{getSenderName(lastMessage)}</Text>
-                  <Text style={styles.chatPreviewBody} numberOfLines={2}>{lastMessage.body}</Text>
-                </View>
-                <Text style={styles.chatPreviewTime}>{formatMsgTime(lastMessage.created_at)}</Text>
-              </View>
-              <Text style={[styles.viewLink, { color: tc }]}>Open chat →</Text>
-            </View>
-          </TouchableOpacity>
-        )}
 
       </ScrollView>
     </SafeAreaView>
