@@ -369,32 +369,36 @@ export default function HomeScreen() {
 
         {/* 3. Upcoming module */}
         {upcomingEvents.length > 0 && (
-          <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#1A56DB' }]}>
-            <Text style={styles.cardLabel}>Upcoming</Text>
-            {upcomingEvents.map((event, i) => {
-              const isGame = event.type === 'game'
-              const isParty = event.type === 'party'
-              const isPicDay = event.type === 'picture_day'
-              const dotColor = isGame ? '#F59E0B' : isParty ? '#8B5CF6' : isPicDay ? '#9C27B0' : '#1A56DB'
-              return (
-                <View key={event.id} style={[styles.eventRow, i < upcomingEvents.length - 1 && styles.eventBorder]}>
-                  <View style={[styles.upcomingDot, { backgroundColor: dotColor }]} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.eventTitle}>
-                      {isGame ? `Game vs ${event.opponent}${event.home != null ? (event.home ? ' · Home' : ' · Away') : ''}`
-                        : isPicDay ? '📸 Picture Day'
-                        : isParty ? `🎉 ${event.title ?? 'End of Season Party'}`
-                        : `Practice · ${event.focus ?? 'General skills'}`}
-                    </Text>
-                    <Text style={styles.eventSub}>{formatDay(event.starts_at)}</Text>
-                    <Text style={styles.eventTime}>{formatTimeRange(event.starts_at, event.duration_min ?? 60)}</Text>
+          <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#1A56DB', padding: 0, overflow: 'hidden' }]}>
+            <View style={{ backgroundColor: '#F0F4FF', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 }}>
+              <Text style={styles.cardLabel}>Upcoming</Text>
+            </View>
+            <View style={{ paddingHorizontal: 16, paddingBottom: 14, paddingTop: 10 }}>
+              {upcomingEvents.map((event, i) => {
+                const isGame = event.type === 'game'
+                const isParty = event.type === 'party'
+                const isPicDay = event.type === 'picture_day'
+                const dotColor = isGame ? '#F59E0B' : isParty ? '#8B5CF6' : isPicDay ? '#9C27B0' : '#1A56DB'
+                return (
+                  <View key={event.id} style={[styles.eventRow, i < upcomingEvents.length - 1 && styles.eventBorder]}>
+                    <View style={[styles.upcomingDot, { backgroundColor: dotColor }]} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.eventTitle}>
+                        {isGame ? `Game vs ${event.opponent}${event.home != null ? (event.home ? ' · Home' : ' · Away') : ''}`
+                          : isPicDay ? '📸 Picture Day'
+                          : isParty ? `🎉 ${event.title ?? 'End of Season Party'}`
+                          : `Practice · ${event.focus ?? 'General skills'}`}
+                      </Text>
+                      <Text style={styles.eventSub}>{formatDay(event.starts_at)}</Text>
+                      <Text style={styles.eventTime}>{formatTimeRange(event.starts_at, event.duration_min ?? 60)}</Text>
+                    </View>
                   </View>
-                </View>
-              )
-            })}
-            <TouchableOpacity onPress={() => router.push('/team')}>
-              <Text style={[styles.viewLink, { color: tc }]}>View full schedule →</Text>
-            </TouchableOpacity>
+                )
+              })}
+              <TouchableOpacity onPress={() => router.push('/team')}>
+                <Text style={[styles.viewLink, { color: tc }]}>View full schedule →</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         )}
 

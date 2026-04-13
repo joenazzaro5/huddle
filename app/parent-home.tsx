@@ -326,31 +326,35 @@ export default function ParentHomeScreen() {
 
         {/* 3. Upcoming events */}
         {upcomingEvents.length > 0 && (
-          <View style={styles.card}>
-            <Text style={styles.cardLabel}>Upcoming</Text>
-            {upcomingEvents.map((event, i) => {
-              const isGame = event.type === 'game'
-              const rsvpStatus = eventRsvps[event.id]
-              return (
-                <View key={event.id} style={[styles.eventRow, i < upcomingEvents.length - 1 && styles.eventBorder]}>
-                  <View style={[styles.upcomingTypeDot, { backgroundColor: isGame ? '#F59E0B' : tc }]} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.eventTitle}>
-                      {isGame ? `Game vs ${event.opponent}` : `Practice · ${event.focus ?? 'General'}`}
-                    </Text>
-                    <Text style={styles.eventSub}>{formatDay(event.starts_at)}</Text>
-                    <Text style={styles.eventTime}>{formatTimeRange(event.starts_at, event.duration_min ?? 60)}</Text>
+          <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: tc, padding: 0, overflow: 'hidden' }]}>
+            <View style={{ backgroundColor: '#F0F4FF', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 }}>
+              <Text style={styles.cardLabel}>Upcoming</Text>
+            </View>
+            <View style={{ paddingHorizontal: 16, paddingBottom: 14, paddingTop: 10 }}>
+              {upcomingEvents.map((event, i) => {
+                const isGame = event.type === 'game'
+                const rsvpStatus = eventRsvps[event.id]
+                return (
+                  <View key={event.id} style={[styles.eventRow, i < upcomingEvents.length - 1 && styles.eventBorder]}>
+                    <View style={[styles.upcomingTypeDot, { backgroundColor: isGame ? '#F59E0B' : tc }]} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.eventTitle}>
+                        {isGame ? `Game vs ${event.opponent}` : `Practice · ${event.focus ?? 'General'}`}
+                      </Text>
+                      <Text style={styles.eventSub}>{formatDay(event.starts_at)}</Text>
+                      <Text style={styles.eventTime}>{formatTimeRange(event.starts_at, event.duration_min ?? 60)}</Text>
+                    </View>
+                    <View style={styles.eventRight}>
+                      <Text style={[styles.eventDays, { color: tc }]}>{daysUntil(event.starts_at)}</Text>
+                      <View style={[styles.rsvpDot, { backgroundColor: rsvpDot(rsvpStatus) }]} />
+                    </View>
                   </View>
-                  <View style={styles.eventRight}>
-                    <Text style={[styles.eventDays, { color: tc }]}>{daysUntil(event.starts_at)}</Text>
-                    <View style={[styles.rsvpDot, { backgroundColor: rsvpDot(rsvpStatus) }]} />
-                  </View>
-                </View>
-              )
-            })}
-            <TouchableOpacity onPress={() => router.push('/parent-schedule')}>
-              <Text style={[styles.viewLink, { color: tc }]}>View schedule →</Text>
-            </TouchableOpacity>
+                )
+              })}
+              <TouchableOpacity onPress={() => router.push('/parent-schedule')}>
+                <Text style={[styles.viewLink, { color: tc }]}>View schedule →</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         )}
 
