@@ -6,6 +6,8 @@ import { supabase } from '../lib/supabase'
 import { generatePracticePlan } from '../lib/ai'
 import { AppHeader } from '../lib/header'
 
+let cachedPlan: any = null
+
 const FALLBACK_PLAN = {
   title: 'Dribbling Focus',
   plan: [
@@ -105,10 +107,10 @@ export default function PracticeScreen() {
   const [prompt, setPrompt] = useState('')
   const [selectedFocuses, setSelectedFocuses] = useState<string[]>([])
   const [aiLoading, setAiLoading] = useState(false)
-  const [plan, setPlan] = useState<any>(FALLBACK_PLAN)
+  const [plan, setPlan] = useState<any>(cachedPlan ?? FALLBACK_PLAN)
   const [planLoading, setPlanLoading] = useState(false)
   const [isOfflinePlan, setIsOfflinePlan] = useState(false)
-  const [isAiPlan, setIsAiPlan] = useState(false)
+  const [isAiPlan, setIsAiPlan] = useState(cachedPlan !== null)
   const [showDrillPicker, setShowDrillPicker] = useState(false)
   const [selectedPickDrills, setSelectedPickDrills] = useState<Set<string>>(new Set())
   const [activeFilter, setActiveFilter] = useState('All')
@@ -153,7 +155,7 @@ export default function PracticeScreen() {
         .limit(1)
         .maybeSingle()
       setNextEvent(eventData)
-      autoGenerate(eventData ?? null, membership.team)
+      if (cachedPlan === null) autoGenerate(eventData ?? null, membership.team)
     }
   }
 
@@ -173,13 +175,15 @@ export default function PracticeScreen() {
         ),
         timeoutPromise
       ])
+      cachedPlan = result
       setPlan(result)
       setIsAiPlan(true)
     } catch {
       setIsOfflinePlan(true)
       // keep current plan (FALLBACK_PLAN or last AI plan)
+    } finally {
+      setPlanLoading(false)
     }
-    setPlanLoading(false)
   }
 
   const toggleFocus = (label: string) => {

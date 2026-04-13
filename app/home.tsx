@@ -7,6 +7,8 @@ import { supabase } from '../lib/supabase'
 import { generatePracticePlan } from '../lib/ai'
 import { getScheduleEvents } from '../lib/season'
 
+let cachedPlan: any = null
+
 const FALLBACK_PLAN = {
   title: 'Dribbling Focus',
   plan: [
@@ -35,10 +37,10 @@ export default function HomeScreen() {
   const [team, setTeam] = useState<any>(null)
   const [events, setEvents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [plan, setPlan] = useState<any>(FALLBACK_PLAN)
+  const [plan, setPlan] = useState<any>(cachedPlan ?? FALLBACK_PLAN)
   const [planLoading, setPlanLoading] = useState(false)
   const [isOfflinePlan, setIsOfflinePlan] = useState(false)
-  const [isAiPlan, setIsAiPlan] = useState(false)
+  const [isAiPlan, setIsAiPlan] = useState(cachedPlan !== null)
   const [rsvpYes, setRsvpYes] = useState(0)
   const [rsvpNo, setRsvpNo] = useState(0)
   const [playerCount, setPlayerCount] = useState(0)
@@ -90,9 +92,9 @@ export default function HomeScreen() {
         .eq('event_id', eventData[0].id).eq('status', 'no')
       setRsvpYes(yes ?? 0)
       setRsvpNo(no ?? 0)
-      autoGeneratePlan(eventData[0], teamData)
+      if (cachedPlan === null) autoGeneratePlan(eventData[0], teamData)
     } else {
-      autoGeneratePlan(getScheduleEvents()[0] ?? null, teamData)
+      if (cachedPlan === null) autoGeneratePlan(getScheduleEvents()[0] ?? null, teamData)
     }
 
     const { data: msgData } = await supabase
@@ -122,13 +124,15 @@ export default function HomeScreen() {
         ),
         timeoutPromise
       ])
+      cachedPlan = result
       setPlan(result)
       setIsAiPlan(true)
     } catch {
       setIsOfflinePlan(true)
       // keep current plan (FALLBACK_PLAN or last AI plan)
+    } finally {
+      setPlanLoading(false)
     }
-    setPlanLoading(false)
   }
 
   const switchTeam = async (teamData: any) => {
