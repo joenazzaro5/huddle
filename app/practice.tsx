@@ -42,10 +42,10 @@ const FOCUS_PILLS = [
 
 const FOCUS_COLORS: Record<string, string> = {
   Dribbling: '#1A56DB',
-  Passing: '#1A56DB',
-  Shooting: '#FF6B35',
-  Defending: '#9C27B0',
-  Goalkeeping: '#607D8B',
+  Passing: '#10B981',
+  Shooting: '#EF4444',
+  Defending: '#8B5CF6',
+  Goalkeeping: '#F59E0B',
 }
 
 const SOCCER_RULES = [
@@ -472,13 +472,16 @@ export default function PracticeScreen() {
             <View style={{ flexDirection: 'row', gap: 8 }}>
               {FOCUSES.map(focus => {
                 const isActive = activeFilter === focus
-                const fc = focus === 'All' ? teamColor : (FOCUS_COLORS[focus] ?? teamColor)
+                const fc = focus === 'All' || focus === 'Favorites' ? teamColor : (FOCUS_COLORS[focus] ?? teamColor)
                 return (
                   <TouchableOpacity
                     key={focus}
                     onPress={() => setActiveFilter(focus)}
                     style={[styles.filterChip, { backgroundColor: isActive ? fc : '#fff', borderColor: isActive ? fc : '#ddd' }]}
                   >
+                    {focus !== 'All' && focus !== 'Favorites' && (
+                      <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: isActive ? '#fff' : fc, marginRight: 5 }} />
+                    )}
                     <Text style={[styles.filterChipText, { color: isActive ? '#fff' : '#555' }]}>{focus}</Text>
                   </TouchableOpacity>
                 )
@@ -498,57 +501,70 @@ export default function PracticeScreen() {
             const isPracticed = practicedDrills.has(drill.id)
             return (
               <View key={drill.id} style={styles.drillCard}>
-                <View style={styles.drillTop}>
-                  <View style={[styles.drillBadge, { backgroundColor: dc + '20' }]}>
-                    <Text style={[styles.drillBadgeText, { color: dc }]}>{drill.focus}</Text>
-                  </View>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                    <Text style={styles.drillMeta}>{drill.level} · {drill.duration}</Text>
-                    <TouchableOpacity
-                      onPress={() => {
-                        setFavoriteDrills(prev => {
-                          const next = new Set(prev)
-                          if (next.has(drill.id)) next.delete(drill.id)
-                          else next.add(drill.id)
-                          return next
-                        })
-                      }}
-                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    >
-                      <Text style={{ fontSize: 18, color: isFav ? teamColor : '#ccc' }}>
-                        {isFav ? '♥' : '♡'}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-                <Text style={styles.drillTitle}>{drill.title}</Text>
-                <Text style={styles.drillDesc}>{drill.desc}</Text>
-                {drill.videoId && (
-                  <TouchableOpacity
-                    onPress={() => onVideoTap(drill.id, drill.videoId!)}
-                    activeOpacity={0.85}
-                    style={{ marginTop: 8, borderRadius: 10, overflow: 'hidden' }}
-                  >
-                    <Image
-                      source={{ uri: `https://img.youtube.com/vi/${drill.videoId}/mqdefault.jpg` }}
-                      style={{ width: '100%', height: 160, borderRadius: 10 }}
-                      resizeMode="cover"
-                    />
-                    <View style={styles.playOverlay}>
-                      <View style={styles.playCircle}>
-                        <Text style={styles.playIcon}>▶</Text>
-                      </View>
+                {/* Colored top banner */}
+                <View style={{ height: 6, backgroundColor: dc }} />
+
+                <View style={{ padding: 16 }}>
+                  {/* Row 1: focus badge + meta + heart */}
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                    <View style={[styles.drillBadge, { backgroundColor: dc + '20' }]}>
+                      <Text style={[styles.drillBadgeText, { color: dc }]}>{drill.focus}</Text>
                     </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                      <Text style={styles.drillMeta}>{drill.level} · {drill.duration}</Text>
+                      <TouchableOpacity
+                        onPress={() => {
+                          setFavoriteDrills(prev => {
+                            const next = new Set(prev)
+                            if (next.has(drill.id)) next.delete(drill.id)
+                            else next.add(drill.id)
+                            return next
+                          })
+                        }}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      >
+                        <Text style={{ fontSize: 20, color: isFav ? '#EF4444' : '#ccc' }}>
+                          {isFav ? '♥' : '♡'}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  {/* Row 2: drill title */}
+                  <Text style={styles.drillTitle}>{drill.title}</Text>
+
+                  {/* Row 3: description */}
+                  <Text style={styles.drillDesc}>{drill.desc}</Text>
+
+                  {/* YouTube thumbnail */}
+                  {drill.videoId && (
+                    <TouchableOpacity
+                      onPress={() => onVideoTap(drill.id, drill.videoId!)}
+                      activeOpacity={0.85}
+                      style={{ marginTop: 10, borderRadius: 10, overflow: 'hidden' }}
+                    >
+                      <Image
+                        source={{ uri: `https://img.youtube.com/vi/${drill.videoId}/mqdefault.jpg` }}
+                        style={{ width: '100%', height: 160, borderRadius: 10 }}
+                        resizeMode="cover"
+                      />
+                      <View style={styles.playOverlay}>
+                        <View style={styles.playCircle}>
+                          <Text style={styles.playIcon}>▶</Text>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  )}
+
+                  <TouchableOpacity
+                    style={[styles.practicedBtn, isPracticed && styles.practicedBtnDone]}
+                    onPress={() => markDrillPracticed(drill.id)}
+                  >
+                    <Text style={[styles.practicedBtnText, isPracticed && styles.practicedBtnTextDone]}>
+                      {isPracticed ? '✓ Practiced' : '✓ I practiced this'}
+                    </Text>
                   </TouchableOpacity>
-                )}
-                <TouchableOpacity
-                  style={[styles.practicedBtn, isPracticed && styles.practicedBtnDone]}
-                  onPress={() => markDrillPracticed(drill.id)}
-                >
-                  <Text style={[styles.practicedBtnText, isPracticed && styles.practicedBtnTextDone]}>
-                    {isPracticed ? '✓ Practiced' : '✓ I practiced this'}
-                  </Text>
-                </TouchableOpacity>
+                </View>
               </View>
             )
           })}
@@ -731,15 +747,15 @@ const styles = StyleSheet.create({
   loadingBoxText: { fontSize: 13, color: '#888' },
   streakBanner: { backgroundColor: '#FFF8E1', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 14 },
   streakText: { fontSize: 14, fontWeight: '700', color: '#F57F17' },
-  filterChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5 },
+  filterChip: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 20, borderWidth: 1.5, flexDirection: 'row', alignItems: 'center' },
   filterChipText: { fontSize: 13, fontWeight: '600' },
-  drillCard: { backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 10, borderWidth: 0.5, borderColor: '#eee' },
+  drillCard: { backgroundColor: '#fff', borderRadius: 16, marginBottom: 12, borderWidth: 0.5, borderColor: '#eee', overflow: 'hidden' },
   drillTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
-  drillBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 6 },
+  drillBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
   drillBadgeText: { fontSize: 11, fontWeight: '700' },
   drillMeta: { fontSize: 11, color: '#aaa' },
-  drillTitle: { fontSize: 15, fontWeight: '700', color: '#1a1a1a', marginBottom: 4 },
-  drillDesc: { fontSize: 13, color: '#888', lineHeight: 18 },
+  drillTitle: { fontSize: 17, fontWeight: '800', color: '#111827', marginBottom: 6 },
+  drillDesc: { fontSize: 13, color: '#6B7280', lineHeight: 20 },
   playOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
   playCircle: { width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(0,0,0,0.7)', alignItems: 'center', justifyContent: 'center' },
   playIcon: { color: '#fff', fontSize: 18 },
