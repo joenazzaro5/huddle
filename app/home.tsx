@@ -369,7 +369,7 @@ export default function HomeScreen() {
 
         {/* 3. Upcoming module */}
         {upcomingEvents.length > 0 && (
-          <View style={styles.card}>
+          <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#1A56DB' }]}>
             <Text style={styles.cardLabel}>Upcoming</Text>
             {upcomingEvents.map((event, i) => {
               const isGame = event.type === 'game'
@@ -444,7 +444,7 @@ export default function HomeScreen() {
         {/* 6. Snack schedule */}
         <TouchableOpacity
           style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#F59E0B', padding: 0, overflow: 'hidden' }]}
-          onPress={() => router.push('/games')}
+          onPress={() => router.push({ pathname: '/team', params: { tab: 'snacks' } })}
           activeOpacity={0.85}
         >
           <View style={styles.snackCardHeader}>
@@ -468,7 +468,7 @@ export default function HomeScreen() {
         {/* 7. Team poll */}
         <TouchableOpacity
           style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#8B5CF6', padding: 0, overflow: 'hidden' }]}
-          onPress={() => router.push('/games')}
+          onPress={() => router.push({ pathname: '/team', params: { tab: 'polls' } })}
           activeOpacity={0.85}
         >
           <View style={styles.pollCardHeader}>
@@ -477,13 +477,22 @@ export default function HomeScreen() {
           <View style={styles.cardBody}>
             <Text style={styles.pollQuestion}>What should our team cheer be?</Text>
             {(() => {
-              const leading = [...pollOptions].sort((a, b) => b.votes - a.votes)[0]
-              return (
-                <View style={styles.pollLeadRow}>
-                  <Text style={styles.pollLeadLabel}>{leading.label}</Text>
-                  <Text style={styles.pollLeadVotes}>{leading.votes} votes</Text>
-                </View>
-              )
+              const total = pollOptions.reduce((sum, o) => sum + o.votes, 0)
+              return pollOptions.map((option, i) => {
+                const pct = total > 0 ? option.votes / total : 0
+                const isLeading = i === 0
+                return (
+                  <View key={i} style={{ marginTop: 8 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <Text style={{ fontSize: 13, fontWeight: isLeading ? '700' : '500', color: isLeading ? '#1a1a1a' : '#555', flex: 1 }}>{option.label}</Text>
+                      <Text style={{ fontSize: 12, color: '#888', fontWeight: '600', marginLeft: 8 }}>{option.votes}</Text>
+                    </View>
+                    <View style={{ height: 5, backgroundColor: '#f0f0f0', borderRadius: 3, overflow: 'hidden' }}>
+                      <View style={{ height: 5, backgroundColor: '#8B5CF6', borderRadius: 3, width: `${Math.round(pct * 100)}%` as any, opacity: isLeading ? 1 : 0.45 }} />
+                    </View>
+                  </View>
+                )
+              })
             })()}
             <Text style={[styles.viewLink, { color: tc }]}>See results →</Text>
           </View>
