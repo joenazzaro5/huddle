@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
-import { View, Text, ScrollView, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, Image } from 'react-native'
+import { View, Text, ScrollView, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, Image, Modal } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import * as ImagePicker from 'expo-image-picker'
 import { supabase } from '../lib/supabase'
@@ -21,6 +21,7 @@ export default function ChatScreen() {
   const [sending, setSending] = useState(false)
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [pendingImage, setPendingImage] = useState<string | null>(null)
+  const [showGifPicker, setShowGifPicker] = useState(false)
   const scrollRef = useRef<ScrollView>(null)
   const teamIdRef = useRef<string | null>(null)
   const latestMessageRef = useRef<string | null>(null)
@@ -107,6 +108,19 @@ export default function ChatScreen() {
     } else {
       if (teamIdRef.current) await loadMessages(teamIdRef.current)
     }
+    setSending(false)
+  }
+
+  const sendGif = async () => {
+    if (!team || !currentUser) return
+    setSending(true)
+    const { error } = await supabase.from('messages').insert({
+      team_id: team.id,
+      user_id: currentUser.id,
+      body: '🎬 [GIF]',
+      type: 'user',
+    })
+    if (!error && teamIdRef.current) await loadMessages(teamIdRef.current)
     setSending(false)
   }
 
@@ -251,7 +265,7 @@ export default function ChatScreen() {
           {/* GIF button */}
           <TouchableOpacity
             style={styles.composerAction}
-            onPress={() => Alert.alert('GIF support coming soon!')}
+            onPress={() => setShowGifPicker(true)}
           >
             <Text style={[styles.composerActionText, { fontSize: 11, fontWeight: '800' }]}>GIF</Text>
           </TouchableOpacity>
@@ -274,6 +288,35 @@ export default function ChatScreen() {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+
+      <Modal visible={showGifPicker} transparent animationType="slide" onRequestClose={() => setShowGifPicker(false)}>
+        <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+          <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.3)' }} activeOpacity={1} onPress={() => setShowGifPicker(false)} />
+          <View style={{ backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, height: 300, padding: 16 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <Text style={{ fontSize: 15, fontWeight: '700', color: '#1a1a1a' }}>GIFs</Text>
+              <TouchableOpacity onPress={() => setShowGifPicker(false)}>
+                <Text style={{ fontSize: 18, color: '#888' }}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F3F4F6', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 12 }}>
+              <Text style={{ color: '#aaa', marginRight: 6 }}>🔍</Text>
+              <TextInput placeholder="Search GIFs..." placeholderTextColor="#aaa" style={{ flex: 1, fontSize: 14, color: '#1a1a1a' }} />
+            </View>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              {[0, 1, 2, 3, 4, 5].map(i => (
+                <TouchableOpacity
+                  key={i}
+                  style={{ width: '31%', aspectRatio: 1, backgroundColor: '#F3F4F6', borderRadius: 10, alignItems: 'center', justifyContent: 'center' }}
+                  onPress={() => { sendGif(); setShowGifPicker(false) }}
+                >
+                  <Text style={{ fontSize: 24, color: '#888' }}>▶</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   )
 }

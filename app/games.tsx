@@ -399,32 +399,48 @@ Slots: ${formationSlots}`
             <Text style={styles.teamCardSub}>{team?.age_group} · {team?.gender} · {players.length} players</Text>
           </View>
 
+          <View style={{ backgroundColor: '#EEF4FF', borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, marginBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <Text style={{ fontSize: 18 }}>🏆</Text>
+            <Text style={{ fontSize: 14, fontWeight: '800', color: tc }}>Team record:</Text>
+            <Text style={{ fontSize: 14, fontWeight: '700', color: '#111' }}>4W · 1L · 1D</Text>
+          </View>
+
           <View style={styles.card}>
             <Text style={styles.cardLabel}>Players · {players.length}</Text>
-            {players.map((player, i) => (
-              <TouchableOpacity
-                key={player.id}
-                style={[styles.rosterRow, i < players.length - 1 && styles.rosterBorder]}
-                onPress={() => router.push({ pathname: '/player', params: { id: player.id } })}
-                activeOpacity={0.7}
-              >
-                <View style={[styles.numBadge, { backgroundColor: tc + '20' }]}>
-                  <Text style={[styles.numText, { color: tc }]}>{player.number ?? '—'}</Text>
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.rosterName}>{player.name}</Text>
-                  {player.positions?.length > 0 && (
-                    <Text style={styles.rosterPos}>{player.positions.join(' · ')}</Text>
-                  )}
-                </View>
-                {(player as any).is_starter && (
-                  <View style={[styles.starterChip, { backgroundColor: tc + '20' }]}>
-                    <Text style={[styles.starterText, { color: tc }]}>Starter</Text>
+            {players.map((player, i) => {
+              const firstPos = (player.positions?.[0] ?? '').toUpperCase()
+              const posColor = firstPos === 'GK' ? '#F59E0B'
+                : ['CB','LB','RB','LWB','RWB'].includes(firstPos) ? '#1A56DB'
+                : ['CM','LM','RM','DM','AM','CAM','CDM'].includes(firstPos) ? '#10B981'
+                : firstPos ? '#FF6B35' : null
+              return (
+                <TouchableOpacity
+                  key={player.id}
+                  style={[styles.rosterRow, i < players.length - 1 && styles.rosterBorder]}
+                  onPress={() => router.push({ pathname: '/player', params: { id: player.id } })}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.numBadge, { backgroundColor: tc + '20' }]}>
+                    <Text style={[styles.numText, { color: tc }]}>{player.number ?? '—'}</Text>
                   </View>
-                )}
-                <Text style={styles.chevron}>›</Text>
-              </TouchableOpacity>
-            ))}
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Text style={styles.rosterName}>{player.name}</Text>
+                      {i === 0 && <Text style={{ fontSize: 13 }}>⭐</Text>}
+                    </View>
+                    {player.positions?.length > 0 && (
+                      <Text style={styles.rosterPos}>{player.positions.join(' · ')}</Text>
+                    )}
+                  </View>
+                  {posColor ? (
+                    <View style={{ backgroundColor: posColor + '22', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, marginRight: 6 }}>
+                      <Text style={{ fontSize: 10, fontWeight: '800', color: posColor }}>{firstPos}</Text>
+                    </View>
+                  ) : null}
+                  <Text style={styles.chevron}>›</Text>
+                </TouchableOpacity>
+              )
+            })}
           </View>
         </ScrollView>
       ) : activeTab === 'snacks' ? (
@@ -546,23 +562,21 @@ Slots: ${formationSlots}`
             ))}
           </View>
 
-          {/* Season stats — horizontal scroll */}
+          {/* Season stats — 2x2 grid */}
           <Text style={[styles.cardLabel, { marginBottom: 8, marginLeft: 2 }]}>Season stats</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
-            <View style={{ flexDirection: 'row', gap: 10, paddingRight: 4 }}>
-              {[
-                { label: 'Goals',        value: '12', color: '#1A56DB' },
-                { label: 'Against',      value: '6',  color: '#EF4444' },
-                { label: 'Clean sheets', value: '2',  color: '#10B981' },
-                { label: 'Win rate',     value: '67%',color: '#F59E0B' },
-              ].map((stat, i) => (
-                <View key={i} style={[styles.statCard, { borderTopColor: stat.color }]}>
-                  <Text style={[styles.statCardValue, { color: stat.color }]}>{stat.value}</Text>
-                  <Text style={styles.statCardLabel}>{stat.label}</Text>
-                </View>
-              ))}
-            </View>
-          </ScrollView>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 12 }}>
+            {[
+              { label: 'Goals',        value: '12', color: '#1A56DB' },
+              { label: 'Against',      value: '6',  color: '#EF4444' },
+              { label: 'Clean sheets', value: '2',  color: '#10B981' },
+              { label: 'Win rate',     value: '67%',color: '#F59E0B' },
+            ].map((stat, i) => (
+              <View key={i} style={[styles.statCard, { borderTopColor: stat.color, width: '48%', flexShrink: 1 }]}>
+                <Text style={[styles.statCardValue, { color: stat.color }]}>{stat.value}</Text>
+                <Text style={styles.statCardLabel}>{stat.label}</Text>
+              </View>
+            ))}
+          </View>
           {/* Win/loss sparkline */}
           <View style={[styles.card, { marginBottom: 12, paddingVertical: 12 }]}>
             <Text style={[styles.cardLabel, { marginBottom: 10 }]}>Recent results</Text>
@@ -574,6 +588,26 @@ Slots: ${formationSlots}`
               ))}
               <Text style={{ fontSize: 12, color: '#aaa', marginLeft: 4 }}>4W · 1L this season</Text>
             </View>
+          </View>
+
+          {/* Top performers */}
+          <View style={styles.card}>
+            <Text style={styles.cardLabel}>Top performers</Text>
+            {[
+              { name: 'Sofia',    pos: 'GK',  stat: 3, type: 'clean sheets' },
+              { name: 'Emma',     pos: 'MID', stat: 4, type: 'goals' },
+              { name: 'Olivia',   pos: 'MID', stat: 5, type: 'assists' },
+              { name: 'Isabella', pos: 'FWD', stat: 3, type: 'goals' },
+            ].map((p, i, arr) => (
+              <View key={i} style={[{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 12 }, i < arr.length - 1 && { borderBottomWidth: 0.5, borderBottomColor: '#f5f5f5' }]}>
+                <Text style={{ fontSize: 15, fontWeight: '700', color: '#1a1a1a', flex: 1 }}>{p.name}</Text>
+                <View style={{ backgroundColor: '#F3F4F6', borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 }}>
+                  <Text style={{ fontSize: 10, fontWeight: '700', color: '#555' }}>{p.pos}</Text>
+                </View>
+                <Text style={{ fontSize: 20, fontWeight: '900', color: tc, minWidth: 24, textAlign: 'right' }}>{p.stat}</Text>
+                <Text style={{ fontSize: 12, color: '#888', minWidth: 80 }}>{p.type}</Text>
+              </View>
+            ))}
           </View>
         </ScrollView>
       ) : (
@@ -618,6 +652,57 @@ Slots: ${formationSlots}`
               </TouchableOpacity>
             </View>
           </View>
+
+          {/* AI Lineup Builder — collapsible */}
+          <TouchableOpacity
+            style={styles.lineupBuilderToggle}
+            onPress={() => setLineupBuilderOpen(v => !v)}
+            activeOpacity={0.8}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Text style={{ fontSize: 14 }}>⚡</Text>
+              <Text style={styles.lineupBuilderToggleText}>AI Lineup Builder</Text>
+            </View>
+            <Text style={{ color: '#6B7280', fontSize: 13 }}>{lineupBuilderOpen ? '▲' : '▼'}</Text>
+          </TouchableOpacity>
+
+          {lineupBuilderOpen && (
+            <View style={[styles.card, { marginTop: 0, borderTopLeftRadius: 0, borderTopRightRadius: 0, borderTopWidth: 0 }]}>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+                {['Strongest lineup', 'Equal playing time', 'Hide injured'].map(pill => {
+                  const active = lineupFocusPills.includes(pill)
+                  return (
+                    <TouchableOpacity
+                      key={pill}
+                      onPress={() => setLineupFocusPills(prev => active ? prev.filter(p => p !== pill) : [...prev, pill])}
+                      style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1.5, backgroundColor: active ? tc : '#F3F4F6', borderColor: active ? tc : '#E5E7EB' }}
+                    >
+                      <Text style={{ fontSize: 12, fontWeight: '600', color: active ? '#fff' : '#555' }}>{pill}</Text>
+                    </TouchableOpacity>
+                  )
+                })}
+              </View>
+              <TextInput
+                style={styles.promptInput}
+                placeholder={`e.g. #1 Sofia in goal all game, rotate everyone equally`}
+                placeholderTextColor="#bbb"
+                value={lineupPrompt}
+                onChangeText={setLineupPrompt}
+                multiline
+                numberOfLines={3}
+              />
+              <TouchableOpacity
+                style={[styles.generateBtn, { backgroundColor: (lineupPrompt.trim() || lineupFocusPills.length > 0) ? tc : '#E0E0E0' }]}
+                onPress={generateLineup}
+                disabled={lineupLoading || (!lineupPrompt.trim() && lineupFocusPills.length === 0)}
+              >
+                {lineupLoading
+                  ? <ActivityIndicator color="#fff" size="small" />
+                  : <Text style={styles.generateBtnText}>Generate lineup</Text>
+                }
+              </TouchableOpacity>
+            </View>
+          )}
 
           {viewMode === 'field' ? (
             <View style={styles.fieldContainer}>
@@ -809,57 +894,6 @@ Slots: ${formationSlots}`
               {players.filter(p => p.minutes < fairShare * 0.7).map(p => (
                 <Text key={p.id} style={styles.fairPlayAlert}>{p.name} needs more time ({formatMins(p.minutes)} vs {formatMins(fairShare)} avg)</Text>
               ))}
-            </View>
-          )}
-
-          {/* AI Lineup Builder — collapsible */}
-          <TouchableOpacity
-            style={styles.lineupBuilderToggle}
-            onPress={() => setLineupBuilderOpen(v => !v)}
-            activeOpacity={0.8}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Text style={{ fontSize: 14 }}>⚡</Text>
-              <Text style={styles.lineupBuilderToggleText}>AI Lineup Builder</Text>
-            </View>
-            <Text style={{ color: '#6B7280', fontSize: 13 }}>{lineupBuilderOpen ? '▲' : '▼'}</Text>
-          </TouchableOpacity>
-
-          {lineupBuilderOpen && (
-            <View style={[styles.card, { marginTop: 0, borderTopLeftRadius: 0, borderTopRightRadius: 0, borderTopWidth: 0 }]}>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
-                {['Strongest lineup', 'Equal playing time', 'Hide injured'].map(pill => {
-                  const active = lineupFocusPills.includes(pill)
-                  return (
-                    <TouchableOpacity
-                      key={pill}
-                      onPress={() => setLineupFocusPills(prev => active ? prev.filter(p => p !== pill) : [...prev, pill])}
-                      style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1.5, backgroundColor: active ? tc : '#F3F4F6', borderColor: active ? tc : '#E5E7EB' }}
-                    >
-                      <Text style={{ fontSize: 12, fontWeight: '600', color: active ? '#fff' : '#555' }}>{pill}</Text>
-                    </TouchableOpacity>
-                  )
-                })}
-              </View>
-              <TextInput
-                style={styles.promptInput}
-                placeholder={`e.g. #1 Sofia in goal all game, rotate everyone equally`}
-                placeholderTextColor="#bbb"
-                value={lineupPrompt}
-                onChangeText={setLineupPrompt}
-                multiline
-                numberOfLines={3}
-              />
-              <TouchableOpacity
-                style={[styles.generateBtn, { backgroundColor: (lineupPrompt.trim() || lineupFocusPills.length > 0) ? tc : '#E0E0E0' }]}
-                onPress={generateLineup}
-                disabled={lineupLoading || (!lineupPrompt.trim() && lineupFocusPills.length === 0)}
-              >
-                {lineupLoading
-                  ? <ActivityIndicator color="#fff" size="small" />
-                  : <Text style={styles.generateBtnText}>Generate lineup</Text>
-                }
-              </TouchableOpacity>
             </View>
           )}
 
