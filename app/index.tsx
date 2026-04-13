@@ -4,6 +4,7 @@ import {
   KeyboardAvoidingView, Platform, Alert, ActivityIndicator,
   Dimensions, ScrollView, Animated,
 } from 'react-native'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useRouter } from 'expo-router'
 import { supabase } from '../lib/supabase'
 
@@ -109,10 +110,19 @@ export default function EntryScreen() {
   }, [screen, onboardingStep])
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) router.replace('/home')
-      else setScreen('splash')
-    })
+    const init = async () => {
+      const seen = await AsyncStorage.getItem('hasSeenOnboarding')
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!seen) {
+        setScreen('splash')
+      } else if (session) {
+        router.replace('/home')
+      } else {
+        setAuthMode('signin')
+        setScreen('auth')
+      }
+    }
+    init()
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) router.replace('/home')
     })
@@ -127,6 +137,12 @@ export default function EntryScreen() {
     Animated.spring(r === 'coach' ? parentScale : coachScale, {
       toValue: 1, useNativeDriver: true, damping: 10,
     }).start()
+  }
+
+  const goToAuth = async (mode: AuthMode) => {
+    await AsyncStorage.setItem('hasSeenOnboarding', 'true')
+    setAuthMode(mode)
+    setScreen('auth')
   }
 
   const handleAuth = async () => {
@@ -188,7 +204,7 @@ export default function EntryScreen() {
           <TouchableOpacity style={styles.primaryBtn} onPress={() => setScreen('role')}>
             <Text style={styles.splashBtnText}>Get started — it's free</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.ghostBtn} onPress={() => { setAuthMode('signin'); setScreen('auth') }}>
+          <TouchableOpacity style={styles.ghostBtn} onPress={() => goToAuth('signin')}>
             <Text style={styles.ghostBtnText}>I already have an account</Text>
           </TouchableOpacity>
         </View>
@@ -402,7 +418,7 @@ export default function EntryScreen() {
           <TouchableOpacity
             style={styles.primaryBtnDark}
             onPress={() => {
-              if (isLast) { setAuthMode('signup'); setScreen('auth') }
+              if (isLast) { goToAuth('signup') }
               else setOnboardingStep(onboardingStep + 1)
             }}
           >
@@ -411,12 +427,12 @@ export default function EntryScreen() {
             </Text>
           </TouchableOpacity>
           {!isLast && (
-            <TouchableOpacity style={styles.ghostBtnDark} onPress={() => { setAuthMode('signup'); setScreen('auth') }}>
+            <TouchableOpacity style={styles.ghostBtnDark} onPress={() => goToAuth('signup')}>
               <Text style={styles.ghostBtnDarkText}>Skip to create account</Text>
             </TouchableOpacity>
           )}
           {isLast && (
-            <TouchableOpacity style={styles.ghostBtnDark} onPress={() => { setAuthMode('signin'); setScreen('auth') }}>
+            <TouchableOpacity style={styles.ghostBtnDark} onPress={() => goToAuth('signin')}>
               <Text style={styles.ghostBtnDarkText}>I already have an account</Text>
             </TouchableOpacity>
           )}
