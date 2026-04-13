@@ -94,7 +94,7 @@ export function AppHeader({ teamColor = '#1A56DB', teamName, onTeamPress, showTe
         </View>
       </TouchableOpacity>
 
-      <View style={styles.center}>
+      <View style={styles.center} pointerEvents="none">
         <Text style={styles.ball}>⚽</Text>
         <Text style={[styles.wordmark, { color: '#1A56DB' }]}>Huddle</Text>
         <Text style={styles.ball}>⚽</Text>
