@@ -169,7 +169,12 @@ export default function HomeScreen() {
     if (teamData.id === team?.id) return
     setTeam(teamData)
     const membership = allTeams.find(m => m.team?.id === teamData.id)
-    const memberRole = membership?.role ?? .coach.; setRole(memberRole); if (memberRole === .parent.) { router.replace(./parent-home.); return }
+    const memberRole = membership?.role ?? 'coach'
+    setRole(memberRole)
+    if (memberRole === 'parent') {
+      router.replace('/parent-home')
+      return
+    }
     setHeroSwitching(true)
     setPlan(null)
 
