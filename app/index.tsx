@@ -40,8 +40,8 @@ const ONBOARDING = {
     },
     {
       emoji: '💬',
-      title: 'Stay connected',
-      desc: 'Message the coach, get updates, no more group texts.',
+      title: 'Never miss a beat',
+      desc: 'Chat with your team, stay on top of snack duty, and get updates the moment they happen.',
       nextLabel: 'Next: Build momentum',
     },
     {
