@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Linking, Alert } from 'react-native'
+import { useEffect, useState, useRef } from 'react'
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Linking, Alert, Animated } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { AppHeader } from '../lib/header'
@@ -49,12 +49,17 @@ export default function HomeScreen() {
   const [showTeamPicker, setShowTeamPicker] = useState(false)
   const [snacks] = useState(SNACK_DATA)
   const [pollOptions] = useState(POLL_OPTS)
+  const [currentUser, setCurrentUser] = useState<any>(null)
+  const [myRsvp, setMyRsvp] = useState<'yes' | 'no' | null>(null)
+  const [toastVisible, setToastVisible] = useState(false)
+  const toastAnim = useRef(new Animated.Value(-60)).current
 
   useEffect(() => { loadData() }, [])
 
   const loadData = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
+    setCurrentUser(user)
 
     const { data: memberships } = await supabase
       .from('team_members')
@@ -215,6 +220,45 @@ export default function HomeScreen() {
     return msg.sender.display_name || msg.sender.email?.split('@')[0] || 'Team'
   }
 
+  const showToast = () => {
+    setToastVisible(true)
+    Animated.timing(toastAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start(() => {
+      setTimeout(() => {
+        Animated.timing(toastAnim, { toValue: -60, duration: 300, useNativeDriver: true }).start(() => {
+          setToastVisible(false)
+        })
+      }, 2000)
+    })
+  }
+
+  const handleRsvp = async (status: 'yes' | 'no') => {
+    if (!nextEvent || !currentUser || !team) return
+    const prev = myRsvp
+    setMyRsvp(status)
+    if (status === 'yes') {
+      setRsvpYes(n => n + (prev === 'yes' ? 0 : 1))
+      if (prev === 'no') setRsvpNo(n => Math.max(0, n - 1))
+    } else {
+      setRsvpNo(n => n + (prev === 'no' ? 0 : 1))
+      if (prev === 'yes') setRsvpYes(n => Math.max(0, n - 1))
+    }
+    await supabase.from('rsvps').upsert(
+      { event_id: nextEvent.id, user_id: currentUser.id, status },
+      { onConflict: 'event_id,user_id' }
+    )
+    const eventLabel = nextEvent.type === 'practice'
+      ? 'Practice'
+      : `Game vs ${nextEvent.opponent ?? 'opponent'}`
+    const dateLabel = new Date(nextEvent.starts_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    await supabase.from('messages').insert({
+      team_id: team.id,
+      user_id: currentUser.id,
+      body: `✅ Coach is ${status === 'yes' ? 'Going' : 'Not going'} to ${eventLabel} on ${dateLabel}!`,
+      type: 'user',
+    })
+    showToast()
+  }
+
   const scheduleEvents = events.length > 0 ? events : getScheduleEvents()
   const nextEvent = scheduleEvents[0] ?? null
   const upcomingEvents = events.length > 0 ? events.slice(1, 4) : getScheduleEvents().slice(1, 4)
@@ -274,6 +318,12 @@ export default function HomeScreen() {
         </View>
       )}
 
+      {toastVisible && (
+        <Animated.View style={[styles.toast, { transform: [{ translateY: toastAnim }] }]}>
+          <Text style={styles.toastText}>RSVP confirmed! Team notified 💬</Text>
+        </Animated.View>
+      )}
+
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
         {/* 1. Hero event card */}
@@ -313,6 +363,22 @@ export default function HomeScreen() {
                 {rsvpNo > 0 ? ` · ${rsvpNo} out` : ''}
                 {pending > 0 ? ` · ${pending} pending` : ''}
               </Text>
+            </View>
+            <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
+              <TouchableOpacity
+                style={[styles.rsvpBtn, myRsvp === 'yes' && styles.rsvpBtnGoing]}
+                onPress={() => handleRsvp('yes')}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.rsvpBtnText}>{myRsvp === 'yes' ? '✅ Going' : 'Going'}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.rsvpBtn, myRsvp === 'no' && styles.rsvpBtnOut]}
+                onPress={() => handleRsvp('no')}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.rsvpBtnText}>{myRsvp === 'no' ? "❌ Can't make it" : "Can't make it"}</Text>
+              </TouchableOpacity>
             </View>
           </View>
         ) : (
@@ -399,7 +465,7 @@ export default function HomeScreen() {
                   </View>
                 )
               })}
-              <TouchableOpacity onPress={() => router.push('/games')}>
+              <TouchableOpacity onPress={() => router.push({ pathname: '/games', params: { initialTab: 'schedule' } })}>
                 <Text style={[styles.viewLink, { color: tc }]}>View full schedule →</Text>
               </TouchableOpacity>
             </View>
@@ -452,7 +518,7 @@ export default function HomeScreen() {
         {/* 6. Snack schedule */}
         <TouchableOpacity
           style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#F59E0B', padding: 0, overflow: 'hidden' }]}
-          onPress={() => router.push({ pathname: '/games', params: { tab: 'snacks' } })}
+          onPress={() => router.push({ pathname: '/games', params: { initialTab: 'snacks' } })}
           activeOpacity={0.85}
         >
           <View style={styles.snackCardHeader}>
@@ -476,7 +542,7 @@ export default function HomeScreen() {
         {/* 7. Team poll */}
         <TouchableOpacity
           style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#8B5CF6', padding: 0, overflow: 'hidden' }]}
-          onPress={() => router.push({ pathname: '/games', params: { tab: 'polls' } })}
+          onPress={() => router.push({ pathname: '/games', params: { initialTab: 'polls' } })}
           activeOpacity={0.85}
         >
           <View style={styles.pollCardHeader}>
@@ -542,6 +608,12 @@ const styles = StyleSheet.create({
   heroCalLink: { fontSize: 12, color: 'rgba(255,255,255,0.85)', fontWeight: '600', marginBottom: 8 },
   rsvpRow: { backgroundColor: 'rgba(0,0,0,0.15)', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 },
   rsvpText: { fontSize: 12, color: 'rgba(255,255,255,0.85)', fontWeight: '600' },
+  rsvpBtn: { flex: 1, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
+  rsvpBtnGoing: { backgroundColor: '#059669' },
+  rsvpBtnOut: { backgroundColor: '#DC2626' },
+  rsvpBtnText: { fontSize: 13, fontWeight: '700', color: '#fff' },
+  toast: { position: 'absolute', top: 50, left: 0, right: 0, zIndex: 100, backgroundColor: '#059669', paddingVertical: 12, paddingHorizontal: 16, alignItems: 'center' },
+  toastText: { fontSize: 14, fontWeight: '700', color: '#fff' },
   emptyHero: { backgroundColor: '#fff', borderRadius: 18, padding: 24, marginBottom: 12, alignItems: 'center', borderWidth: 0.5, borderColor: '#eee' },
   emptyTitle: { fontSize: 16, fontWeight: '700', color: '#1a1a1a', marginBottom: 6 },
   emptySub: { fontSize: 13, color: '#888', textAlign: 'center' },

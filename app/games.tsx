@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, TextInput } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useRouter } from 'expo-router'
+import { useRouter, useLocalSearchParams } from 'expo-router'
 import { supabase } from '../lib/supabase'
 import { AppHeader } from '../lib/header'
 import { SEASON_SCHEDULE } from '../lib/season'
@@ -90,6 +90,7 @@ type Player = {
 
 export default function GamesScreen() {
   const router = useRouter()
+  const { initialTab } = useLocalSearchParams<{ initialTab?: string }>()
   const [team, setTeam] = useState<any>(null)
   const [players, setPlayers] = useState<Player[]>([])
   const [events, setEvents] = useState<any[]>([])
@@ -125,6 +126,10 @@ export default function GamesScreen() {
   const [votedOption, setVotedOption] = useState<number | null>(null)
 
   useEffect(() => {
+    const validTabs = ['schedule', 'games', 'roster', 'standings', 'snacks', 'polls']
+    if (initialTab && validTabs.includes(initialTab)) {
+      setActiveTab(initialTab as typeof activeTab)
+    }
     loadData()
     return () => { if (timerRef.current) clearInterval(timerRef.current) }
   }, [])
