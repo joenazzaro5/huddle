@@ -111,7 +111,7 @@ export default function EntryScreen() {
 
   useEffect(() => {
     const init = async () => {
-      const seen = await AsyncStorage.getItem('hasSeenOnboarding')
+      const seen = await AsyncStorage.getItem('huddle_onboarding_complete')
       const { data: { session } } = await supabase.auth.getSession()
       if (!seen) {
         setScreen('splash')
@@ -123,8 +123,11 @@ export default function EntryScreen() {
       }
     }
     init()
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session) router.replace('/home')
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        const seen = await AsyncStorage.getItem('huddle_onboarding_complete')
+        if (seen) router.replace('/home')
+      }
     })
     return () => subscription.unsubscribe()
   }, [])
@@ -140,7 +143,7 @@ export default function EntryScreen() {
   }
 
   const goToAuth = async (mode: AuthMode) => {
-    await AsyncStorage.setItem('hasSeenOnboarding', 'true')
+    await AsyncStorage.setItem('huddle_onboarding_complete', 'true')
     setAuthMode(mode)
     setScreen('auth')
   }
