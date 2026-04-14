@@ -170,10 +170,9 @@ export default function HomeScreen() {
       setIsAiPlan(true)
     } catch {
       setIsOfflinePlan(true)
-      const cacheKey = `huddle_cached_plan_${teamData?.id}`
-      const existing = await AsyncStorage.getItem(cacheKey)
+      const existing = await AsyncStorage.getItem('huddle_active_plan')
       if (!existing) {
-        await AsyncStorage.setItem(cacheKey, JSON.stringify({ plan: FALLBACK_PLAN, timestamp: 0 }))
+        await AsyncStorage.setItem('huddle_active_plan', JSON.stringify({ plan: FALLBACK_PLAN, timestamp: 0 }))
       }
     } finally {
       setPlanLoading(false)

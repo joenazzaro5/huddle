@@ -394,7 +394,7 @@ export default function PracticeScreen() {
               </View>
               <View>
                 <Text style={styles.cardTitle}>Adjust your plan</Text>
-                <Text style={styles.cardSub}>{team?.age_group ?? 'U10'} · Play-Practice-Play · 60 min</Text>
+                <Text style={styles.cardSub}>{team?.age_group} · Play-Practice-Play · 60 min</Text>
               </View>
             </View>
 
