@@ -2,16 +2,13 @@ import { useEffect, useState, useRef } from 'react'
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, Platform, Alert, ActivityIndicator,
-  Dimensions, ScrollView, Animated,
+  Animated,
 } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useRouter } from 'expo-router'
 import { supabase } from '../lib/supabase'
 
-const { width } = Dimensions.get('window')
 const BLUE = '#1A56DB'
-
-const AGE_GROUPS = ['U6', 'U8', 'U10', 'U12', 'U14', 'U16']
 
 const ONBOARDING = {
   coach: [
@@ -23,13 +20,13 @@ const ONBOARDING = {
     },
     {
       emoji: '📋',
-      title: 'Game day, your way',
+      title: 'Game day command center',
       desc: 'Build your starting lineup, plan substitutions, and track playing time — all in one place.',
       nextLabel: 'Next: Your team',
     },
     {
       emoji: '💬',
-      title: 'Your whole team, connected',
+      title: 'Keep everyone connected',
       desc: 'Message parents, track RSVPs, and share the schedule. No more group texts.',
       nextLabel: null,
     },
@@ -49,14 +46,14 @@ const ONBOARDING = {
     },
     {
       emoji: '🔥',
-      title: 'Practice at home, build streaks',
+      title: 'Practice at home',
       desc: 'Follow drill tips and build a practice streak together. Progress you can see.',
       nextLabel: null,
     },
   ],
 }
 
-type Screen = 'checking' | 'splash' | 'role' | 'context' | 'onboarding' | 'auth'
+type Screen = 'checking' | 'role' | 'onboarding' | 'auth'
 type Role = 'coach' | 'parent' | null
 type AuthMode = 'signin' | 'signup'
 
@@ -69,32 +66,11 @@ export default function EntryScreen() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
-  const [teamName, setTeamName] = useState('')
-  const [ageGroup, setAgeGroup] = useState('')
-  const [teamCode, setTeamCode] = useState('')
 
   // Animations
-  const pulseAnim = useRef(new Animated.Value(1)).current
   const coachScale = useRef(new Animated.Value(1)).current
   const parentScale = useRef(new Animated.Value(1)).current
   const emojiAnim = useRef(new Animated.Value(1)).current
-  const pulseLoopRef = useRef<Animated.CompositeAnimation | null>(null)
-
-  // Pulse loop while splash is showing
-  useEffect(() => {
-    if (screen === 'splash') {
-      pulseLoopRef.current = Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, { toValue: 1.05, duration: 800, useNativeDriver: true }),
-          Animated.timing(pulseAnim, { toValue: 1.0,  duration: 800, useNativeDriver: true }),
-        ])
-      )
-      pulseLoopRef.current.start()
-    } else {
-      pulseLoopRef.current?.stop()
-      pulseAnim.setValue(1)
-    }
-  }, [screen])
 
   // Emoji bounce on each slide mount
   useEffect(() => {
@@ -114,7 +90,7 @@ export default function EntryScreen() {
       const seen = await AsyncStorage.getItem('huddle_onboarding_complete')
       const { data: { session } } = await supabase.auth.getSession()
       if (!seen) {
-        setScreen('splash')
+        setScreen('role')
       } else if (session) {
         router.replace('/home')
       } else {
@@ -175,56 +151,12 @@ export default function EntryScreen() {
     )
   }
 
-  // ── Splash ──────────────────────────────────────────────────────
-  if (screen === 'splash') {
-    return (
-      <View style={styles.splash}>
-        <View style={styles.splashTop}>
-          <Animated.View style={[styles.iconWrap, { transform: [{ scale: pulseAnim }] }]}>
-            <Text style={styles.iconEmoji}>🤝</Text>
-          </Animated.View>
-          <Text style={styles.wordmark}>Huddle</Text>
-          <Text style={styles.splashTagline}>Your team. Your season. All in one place.</Text>
-        </View>
-
-        <View style={styles.splashFeatures}>
-          {[
-            { emoji: '⚡', title: 'AI practice plans in seconds',              desc: 'Pick your focus, tap generate. A full session, done.' },
-            { emoji: '📅', title: 'Schedules, RSVPs, and game day tools',      desc: 'Everything your team needs, all in one place.' },
-            { emoji: '💬', title: 'Connect coaches, parents, and players',     desc: 'No more group texts. One app for everyone.' },
-          ].map((f, i) => (
-            <View key={i} style={styles.featureCard}>
-              <Text style={styles.featureEmoji}>{f.emoji}</Text>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.featureTitle}>{f.title}</Text>
-                <Text style={styles.featureDesc}>{f.desc}</Text>
-              </View>
-            </View>
-          ))}
-        </View>
-
-        <View style={styles.splashButtons}>
-          <TouchableOpacity style={styles.primaryBtn} onPress={() => setScreen('role')}>
-            <Text style={styles.splashBtnText}>Get started — it's free</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.ghostBtn} onPress={() => goToAuth('signin')}>
-            <Text style={styles.ghostBtnText}>I already have an account</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    )
-  }
-
   // ── Role selection ──────────────────────────────────────────────
   if (screen === 'role') {
     return (
       <View style={styles.container}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => setScreen('splash')}>
-          <Text style={styles.backText}>← Back</Text>
-        </TouchableOpacity>
-
-        <Text style={styles.roleHeading}>I am a...</Text>
-        <Text style={styles.roleSub}>Choose your role to get the right experience</Text>
+        <Text style={styles.roleHeading}>Welcome to Huddle</Text>
+        <Text style={styles.roleSub}>How will you be using Huddle?</Text>
 
         <Animated.View style={{ transform: [{ scale: coachScale }] }}>
           <TouchableOpacity
@@ -232,14 +164,10 @@ export default function EntryScreen() {
             onPress={() => selectRole('coach')}
             activeOpacity={0.9}
           >
-            <Text style={styles.roleCardBigEmoji}>📋⚡</Text>
+            <Text style={styles.roleCardBigEmoji}>📋</Text>
             <View style={{ flex: 1 }}>
               <Text style={styles.roleCardTitle}>Coach</Text>
-              <Text style={styles.roleCardPayoff}>Build plans in seconds. Run game day like a pro.</Text>
-              <Text style={styles.roleCardDesc}>Practice plans · Lineup builder · Schedule & RSVPs</Text>
-            </View>
-            <View style={[styles.roleRadio, role === 'coach' && styles.roleRadioActive]}>
-              {role === 'coach' && <View style={styles.roleRadioDot} />}
+              <Text style={styles.roleCardDesc}>Build AI practice plans, manage your roster, and keep your team organized.</Text>
             </View>
           </TouchableOpacity>
         </Animated.View>
@@ -250,140 +178,22 @@ export default function EntryScreen() {
             onPress={() => selectRole('parent')}
             activeOpacity={0.9}
           >
-            <Text style={styles.roleCardBigEmoji}>📅❤️</Text>
+            <Text style={styles.roleCardBigEmoji}>👨‍👧</Text>
             <View style={{ flex: 1 }}>
-              <Text style={styles.roleCardTitle}>Parent</Text>
-              <Text style={styles.roleCardPayoff}>Never miss a thing. Always know what's next.</Text>
-              <Text style={styles.roleCardDesc}>Schedule · RSVPs · Team updates · Chat</Text>
-            </View>
-            <View style={[styles.roleRadio, role === 'parent' && styles.roleRadioActive]}>
-              {role === 'parent' && <View style={styles.roleRadioDot} />}
+              <Text style={styles.roleCardTitle}>Parent / Guardian</Text>
+              <Text style={styles.roleCardDesc}>Stay in the loop with schedules, RSVPs, and team updates from your coach.</Text>
             </View>
           </TouchableOpacity>
         </Animated.View>
 
         <TouchableOpacity
           style={[styles.primaryBtnDark, !role && { opacity: 0.4 }]}
-          onPress={() => { if (role) setScreen('context') }}
+          onPress={() => { if (role) { setOnboardingStep(0); setScreen('onboarding') } }}
           disabled={!role}
         >
-          <Text style={styles.primaryBtnText}>Continue</Text>
+          <Text style={styles.primaryBtnText}>Continue →</Text>
         </TouchableOpacity>
       </View>
-    )
-  }
-
-  // ── Context step ────────────────────────────────────────────────
-  if (screen === 'context') {
-
-    // Coach context: team name + age group
-    if (role === 'coach') {
-      return (
-        <KeyboardAvoidingView
-          style={styles.container}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
-          <TouchableOpacity style={styles.backBtn} onPress={() => setScreen('role')}>
-            <Text style={styles.backText}>← Back</Text>
-          </TouchableOpacity>
-
-          <View style={{ flex: 1, justifyContent: 'center' }}>
-            <Text style={styles.contextHeading}>Tell us about your team</Text>
-            <Text style={styles.contextSub}>We'll personalize your experience right from the start.</Text>
-
-            <Text style={styles.contextLabel}>Team name</Text>
-            <TextInput
-              style={styles.contextInput}
-              placeholder="e.g. Marin Cheetahs"
-              placeholderTextColor="#bbb"
-              value={teamName}
-              onChangeText={setTeamName}
-              autoCapitalize="words"
-            />
-
-            <Text style={[styles.contextLabel, { marginTop: 20 }]}>Age group</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={{ marginBottom: 36 }}
-              contentContainerStyle={{ paddingVertical: 4, gap: 8, flexDirection: 'row' }}
-            >
-              {AGE_GROUPS.map(g => (
-                <TouchableOpacity
-                  key={g}
-                  style={[styles.agePill, ageGroup === g && styles.agePillActive]}
-                  onPress={() => setAgeGroup(g)}
-                >
-                  <Text style={[styles.agePillText, ageGroup === g && styles.agePillTextActive]}>{g}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-
-            <TouchableOpacity
-              style={[styles.primaryBtnDark, (!teamName.trim() || !ageGroup) && { opacity: 0.4 }]}
-              onPress={() => {
-                if (teamName.trim() && ageGroup) { setOnboardingStep(0); setScreen('onboarding') }
-              }}
-              disabled={!teamName.trim() || !ageGroup}
-            >
-              <Text style={styles.primaryBtnText}>Let's go →</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.ghostBtnDark}
-              onPress={() => { setOnboardingStep(0); setScreen('onboarding') }}
-            >
-              <Text style={styles.ghostBtnDarkText}>Skip for now</Text>
-            </TouchableOpacity>
-          </View>
-        </KeyboardAvoidingView>
-      )
-    }
-
-    // Parent context: team code
-    return (
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
-        <TouchableOpacity style={styles.backBtn} onPress={() => setScreen('role')}>
-          <Text style={styles.backText}>← Back</Text>
-        </TouchableOpacity>
-
-        <View style={{ flex: 1, justifyContent: 'center' }}>
-          <Text style={styles.contextHeading}>Join your team</Text>
-          <Text style={styles.contextSub}>Enter the code your coach shared with you.</Text>
-
-          <Text style={styles.contextLabel}>Team code</Text>
-          <TextInput
-            style={[styles.contextInput, styles.codeInput]}
-            placeholder="ABC123"
-            placeholderTextColor="#bbb"
-            value={teamCode}
-            onChangeText={t => setTeamCode(t.toUpperCase().slice(0, 6))}
-            autoCapitalize="characters"
-            maxLength={6}
-          />
-          <Text style={styles.contextNote}>Get this code from your coach</Text>
-
-          <TouchableOpacity
-            style={[styles.primaryBtnDark, { marginTop: 24 }, teamCode.length < 6 && { opacity: 0.4 }]}
-            onPress={() => {
-              if (teamCode.length === 6) { setOnboardingStep(0); setScreen('onboarding') }
-            }}
-            disabled={teamCode.length < 6}
-          >
-            <Text style={styles.primaryBtnText}>Join team →</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.ghostBtnDark}
-            onPress={() => { setOnboardingStep(0); setScreen('onboarding') }}
-          >
-            <Text style={styles.ghostBtnDarkText}>I don't have a code yet</Text>
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
     )
   }
 
@@ -398,7 +208,7 @@ export default function EntryScreen() {
       <View style={[styles.container, { backgroundColor: slideBg }]}>
         <TouchableOpacity style={styles.backBtn} onPress={() => {
           if (onboardingStep > 0) setOnboardingStep(onboardingStep - 1)
-          else setScreen('context')
+          else setScreen('role')
         }}>
           <Text style={styles.backText}>← Back</Text>
         </TouchableOpacity>
@@ -447,7 +257,7 @@ export default function EntryScreen() {
   // ── Auth ────────────────────────────────────────────────────────
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <TouchableOpacity style={styles.backBtn} onPress={() => setScreen(role ? 'onboarding' : 'splash')}>
+      <TouchableOpacity style={styles.backBtn} onPress={() => setScreen(role ? 'onboarding' : 'role')}>
         <Text style={styles.backText}>← Back</Text>
       </TouchableOpacity>
 
@@ -455,18 +265,20 @@ export default function EntryScreen() {
         <Text style={styles.authTitle}>{authMode === 'signin' ? 'Welcome back' : 'Create your account'}</Text>
         <Text style={styles.authSub}>{authMode === 'signin' ? 'Sign in to continue' : 'Start your free account'}</Text>
 
+        <Text style={styles.authLabel}>Email</Text>
         <TextInput
           style={styles.authInput}
-          placeholder="Email"
+          placeholder="you@example.com"
           placeholderTextColor="#aaa"
           value={email}
           onChangeText={setEmail}
           autoCapitalize="none"
           keyboardType="email-address"
         />
+        <Text style={styles.authLabel}>Password</Text>
         <TextInput
           style={styles.authInput}
-          placeholder="Password"
+          placeholder="••••••••"
           placeholderTextColor="#aaa"
           value={password}
           onChangeText={setPassword}
@@ -495,13 +307,12 @@ export default function EntryScreen() {
 }
 
 const styles = StyleSheet.create({
-  // ── Splash ──────────────────────────────────────────────────────
+  // ── Splash / Loading ─────────────────────────────────────────────
   splash: {
     flex: 1, backgroundColor: BLUE,
-    paddingHorizontal: 28, paddingTop: 80, paddingBottom: 48,
-    justifyContent: 'space-between',
+    alignItems: 'center', justifyContent: 'center',
+    paddingHorizontal: 28,
   },
-  splashTop: { alignItems: 'center' },
   iconWrap: {
     width: 88, height: 88, borderRadius: 24,
     backgroundColor: 'rgba(255,255,255,0.15)',
@@ -509,20 +320,6 @@ const styles = StyleSheet.create({
   },
   iconEmoji: { fontSize: 42 },
   wordmark: { fontSize: 48, fontWeight: '900', color: '#fff', letterSpacing: -2, marginBottom: 8 },
-  splashTagline: { fontSize: 15, color: 'rgba(255,255,255,0.75)', letterSpacing: 0.3, textAlign: 'center', lineHeight: 22 },
-  splashFeatures: { gap: 12 },
-  featureCard: {
-    flexDirection: 'row', alignItems: 'center', gap: 14,
-    backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 16, padding: 14,
-  },
-  featureEmoji: { fontSize: 22, width: 32, textAlign: 'center' },
-  featureTitle: { fontSize: 15, color: '#fff', fontWeight: '700', marginBottom: 2 },
-  featureDesc: { fontSize: 13, color: 'rgba(255,255,255,0.6)', lineHeight: 18 },
-  splashButtons: { gap: 12 },
-  primaryBtn: { backgroundColor: '#fff', borderRadius: 16, paddingVertical: 17, alignItems: 'center' },
-  splashBtnText: { fontSize: 16, fontWeight: '700', color: BLUE },
-  ghostBtn: { borderRadius: 16, paddingVertical: 14, alignItems: 'center' },
-  ghostBtnText: { fontSize: 15, color: 'rgba(255,255,255,0.7)', fontWeight: '500' },
 
   // ── Shared container ─────────────────────────────────────────────
   container: { flex: 1, backgroundColor: '#fff', paddingHorizontal: 24, paddingTop: 56, paddingBottom: 40 },
@@ -534,7 +331,7 @@ const styles = StyleSheet.create({
   ghostBtnDarkText: { fontSize: 15, color: '#888', fontWeight: '500' },
 
   // ── Role ──────────────────────────────────────────────────────────
-  roleHeading: { fontSize: 30, fontWeight: '900', color: '#111827', letterSpacing: -0.5, marginBottom: 6 },
+  roleHeading: { fontSize: 30, fontWeight: '900', color: '#111827', letterSpacing: -0.5, marginBottom: 6, marginTop: 24 },
   roleSub: { fontSize: 14, color: '#888', marginBottom: 28 },
   roleCard: {
     flexDirection: 'row', alignItems: 'center', gap: 14,
@@ -544,38 +341,8 @@ const styles = StyleSheet.create({
   },
   roleCardActive: { borderColor: BLUE, backgroundColor: '#EEF4FF' },
   roleCardBigEmoji: { fontSize: 32, lineHeight: 40 },
-  roleCardTitle: { fontSize: 18, fontWeight: '800', color: '#111827', marginBottom: 3 },
-  roleCardPayoff: { fontSize: 13, fontWeight: '600', color: BLUE, marginBottom: 4, lineHeight: 18 },
-  roleCardDesc: { fontSize: 12, color: '#999', lineHeight: 17 },
-  roleRadio: {
-    width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: '#D1D5DB',
-    alignItems: 'center', justifyContent: 'center',
-  },
-  roleRadioActive: { borderColor: BLUE },
-  roleRadioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: BLUE },
-
-  // ── Context ───────────────────────────────────────────────────────
-  contextHeading: { fontSize: 28, fontWeight: '900', color: '#111827', letterSpacing: -0.5, marginBottom: 8 },
-  contextSub: { fontSize: 15, color: '#888', marginBottom: 32, lineHeight: 22 },
-  contextLabel: { fontSize: 13, fontWeight: '700', color: '#555', marginBottom: 8 },
-  contextInput: {
-    backgroundColor: '#F9FAFB', borderRadius: 14,
-    paddingHorizontal: 16, paddingVertical: 14,
-    fontSize: 16, color: '#111827',
-    borderWidth: 1.5, borderColor: '#E5E7EB',
-  },
-  codeInput: {
-    textTransform: 'uppercase', letterSpacing: 6,
-    fontSize: 24, textAlign: 'center', fontWeight: '700',
-  },
-  contextNote: { fontSize: 12, color: '#aaa', marginTop: 8, marginBottom: 4 },
-  agePill: {
-    paddingHorizontal: 18, paddingVertical: 10,
-    borderRadius: 20, borderWidth: 1.5, borderColor: '#E5E7EB', backgroundColor: '#F9FAFB',
-  },
-  agePillActive: { backgroundColor: BLUE, borderColor: BLUE },
-  agePillText: { fontSize: 14, fontWeight: '700', color: '#555' },
-  agePillTextActive: { color: '#fff' },
+  roleCardTitle: { fontSize: 18, fontWeight: '800', color: '#111827', marginBottom: 4 },
+  roleCardDesc: { fontSize: 13, color: '#6B7280', lineHeight: 19 },
 
   // ── Onboarding ───────────────────────────────────────────────────
   onboardingDots: { flexDirection: 'row', gap: 6, marginBottom: 48 },
@@ -591,10 +358,11 @@ const styles = StyleSheet.create({
   authContent: { flex: 1, justifyContent: 'center' },
   authTitle: { fontSize: 30, fontWeight: '900', color: '#111827', letterSpacing: -0.5, marginBottom: 6 },
   authSub: { fontSize: 14, color: '#888', marginBottom: 32 },
+  authLabel: { fontSize: 14, fontWeight: '500', color: '#6B7280', marginBottom: 6 },
   authInput: {
     backgroundColor: '#F9FAFB', borderRadius: 14,
     paddingHorizontal: 16, paddingVertical: 14,
-    fontSize: 16, color: '#111827', marginBottom: 12,
+    fontSize: 16, color: '#111827', marginBottom: 16,
     borderWidth: 1, borderColor: '#E5E7EB',
   },
   authToggle: { fontSize: 14, color: BLUE, textAlign: 'center', marginTop: 20, fontWeight: '500' },
