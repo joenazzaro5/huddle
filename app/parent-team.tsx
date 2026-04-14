@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useLocalSearchParams } from 'expo-router'
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { AppHeader } from '../lib/header'
@@ -24,7 +25,8 @@ export default function ParentTeamScreen() {
   const [team, setTeam] = useState<any>(null)
   const [players, setPlayers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'schedule' | 'roster' | 'standings' | 'snacks' | 'polls'>('schedule')
+  const params = useLocalSearchParams()
+  const [activeTab, setActiveTab] = useState<'schedule' | 'roster' | 'standings' | 'snacks' | 'polls'>((params.tab as any) || 'schedule')
   const [rsvpMap, setRsvpMap] = useState<Record<string, 'yes' | 'no' | 'maybe'>>({})
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [snackData, setSnackData] = useState([
