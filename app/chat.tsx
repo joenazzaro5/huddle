@@ -25,6 +25,10 @@ export default function ChatScreen() {
   const [gifQuery, setGifQuery] = useState('soccer')
   const [gifs, setGifs] = useState<any[]>([])
   const [gifLoading, setGifLoading] = useState(false)
+  const [pollModalVisible, setPollModalVisible] = useState(false)
+  const [pollQuestion, setPollQuestion] = useState('')
+  const [pollOpts, setPollOpts] = useState(['', '', ''])
+  const [pollVotes, setPollVotes] = useState<Record<string, number>>({})
   const scrollRef = useRef<ScrollView>(null)
   const teamIdRef = useRef<string | null>(null)
   const latestMessageRef = useRef<string | null>(null)
@@ -126,6 +130,24 @@ export default function ChatScreen() {
       setGifs([])
     }
     setGifLoading(false)
+  }
+
+  const sendPoll = async () => {
+    if (!team || !currentUser || !pollQuestion.trim()) return
+    const options = pollOpts.filter(o => o.trim())
+    if (options.length < 2) return
+    const body = 'POLL:' + JSON.stringify({ question: pollQuestion.trim(), options })
+    setPollModalVisible(false)
+    setPollQuestion('')
+    setPollOpts(['', '', ''])
+    const { error } = await supabase.from('messages').insert({
+      team_id: team.id, user_id: currentUser.id, body, type: 'user',
+    })
+    if (!error && teamIdRef.current) await loadMessages(teamIdRef.current)
+  }
+
+  const votePoll = (msgId: string, optIndex: number) => {
+    setPollVotes(prev => ({ ...prev, [msgId]: optIndex }))
   }
 
   const sendGif = async (url: string) => {
@@ -251,7 +273,34 @@ export default function ChatScreen() {
                   )}
                   <View style={[styles.bubbleWrap, isMe && styles.bubbleWrapMe]}>
                     {!isMe && <View style={styles.avatarSpacer} />}
-                    {msg.body?.startsWith('https://') ? (
+                    {msg.body?.startsWith('POLL:') ? (() => {
+                      try {
+                        const poll = JSON.parse(msg.body.slice(5))
+                        const myVote = pollVotes[msg.id]
+                        return (
+                          <View style={styles.pollCard}>
+                            <Text style={styles.pollCardQuestion}>{poll.question}</Text>
+                            {poll.options.map((opt: string, i: number) => {
+                              const isVoted = myVote === i
+                              return (
+                                <TouchableOpacity key={i} onPress={() => votePoll(msg.id, i)} activeOpacity={0.75}>
+                                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 3 }}>
+                                    <Text style={{ fontSize: 13, fontWeight: isVoted ? '700' : '500', color: isVoted ? '#7C3AED' : '#333', flex: 1 }}>{opt}</Text>
+                                    {isVoted && <Text style={{ fontSize: 11, color: '#7C3AED', fontWeight: '600' }}>✓</Text>}
+                                  </View>
+                                  <View style={{ height: 5, backgroundColor: '#f0f0f0', borderRadius: 3, marginBottom: 8, overflow: 'hidden' }}>
+                                    <View style={{ height: 5, borderRadius: 3, backgroundColor: isVoted ? '#7C3AED' : '#E9D5FF', width: isVoted ? '100%' : '0%' }} />
+                                  </View>
+                                </TouchableOpacity>
+                              )
+                            })}
+                            <Text style={{ fontSize: 11, color: '#9CA3AF', marginTop: 2 }}>
+                              {typeof myVote === 'number' ? 'Voted' : 'Tap to vote'}
+                            </Text>
+                          </View>
+                        )
+                      } catch { return null }
+                    })() : msg.body?.startsWith('https://') ? (
                       <Image source={{ uri: msg.body }} style={styles.gifBubble} resizeMode="cover" />
                     ) : (
                       <View style={[styles.bubble, isMe ? [styles.bubbleMe, { backgroundColor: tc }] : styles.bubbleOther]}>
@@ -291,6 +340,13 @@ export default function ChatScreen() {
           >
             <Text style={[styles.composerActionText, { fontSize: 11, fontWeight: '800' }]}>GIF</Text>
           </TouchableOpacity>
+          {/* Poll button */}
+          <TouchableOpacity
+            style={styles.composerAction}
+            onPress={() => setPollModalVisible(true)}
+          >
+            <Text style={{ fontSize: 17 }}>🗳️</Text>
+          </TouchableOpacity>
 
           <TextInput
             style={styles.composerInput}
@@ -310,6 +366,44 @@ export default function ChatScreen() {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+
+      <Modal visible={pollModalVisible} transparent animationType="slide" onRequestClose={() => setPollModalVisible(false)}>
+        <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+          <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.3)' }} activeOpacity={1} onPress={() => setPollModalVisible(false)} />
+          <View style={{ backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
+              <Text style={{ fontSize: 17, fontWeight: '700', color: '#1a1a1a' }}>Create a poll</Text>
+              <TouchableOpacity onPress={() => setPollModalVisible(false)}>
+                <Text style={{ fontSize: 18, color: '#888' }}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <TextInput
+              style={{ backgroundColor: '#F9FAFB', borderRadius: 12, padding: 14, fontSize: 15, color: '#1a1a1a', borderWidth: 1, borderColor: '#E5E7EB', marginBottom: 12 }}
+              placeholder="Ask the team something..."
+              placeholderTextColor="#bbb"
+              value={pollQuestion}
+              onChangeText={setPollQuestion}
+            />
+            {pollOpts.map((opt, i) => (
+              <TextInput
+                key={i}
+                style={{ backgroundColor: '#F9FAFB', borderRadius: 12, padding: 14, fontSize: 14, color: '#1a1a1a', borderWidth: 1, borderColor: '#E5E7EB', marginBottom: 10 }}
+                placeholder={`Option ${i + 1}${i < 2 ? ' (required)' : ''}`}
+                placeholderTextColor="#bbb"
+                value={opt}
+                onChangeText={t => setPollOpts(prev => prev.map((o, j) => j === i ? t : o))}
+              />
+            ))}
+            <TouchableOpacity
+              style={[{ backgroundColor: '#7C3AED', borderRadius: 14, paddingVertical: 15, alignItems: 'center', marginTop: 4 }, (!pollQuestion.trim() || pollOpts.filter(o => o.trim()).length < 2) && { opacity: 0.4 }]}
+              onPress={sendPoll}
+              disabled={!pollQuestion.trim() || pollOpts.filter(o => o.trim()).length < 2}
+            >
+              <Text style={{ fontSize: 15, fontWeight: '700', color: '#fff' }}>Post poll</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       <Modal visible={gifModalVisible} transparent animationType="slide" onRequestClose={() => setGifModalVisible(false)}>
         <View style={{ flex: 1, justifyContent: 'flex-end' }}>
@@ -447,4 +541,6 @@ const styles = StyleSheet.create({
   sendBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', alignSelf: 'flex-end' },
   sendIcon: { color: '#fff', fontSize: 18, fontWeight: '800' },
   gifBubble: { width: 200, height: 150, borderRadius: 12 },
+  pollCard: { borderLeftWidth: 3, borderLeftColor: '#7C3AED', backgroundColor: '#FAFAFA', borderRadius: 14, padding: 14, maxWidth: 280, borderWidth: 0.5, borderColor: '#E5E7EB' },
+  pollCardQuestion: { fontSize: 15, fontWeight: '700', color: '#1a1a1a', marginBottom: 12 },
 })

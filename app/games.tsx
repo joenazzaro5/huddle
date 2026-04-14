@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, TextInput } from 'react-native'
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, TextInput, Modal } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter, useLocalSearchParams } from 'expo-router'
 import { supabase } from '../lib/supabase'
@@ -8,6 +8,16 @@ import { SEASON_SCHEDULE } from '../lib/season'
 
 const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl2c3B5d21od3FkYXB4ZW14bHVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMDIwMjksImV4cCI6MjA5MDY3ODAyOX0.HXsFNltsIhtL0S2tLtzFK55lbQX6GMFQKxw-U3OY6KQ'
 const SUPABASE_URL = 'https://yvspywmhwqdapxemxlug.supabase.co'
+
+const PLAYER_STATS_INIT = [
+  { name: 'Sofia',     pos: 'GK',  goals: 0, assists: 0, yellows: 0 },
+  { name: 'Emma',      pos: 'MID', goals: 4, assists: 1, yellows: 0 },
+  { name: 'Olivia',    pos: 'MID', goals: 2, assists: 5, yellows: 1 },
+  { name: 'Isabella',  pos: 'FWD', goals: 3, assists: 2, yellows: 0 },
+  { name: 'Charlotte', pos: 'MID', goals: 1, assists: 3, yellows: 0 },
+  { name: 'Mia',       pos: 'DEF', goals: 2, assists: 1, yellows: 0 },
+  { name: 'Ava',       pos: 'DEF', goals: 1, assists: 2, yellows: 0 },
+]
 
 const STANDINGS = [
   { team:'Marin Cheetahs', w:4, l:1, d:1, pts:13, isUs:true },
@@ -124,6 +134,10 @@ export default function GamesScreen() {
     { label: 'All day, every day!', votes: 5 },
   ])
   const [votedOption, setVotedOption] = useState<number | null>(null)
+  const [playerStats, setPlayerStats] = useState(PLAYER_STATS_INIT)
+  const [logModalVisible, setLogModalVisible] = useState(false)
+  const [logPlayerName, setLogPlayerName] = useState(PLAYER_STATS_INIT[0].name)
+  const [logStatType, setLogStatType] = useState<'goals' | 'assists' | 'yellows'>('goals')
 
   useEffect(() => {
     const validTabs = ['schedule', 'games', 'roster', 'standings', 'snacks', 'polls']
@@ -628,6 +642,38 @@ Slots: ${formationSlots}`
               </View>
             ))}
           </View>
+
+          {/* Player stats table */}
+          <View style={[styles.card, { padding: 0, overflow: 'hidden' }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 14, paddingBottom: 10 }}>
+              <Text style={styles.cardLabel}>Player stats</Text>
+              <TouchableOpacity
+                style={{ backgroundColor: tc, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 }}
+                onPress={() => setLogModalVisible(true)}
+              >
+                <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }}>Log stats +</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 8, borderBottomWidth: 0.5, borderBottomColor: '#f0f0f0' }}>
+              <Text style={{ flex: 1, fontSize: 11, fontWeight: '700', color: '#9CA3AF' }}>PLAYER</Text>
+              <Text style={{ width: 36, textAlign: 'center', fontSize: 11, fontWeight: '700', color: '#9CA3AF' }}>G</Text>
+              <Text style={{ width: 36, textAlign: 'center', fontSize: 11, fontWeight: '700', color: '#9CA3AF' }}>A</Text>
+              <Text style={{ width: 36, textAlign: 'center', fontSize: 11, fontWeight: '700', color: '#D97706' }}>Y</Text>
+            </View>
+            {playerStats.map((p, i) => (
+              <View key={i} style={[{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 11 }, i < playerStats.length - 1 && { borderBottomWidth: 0.5, borderBottomColor: '#f5f5f5' }]}>
+                <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <View style={{ borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, backgroundColor: p.pos === 'GK' ? '#FEF3C7' : p.pos === 'DEF' ? '#EEF4FF' : p.pos === 'FWD' ? '#FEE2E2' : '#D1FAE5' }}>
+                    <Text style={{ fontSize: 10, fontWeight: '700', color: p.pos === 'GK' ? '#D97706' : p.pos === 'DEF' ? '#1A56DB' : p.pos === 'FWD' ? '#DC2626' : '#059669' }}>{p.pos}</Text>
+                  </View>
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: '#1a1a1a' }}>{p.name}</Text>
+                </View>
+                <Text style={{ width: 36, textAlign: 'center', fontSize: 14, fontWeight: '700', color: p.goals > 0 ? '#1a1a1a' : '#ccc' }}>{p.goals}</Text>
+                <Text style={{ width: 36, textAlign: 'center', fontSize: 14, fontWeight: '700', color: p.assists > 0 ? '#1a1a1a' : '#ccc' }}>{p.assists}</Text>
+                <Text style={{ width: 36, textAlign: 'center', fontSize: 14, fontWeight: '700', color: p.yellows > 0 ? '#D97706' : '#ccc' }}>{p.yellows}</Text>
+              </View>
+            ))}
+          </View>
         </ScrollView>
       ) : (
         /* Games tab — game day content */
@@ -929,6 +975,55 @@ Slots: ${formationSlots}`
 
         </ScrollView>
       )}
+
+      <Modal visible={logModalVisible} transparent animationType="slide" onRequestClose={() => setLogModalVisible(false)}>
+        <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+          <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.3)' }} activeOpacity={1} onPress={() => setLogModalVisible(false)} />
+          <View style={{ backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <Text style={{ fontSize: 17, fontWeight: '700', color: '#1a1a1a' }}>Log a stat</Text>
+              <TouchableOpacity onPress={() => setLogModalVisible(false)}>
+                <Text style={{ fontSize: 18, color: '#888' }}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={{ fontSize: 12, fontWeight: '700', color: '#9CA3AF', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>Player</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20 }} contentContainerStyle={{ gap: 8 }}>
+              {playerStats.map(p => (
+                <TouchableOpacity
+                  key={p.name}
+                  style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1.5, backgroundColor: logPlayerName === p.name ? tc : '#F9FAFB', borderColor: logPlayerName === p.name ? tc : '#E5E7EB' }}
+                  onPress={() => setLogPlayerName(p.name)}
+                >
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: logPlayerName === p.name ? '#fff' : '#555' }}>{p.name}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <Text style={{ fontSize: 12, fontWeight: '700', color: '#9CA3AF', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>Stat type</Text>
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 24 }}>
+              {([['goals', 'Goal ⚽'], ['assists', 'Assist 🎯'], ['yellows', 'Yellow 🟨']] as const).map(([type, label]) => (
+                <TouchableOpacity
+                  key={type}
+                  style={{ flex: 1, paddingVertical: 12, borderRadius: 12, borderWidth: 1.5, alignItems: 'center', backgroundColor: logStatType === type ? tc : '#F9FAFB', borderColor: logStatType === type ? tc : '#E5E7EB' }}
+                  onPress={() => setLogStatType(type)}
+                >
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: logStatType === type ? '#fff' : '#555', textAlign: 'center' }}>{label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <TouchableOpacity
+              style={{ backgroundColor: tc, borderRadius: 14, paddingVertical: 15, alignItems: 'center' }}
+              onPress={() => {
+                setPlayerStats(prev => prev.map(p =>
+                  p.name === logPlayerName ? { ...p, [logStatType]: p[logStatType] + 1 } : p
+                ))
+                setLogModalVisible(false)
+              }}
+            >
+              <Text style={{ fontSize: 15, fontWeight: '700', color: '#fff' }}>Save</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   )
 }
