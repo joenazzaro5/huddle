@@ -520,7 +520,7 @@ export default function HomeScreen() {
                   </View>
                 )
               })}
-              <TouchableOpacity onPress={() => router.push({ pathname: '/games', params: { initialTab: 'schedule' } })}>
+              <TouchableOpacity onPress={() => router.push({ pathname: '/games', params: { tab: 'schedule' } })}>
                 <Text style={[styles.viewLink, { color: tc }]}>View full schedule →</Text>
               </TouchableOpacity>
             </View>
@@ -542,7 +542,7 @@ export default function HomeScreen() {
                 <Text style={styles.teamMeta}>{team?.age_group} · {team?.gender} · {playerCount} players</Text>
               </View>
             </View>
-            <TouchableOpacity style={[styles.viewRosterBtn, { borderColor: tc }]} onPress={() => router.push('/games')}>
+            <TouchableOpacity style={[styles.viewRosterBtn, { borderColor: tc }]} onPress={() => router.push({ pathname: '/games', params: { tab: 'roster' } })}>
               <Text style={[styles.viewRosterText, { color: tc }]}>View roster →</Text>
             </TouchableOpacity>
           </View>
@@ -573,7 +573,7 @@ export default function HomeScreen() {
         {/* 6. Snack schedule */}
         <TouchableOpacity
           style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#F59E0B', padding: 0, overflow: 'hidden' }]}
-          onPress={() => router.push({ pathname: '/games', params: { initialTab: 'snacks' } })}
+          onPress={() => router.push({ pathname: '/games', params: { tab: 'snacks' } })}
           activeOpacity={0.85}
         >
           <View style={styles.snackCardHeader}>
@@ -597,7 +597,7 @@ export default function HomeScreen() {
         {/* 7. Team poll */}
         <TouchableOpacity
           style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#8B5CF6', padding: 0, overflow: 'hidden' }]}
-          onPress={() => router.push({ pathname: '/games', params: { initialTab: 'polls' } })}
+          onPress={() => router.push({ pathname: '/games', params: { tab: 'polls' } })}
           activeOpacity={0.85}
         >
           <View style={styles.pollCardHeader}>

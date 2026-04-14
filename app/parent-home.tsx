@@ -351,7 +351,7 @@ export default function ParentHomeScreen() {
                   </View>
                 )
               })}
-              <TouchableOpacity onPress={() => router.push('/parent-team')}>
+              <TouchableOpacity onPress={() => router.push('/parent-schedule')}>
                 <Text style={[styles.viewLink, { color: tc }]}>View schedule →</Text>
               </TouchableOpacity>
             </View>
@@ -421,7 +421,7 @@ export default function ParentHomeScreen() {
         {/* 6. Team poll preview */}
         <TouchableOpacity
           style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#8B5CF6', padding: 0, overflow: 'hidden' }]}
-          onPress={() => router.push('/parent-team')}
+          onPress={() => router.push({ pathname: '/parent-team', params: { tab: 'polls' } })}
           activeOpacity={0.85}
         >
           <View style={{ backgroundColor: '#F5F3FF', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 }}>

@@ -100,7 +100,7 @@ type Player = {
 
 export default function GamesScreen() {
   const router = useRouter()
-  const { initialTab } = useLocalSearchParams<{ initialTab?: string }>()
+  const params = useLocalSearchParams()
   const [team, setTeam] = useState<any>(null)
   const [players, setPlayers] = useState<Player[]>([])
   const [events, setEvents] = useState<any[]>([])
@@ -140,10 +140,10 @@ export default function GamesScreen() {
   const [logStatType, setLogStatType] = useState<'goals' | 'assists' | 'yellows'>('goals')
 
   useEffect(() => {
-    const validTabs = ['schedule', 'games', 'roster', 'standings', 'snacks', 'polls']
-    if (initialTab && validTabs.includes(initialTab)) {
-      setActiveTab(initialTab as typeof activeTab)
-    }
+    if (params.tab) setActiveTab(params.tab as typeof activeTab)
+  }, [params.tab])
+
+  useEffect(() => {
     loadData()
     return () => { if (timerRef.current) clearInterval(timerRef.current) }
   }, [])
