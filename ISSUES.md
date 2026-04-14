@@ -1,35 +1,32 @@
-# Huddle — Open Issues (must fix every build)
+# Huddle — Open Issues
 
-## CRITICAL (blocking)
-- [ ] Team tab sub-nav labels cut off — Schedule shows as "ule" — MUST scroll horizontally with full words visible
-- [ ] Team Schedule tab shows only 3 events — must show full season
-- [ ] All navigation links must go to correct destination (no dead pages, no wrong tabs)
-- [ ] Parent view links crashing app — every link needs a working destination
+Last updated: April 13 2026
 
-## HOME SCREEN
-- [ ] Season dates: start late April 2026, end early June 2026 (practices Wed+Fri, games Sunday)
-- [ ] Upcoming module needs border like other cards
-- [ ] Team poll must show all 3 options
-- [ ] Snack schedule "View schedule" goes to Snacks tab (not Schedule tab)
-- [ ] Team poll "See results" goes to Polls tab (not Schedule tab)
+## P0 — Broken (fix first, test locally before building)
 
-## PRACTICE TAB
-- [ ] Drill feedback (hard/good/easy) must NOT show during practice — show as post-practice popup/interstitial
-- [ ] All cards need left border accent like home screen
+- [ ] GIFs broken — GIPHY integration not returning results
+- [ ] Multi-team not showing — seed data function not running correctly
+- [ ] Poll entry point on home screen not displaying correctly
+- [ ] Parent home entry point links going to wrong destinations
 
-## TEAM TAB
-- [ ] Sub-nav labels STILL cut off (mentioned 6+ times)
-- [ ] Schedule shows only 3 events — needs full season
-- [ ] AI Lineup Builder placement good but needs more prominence
-- [ ] Half 1 playing time tracker should move lower on Games tab
-- [ ] Formation default should be 3-1-2 (not 4-3-3)
-- [ ] All modules need border
-- [ ] Polls tab hard to discover
+## P1 — Missing features
 
-## PARENT VIEW
-- [ ] Drill of the day "Watch drill" should open the specific drill in drill library
-- [ ] Practice streak connected to drill of day only (watching is secondary)
-- [ ] Streak buttons: only "I practiced today" increments streak — watching should be separate
-- [ ] Every link/entry point needs a working destination
-- [ ] Parent pill in header needs color (like Coach pill has blue)
-- [ ] Squad module links to working roster page
+- [ ] Polls removed from Team tab but not fully integrated into chat
+- [ ] Poll creation needs more than 3 options (add dynamic "Add option +" button)
+- [ ] No way to unpin a message in chat
+- [ ] More reaction emoji options needed (currently only 5)
+- [ ] Onboarding not showing for existing users (need Reset button to work)
+
+## P2 — Design issues
+
+- [ ] Chat message design looks off — review bubble layout and spacing
+- [ ] Multi-team pill switcher UI needs review once seeding works
+
+## Process rules (follow every session)
+
+1. Read this file at the start of every Claude Code session
+2. Fix ONE issue at a time
+3. Test locally with npx expo start before EAS build
+4. Check off items as they are fixed
+5. Never batch more than 3 file changes in one Claude Code prompt
+6. If rate limit hit, wait 60 seconds — do NOT re-send the same prompt
