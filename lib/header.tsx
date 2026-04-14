@@ -118,7 +118,7 @@ export function AppHeader({ teamColor = '#1A56DB', teamName, onTeamPress, showTe
         <View style={styles.pillsRow}>
           {allTeams.map(m => {
             const isActive = activeTeamId ? m.team.id === activeTeamId : m.team.name === teamName
-            const abbreviated = m.team.name.split(' ').slice(0, 2).join(' ')
+            const abbreviated = m.team.name
             const dotColor = m.team.color ?? '#1A56DB'
             return (
               <TouchableOpacity

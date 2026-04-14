@@ -410,7 +410,7 @@ export default function HomeScreen() {
                 </Text>
               </View>
             </View>
-            {plan.plan?.map((phase: any, i: number) => {
+            (plan?.plan ?? []).map((phase: any, i: number) => {
               const phaseColors = ['#10B981', '#1A56DB', '#F59E0B']
               const phaseColor = phaseColors[i % phaseColors.length]
               return (
