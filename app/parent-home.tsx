@@ -206,7 +206,7 @@ export default function ParentHomeScreen() {
             <Text style={styles.heroDay}>{formatDay(nextEvent.starts_at)}</Text>
             <Text style={styles.heroTitle}>
               {nextEvent.type === 'practice'
-                ? `Focus: ${nextEvent.focus ?? 'General skills'}`
+                ? `Focus: ${FALLBACK_PLAN.title}`
                 : `vs ${nextEvent.opponent}`}
             </Text>
             <Text style={styles.heroTime}>{formatTimeRange(nextEvent.starts_at, nextEvent.duration_min ?? 60)}</Text>
