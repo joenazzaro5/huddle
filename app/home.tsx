@@ -531,7 +531,9 @@ export default function HomeScreen() {
           </View>
           <View style={styles.teamCardBody}>
             <Text style={styles.teamMeta}>{team?.age_group} · {team?.gender} · {playerCount} players</Text>
-            {players.slice(0, 3).map((player, i) => {
+            {players.length === 0 ? (
+              <Text style={{ fontSize: 13, color: '#aaa', marginTop: 8, marginBottom: 4 }}>Add players in the Team tab</Text>
+            ) : players.slice(0, 3).map((player, i) => {
               const firstPos = (player.positions?.[0] ?? player.position ?? '').toUpperCase()
               const posColor = firstPos === 'GK' ? '#F59E0B'
                 : ['CB','LB','RB','LWB','RWB'].includes(firstPos) ? tc
@@ -558,15 +560,15 @@ export default function HomeScreen() {
         </View>
 
         {/* 5. Team chat */}
-        {lastMessage && (
-          <TouchableOpacity
-            style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#10B981', padding: 0, overflow: 'hidden' }]}
-            onPress={() => router.push('/chat')}
-          >
-            <View style={styles.chatCardHeader}>
-              <Text style={styles.cardLabel}>💬 Team chat</Text>
-            </View>
-            <View style={styles.cardBody}>
+        <TouchableOpacity
+          style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#10B981', padding: 0, overflow: 'hidden' }]}
+          onPress={() => router.push('/chat')}
+        >
+          <View style={styles.chatCardHeader}>
+            <Text style={styles.cardLabel}>💬 Team chat</Text>
+          </View>
+          <View style={styles.cardBody}>
+            {lastMessage ? (
               <View style={styles.chatPreviewRow}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.chatSender}>{getSenderName(lastMessage)}</Text>
@@ -574,10 +576,12 @@ export default function HomeScreen() {
                 </View>
                 <Text style={styles.chatPreviewTime}>{formatMsgTime(lastMessage.created_at)}</Text>
               </View>
-              <Text style={[styles.viewLink, { color: tc }]}>Open chat →</Text>
-            </View>
-          </TouchableOpacity>
-        )}
+            ) : (
+              <Text style={{ fontSize: 13, color: '#aaa', marginBottom: 4 }}>No messages yet — say hi! 👋</Text>
+            )}
+            <Text style={[styles.viewLink, { color: tc }]}>Open chat →</Text>
+          </View>
+        </TouchableOpacity>
 
         {/* 6. Snack schedule */}
         <TouchableOpacity
