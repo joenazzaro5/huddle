@@ -135,7 +135,7 @@ export default function ChatScreen() {
     setGifsLoading(true)
     setGifError(null)
     try {
-      const url = 'https://api.giphy.com/v1/gifs/search?api_key=OprgOo4Y5iCyxUDYT1O9Acyja61pGho2&q=' + encodeURIComponent(query) + '&limit=6&rating=g'
+      const url = 'https://api.giphy.com/v1/gifs/search?api_key=OprgOo4Y5iCyxUDYT1O9Acyja61pGho2&q=' + encodeURIComponent(query) + '&limit=18&rating=g'
       console.log('[GIF] Fetching URL:', url)
       const res = await fetch(url)
       const json = await res.json()
