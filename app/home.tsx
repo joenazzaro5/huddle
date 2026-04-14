@@ -580,7 +580,7 @@ export default function HomeScreen() {
                 </View>
               </View>
             ))}
-            <Text style={[styles.viewLink, { color: tc }]}>View schedule →</Text>
+            <Text style={[styles.viewLink, { color: tc }]}>Snack me! 🍊 →</Text>
           </View>
         </TouchableOpacity>
 
