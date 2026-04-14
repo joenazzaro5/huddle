@@ -44,6 +44,10 @@ export default function ChatScreen() {
     return () => { if (pollInterval.current) clearInterval(pollInterval.current) }
   }, [])
 
+  useEffect(() => {
+    if (gifModalVisible) loadGifs('soccer celebration')
+  }, [gifModalVisible])
+
   const loadData = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
@@ -554,6 +558,13 @@ export default function ChatScreen() {
               data={gifs}
               keyExtractor={(item) => item.id}
               numColumns={3}
+              style={{ flex: 1, minHeight: 200 }}
+              contentContainerStyle={{ flexGrow: 1 }}
+              ListEmptyComponent={
+                <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+                  <Text style={{ color: '#DC2626', fontSize: 14, fontWeight: '600', textAlign: 'center' }}>No results — try another search</Text>
+                </View>
+              }
               renderItem={({ item }) => (
                 <TouchableOpacity
                   style={{ width: (width - 40) / 3, height: 100, margin: 2, borderRadius: 8, overflow: 'hidden' }}
