@@ -42,9 +42,20 @@ const DRILLS_OF_DAY = [
   { title: 'Agility Ladder',       focus: 'Footwork',     level: 'All levels',   duration: '10 min', desc: 'Quick feet through the ladder pattern. Keep your eyes up and stay light.' },
 ]
 
+function getChatPreviewText(body: string | null | undefined): string {
+  if (!body) return ''
+  if (body.startsWith('POLL:')) {
+    let q = 'New poll'
+    try { q = JSON.parse(body.slice(5)).question ?? 'New poll' } catch {}
+    return `📊 ${q}`
+  }
+  if (body.startsWith('https://')) return 'Sent a GIF 🎬'
+  return body
+}
+
 export default function HomeScreen() {
   const router = useRouter()
-  const { setRole, setActiveTeamId } = useRole()
+  const { setRole, setActiveTeamId, activeTeamId } = useRole()
   const [team, setTeam] = useState<any>(null)
   const [events, setEvents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -80,6 +91,16 @@ export default function HomeScreen() {
       loadData(team)
     }
   }, [team?.id])
+
+  // Sync with activeTeamId from roleStore — handles team switches made on other screens
+  useEffect(() => {
+    if (!activeTeamId || activeTeamId === team?.id) return
+    const membership = allTeams.find(m => m.team?.id === activeTeamId)
+    if (membership?.team) {
+      setLastMessage(null)
+      loadData(membership.team)
+    }
+  }, [activeTeamId])
 
   const loadData = async (preferredTeamData?: any) => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -578,7 +599,7 @@ export default function HomeScreen() {
               <View style={styles.chatPreviewRow}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.chatSender}>{getSenderName(lastMessage)}</Text>
-                  <Text style={styles.chatPreviewBody} numberOfLines={2}>{lastMessage.body?.startsWith('POLL:') ? '📊 New poll - tap to vote' : lastMessage.body?.startsWith('https://') ? 'Sent a GIF 🎬' : lastMessage.body}</Text>
+                  <Text style={styles.chatPreviewBody} numberOfLines={2}>{getChatPreviewText(lastMessage.body)}</Text>
                 </View>
                 <Text style={styles.chatPreviewTime}>{formatMsgTime(lastMessage.created_at)}</Text>
               </View>

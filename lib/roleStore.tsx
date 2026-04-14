@@ -31,6 +31,6 @@ export function useRole() {
   try {
     return useContext(RoleContext)
   } catch {
-    return { currentRole: 'coach' as const, setRole: (_role: Role) => {} }
+    return { currentRole: 'coach' as const, setRole: (_role: Role) => {}, activeTeamId: null as string | null, setActiveTeamId: (_id: string | null) => {} }
   }
 }
