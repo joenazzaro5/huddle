@@ -410,69 +410,6 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* 3. Drill of the day + Practice streak */}
-        <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#F59E0B', padding: 0, overflow: 'hidden' }]}>
-          <View style={{ backgroundColor: '#FFFBEB', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 }}>
-            <Text style={styles.cardLabel}>Drill of the day 🎯</Text>
-          </View>
-          <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 14 }}>
-            <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 6 }}>{drillOfDay.title}</Text>
-            <View style={{ flexDirection: 'row', gap: 6, marginBottom: 8 }}>
-              <View style={{ backgroundColor: '#F0F4FF', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
-                <Text style={{ fontSize: 10, fontWeight: '700', color: tc }}>{drillOfDay.focus}</Text>
-              </View>
-              <View style={{ backgroundColor: '#F0FDF4', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
-                <Text style={{ fontSize: 10, fontWeight: '700', color: '#059669' }}>{drillOfDay.level}</Text>
-              </View>
-              <View style={{ backgroundColor: '#F5F3FF', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
-                <Text style={{ fontSize: 10, fontWeight: '700', color: '#7C3AED' }}>{drillOfDay.duration}</Text>
-              </View>
-            </View>
-            <Text style={{ fontSize: 13, color: '#6B7280', lineHeight: 20, marginBottom: 14 }}>{drillOfDay.desc}</Text>
-
-            {/* Practice streak */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
-              <Text style={{ fontSize: 14, fontWeight: '700', color: '#F59E0B', flex: 1 }}>
-                Practice streak 🔥
-              </Text>
-              <Text style={{ fontSize: 22, fontWeight: '800', color: '#F59E0B' }}>
-                {practiceStreak}
-              </Text>
-              <Text style={{ fontSize: 13, color: '#9CA3AF', marginLeft: 4 }}>
-                day{practiceStreak !== 1 ? 's' : ''}
-              </Text>
-            </View>
-            {/* 7-day dot tracker */}
-            <View style={{ flexDirection: 'row', gap: 6, marginBottom: 14 }}>
-              {['M','T','W','T','F','S','S'].map((d, i) => (
-                <View key={i} style={{ alignItems: 'center', flex: 1 }}>
-                  <View style={[{ width: 28, height: 28, borderRadius: 14, marginBottom: 3, alignItems: 'center', justifyContent: 'center' }, practicedDays.includes(i) ? { backgroundColor: '#F59E0B' } : { backgroundColor: '#F3F4F6' }]}>
-                    {practicedDays.includes(i) && <Text style={{ fontSize: 11, color: '#fff', fontWeight: '700' }}>✓</Text>}
-                  </View>
-                  <Text style={{ fontSize: 9, color: '#9CA3AF', fontWeight: '600' }}>{d}</Text>
-                </View>
-              ))}
-            </View>
-            <TouchableOpacity
-              style={{ backgroundColor: practicedToday ? '#F0FDF4' : '#F59E0B', borderRadius: 10, paddingVertical: 11, alignItems: 'center', borderWidth: practicedToday ? 1 : 0, borderColor: '#D97706' }}
-              onPress={() => {
-                if (!practicedToday) {
-                  setPracticedToday(true)
-                  setPracticeStreak(s => s + 1)
-                  const todayIdx = (new Date().getDay() + 6) % 7
-                  setPracticedDays(prev => prev.includes(todayIdx) ? prev : [...prev, todayIdx])
-                }
-              }}
-              disabled={practicedToday}
-              activeOpacity={practicedToday ? 1 : 0.8}
-            >
-              <Text style={{ fontSize: 13, fontWeight: '700', color: practicedToday ? '#059669' : '#fff' }}>
-                {practicedToday ? '✓ Practiced today!' : '✓ I practiced today'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
         {/* 4. Upcoming module */}
         {upcomingEvents.length > 0 && (
           <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#1A56DB', padding: 0, overflow: 'hidden' }]}>
@@ -551,7 +488,70 @@ export default function HomeScreen() {
           </TouchableOpacity>
         )}
 
-        {/* 6. Snack schedule */}
+        {/* 6. Drill of the day + Practice streak */}
+        <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#F59E0B', padding: 0, overflow: 'hidden' }]}>
+          <View style={{ backgroundColor: '#FFFBEB', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 }}>
+            <Text style={styles.cardLabel}>Drill of the day 🎯</Text>
+          </View>
+          <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 14 }}>
+            <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 6 }}>{drillOfDay.title}</Text>
+            <View style={{ flexDirection: 'row', gap: 6, marginBottom: 8 }}>
+              <View style={{ backgroundColor: '#F0F4FF', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
+                <Text style={{ fontSize: 10, fontWeight: '700', color: tc }}>{drillOfDay.focus}</Text>
+              </View>
+              <View style={{ backgroundColor: '#F0FDF4', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
+                <Text style={{ fontSize: 10, fontWeight: '700', color: '#059669' }}>{drillOfDay.level}</Text>
+              </View>
+              <View style={{ backgroundColor: '#F5F3FF', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
+                <Text style={{ fontSize: 10, fontWeight: '700', color: '#7C3AED' }}>{drillOfDay.duration}</Text>
+              </View>
+            </View>
+            <Text style={{ fontSize: 13, color: '#6B7280', lineHeight: 20, marginBottom: 14 }}>{drillOfDay.desc}</Text>
+
+            {/* Practice streak */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+              <Text style={{ fontSize: 14, fontWeight: '700', color: '#F59E0B', flex: 1 }}>
+                Practice streak 🔥
+              </Text>
+              <Text style={{ fontSize: 22, fontWeight: '800', color: '#F59E0B' }}>
+                {practiceStreak}
+              </Text>
+              <Text style={{ fontSize: 13, color: '#9CA3AF', marginLeft: 4 }}>
+                day{practiceStreak !== 1 ? 's' : ''}
+              </Text>
+            </View>
+            {/* 7-day dot tracker */}
+            <View style={{ flexDirection: 'row', gap: 6, marginBottom: 14 }}>
+              {['M','T','W','T','F','S','S'].map((d, i) => (
+                <View key={i} style={{ alignItems: 'center', flex: 1 }}>
+                  <View style={[{ width: 28, height: 28, borderRadius: 14, marginBottom: 3, alignItems: 'center', justifyContent: 'center' }, practicedDays.includes(i) ? { backgroundColor: '#F59E0B' } : { backgroundColor: '#F3F4F6' }]}>
+                    {practicedDays.includes(i) && <Text style={{ fontSize: 11, color: '#fff', fontWeight: '700' }}>✓</Text>}
+                  </View>
+                  <Text style={{ fontSize: 9, color: '#9CA3AF', fontWeight: '600' }}>{d}</Text>
+                </View>
+              ))}
+            </View>
+            <TouchableOpacity
+              style={{ backgroundColor: practicedToday ? '#F0FDF4' : '#F59E0B', borderRadius: 10, paddingVertical: 11, alignItems: 'center', borderWidth: practicedToday ? 1 : 0, borderColor: '#D97706' }}
+              onPress={() => {
+                if (!practicedToday) {
+                  setPracticedToday(true)
+                  setPracticeStreak(s => s + 1)
+                  const todayIdx = (new Date().getDay() + 6) % 7
+                  setPracticedDays(prev => prev.includes(todayIdx) ? prev : [...prev, todayIdx])
+                }
+              }}
+              disabled={practicedToday}
+              activeOpacity={practicedToday ? 1 : 0.8}
+            >
+              <Text style={{ fontSize: 13, fontWeight: '700', color: practicedToday ? '#059669' : '#fff' }}>
+                {practicedToday ? '✓ Practiced today!' : '✓ I practiced today'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* 7. Snack schedule */}
         <TouchableOpacity
           style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#F59E0B', padding: 0, overflow: 'hidden' }]}
           onPress={() => router.push({ pathname: '/games', params: { tab: 'snacks' } })}
