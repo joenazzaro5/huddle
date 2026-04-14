@@ -18,6 +18,23 @@ const STANDINGS = [
   { team: 'Fairfax FC',     w: 0, l: 5, d: 1, pts: 1  },
 ]
 
+const MOCK_PLAYERS = [
+  { id: 'm1', name: 'Sofia',     number: 1,  positions: ['GK']  },
+  { id: 'm2', name: 'Emma',      number: 10, positions: ['MID'] },
+  { id: 'm3', name: 'Olivia',    number: 7,  positions: ['MID'] },
+  { id: 'm4', name: 'Isabella',  number: 9,  positions: ['FWD'] },
+  { id: 'm5', name: 'Charlotte', number: 8,  positions: ['MID'] },
+  { id: 'm6', name: 'Mia',       number: 4,  positions: ['DEF'] },
+  { id: 'm7', name: 'Ava',       number: 5,  positions: ['DEF'] },
+]
+
+const PLAYER_STATS = [
+  { name: 'Sofia',    goals: 0, assists: 0, pos: 'GK'  },
+  { name: 'Emma',     goals: 4, assists: 1, pos: 'MID' },
+  { name: 'Olivia',   goals: 2, assists: 5, pos: 'MID' },
+  { name: 'Isabella', goals: 3, assists: 2, pos: 'FWD' },
+]
+
 export default function ParentTeamScreen() {
   const { currentRole } = useRole()
   const isCoach = currentRole === 'coach'
@@ -26,7 +43,7 @@ export default function ParentTeamScreen() {
   const [players, setPlayers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const params = useLocalSearchParams()
-  const [activeTab, setActiveTab] = useState<'schedule' | 'roster' | 'standings' | 'snacks' | 'polls'>((params.tab as any) || 'schedule')
+  const [activeTab, setActiveTab] = useState<'schedule' | 'roster' | 'standings' | 'snacks'>((params.tab as any) || 'schedule')
   const [rsvpMap, setRsvpMap] = useState<Record<string, 'yes' | 'no' | 'maybe'>>({})
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [snackData, setSnackData] = useState([
@@ -37,12 +54,7 @@ export default function ParentTeamScreen() {
     { date: 'May 3',  type: 'Practice', name: 'Lisa R',        claimed: true  },
     { date: 'May 10', type: 'Game',     name: null as string | null, claimed: false },
   ])
-  const [pollOptions, setPollOptions] = useState([
-    { label: "Let's go, team!", votes: 12 },
-    { label: 'Hustle hard!',    votes: 8  },
-    { label: 'All day, every day!', votes: 5 },
-  ])
-  const [votedOption, setVotedOption] = useState<number | null>(null)
+
 
   useEffect(() => { loadData() }, [])
 
@@ -102,8 +114,8 @@ export default function ParentTeamScreen() {
       {/* Sub-tab bar */}
       <View style={{ height: 44, backgroundColor: '#fff', borderBottomWidth: 0.5, borderBottomColor: '#eee' }}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingLeft: 0 }}>
-          {(['schedule', 'roster', 'standings', 'snacks', 'polls'] as const).map(tab => {
-            const labels = { schedule: 'Schedule', roster: 'Roster', standings: 'Standings', snacks: 'Snacks', polls: 'Polls' }
+          {(['schedule', 'roster', 'standings', 'snacks'] as const).map(tab => {
+            const labels = { schedule: 'Schedule', roster: 'Roster', standings: 'Standings', snacks: 'Snacks' }
             const isActive = activeTab === tab
             return (
               <TouchableOpacity
@@ -192,7 +204,7 @@ export default function ParentTeamScreen() {
         <ScrollView contentContainerStyle={styles.content}>
           <View style={[styles.teamCard, { backgroundColor: tc }]}>
             <Text style={styles.teamCardName}>{team?.name}</Text>
-            <Text style={styles.teamCardSub}>{team?.age_group} · {team?.gender} · {players.length} players</Text>
+            <Text style={styles.teamCardSub}>{team?.age_group} · {team?.gender} · {players.length > 0 ? players.length : MOCK_PLAYERS.length} players</Text>
           </View>
 
           <View style={{ backgroundColor: '#EEF4FF', borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12, marginBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 0.5, borderColor: '#eee' }}>
@@ -202,35 +214,42 @@ export default function ParentTeamScreen() {
           </View>
 
           <View style={styles.card}>
-            <Text style={styles.cardLabel}>Players · {players.length}</Text>
-            {players.map((player, i) => {
-              const firstPos = (player.positions?.[0] ?? '').toUpperCase()
-              const posColor = firstPos === 'GK' ? '#F59E0B'
-                : ['CB', 'LB', 'RB', 'LWB', 'RWB'].includes(firstPos) ? tc
-                : ['CM', 'LM', 'RM', 'DM', 'AM', 'CAM', 'CDM'].includes(firstPos) ? '#10B981'
-                : firstPos ? '#FF6B35' : null
+            {(() => {
+              const displayPlayers = players.length > 0 ? players : MOCK_PLAYERS
               return (
-                <View
-                  key={player.id}
-                  style={[styles.rosterRow, i < players.length - 1 && styles.rosterBorder]}
-                >
-                  <View style={[styles.numBadge, { backgroundColor: tc + '20' }]}>
-                    <Text style={[styles.numText, { color: tc }]}>{player.number ?? '—'}</Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.rosterName}>{player.name}</Text>
-                    {player.positions?.length > 0 && (
-                      <Text style={styles.rosterPos}>{player.positions.join(' · ')}</Text>
-                    )}
-                  </View>
-                  {posColor ? (
-                    <View style={{ backgroundColor: posColor + '22', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
-                      <Text style={{ fontSize: 10, fontWeight: '800', color: posColor }}>{firstPos}</Text>
-                    </View>
-                  ) : null}
-                </View>
+                <>
+                  <Text style={styles.cardLabel}>Players · {displayPlayers.length}</Text>
+                  {displayPlayers.map((player, i) => {
+                    const firstPos = (player.positions?.[0] ?? '').toUpperCase()
+                    const posColor = firstPos === 'GK' ? '#F59E0B'
+                      : ['CB', 'LB', 'RB', 'LWB', 'RWB'].includes(firstPos) ? tc
+                      : ['CM', 'LM', 'RM', 'DM', 'AM', 'CAM', 'CDM'].includes(firstPos) ? '#10B981'
+                      : firstPos ? '#FF6B35' : null
+                    return (
+                      <View
+                        key={player.id}
+                        style={[styles.rosterRow, i < displayPlayers.length - 1 && styles.rosterBorder]}
+                      >
+                        <View style={[styles.numBadge, { backgroundColor: tc + '20' }]}>
+                          <Text style={[styles.numText, { color: tc }]}>{player.number ?? '—'}</Text>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.rosterName}>{player.name}</Text>
+                          {player.positions?.length > 0 && (
+                            <Text style={styles.rosterPos}>{player.positions.join(' · ')}</Text>
+                          )}
+                        </View>
+                        {posColor ? (
+                          <View style={{ backgroundColor: posColor + '22', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
+                            <Text style={{ fontSize: 10, fontWeight: '800', color: posColor }}>{firstPos}</Text>
+                          </View>
+                        ) : null}
+                      </View>
+                    )
+                  })}
+                </>
               )
-            })}
+            })()}
           </View>
         </ScrollView>
       )}
@@ -293,6 +312,23 @@ export default function ParentTeamScreen() {
               <Text style={{ fontSize: 12, color: '#aaa', marginLeft: 4 }}>4W · 1L this season</Text>
             </View>
           </View>
+
+          <View style={styles.card}>
+            <View style={{ flexDirection: 'row', paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: '#E5E7EB', marginBottom: 2 }}>
+              <Text style={[styles.cardLabel, { flex: 1, marginBottom: 0 }]}>Player stats</Text>
+              <Text style={[styles.standingsColHdr, { color: tc }]}>G</Text>
+              <Text style={styles.standingsColHdr}>A</Text>
+              <Text style={styles.standingsColHdr}>POS</Text>
+            </View>
+            {PLAYER_STATS.map((p, i) => (
+              <View key={i} style={[{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10 }, i < PLAYER_STATS.length - 1 && styles.standingsBorder]}>
+                <Text style={[styles.standingsTeamName]}>{p.name}</Text>
+                <Text style={[styles.standingsVal, { color: tc, fontWeight: '700' }]}>{p.goals}</Text>
+                <Text style={[styles.standingsVal, { color: '#10B981', fontWeight: '700' }]}>{p.assists}</Text>
+                <Text style={[styles.standingsVal, { color: '#888', fontWeight: '600', fontSize: 11 }]}>{p.pos}</Text>
+              </View>
+            ))}
+          </View>
         </ScrollView>
       )}
 
@@ -351,58 +387,7 @@ export default function ParentTeamScreen() {
         </ScrollView>
       )}
 
-      {/* ── Polls ────────────────────────────────────────────────── */}
-      {activeTab === 'polls' && (
-        <ScrollView contentContainerStyle={styles.content}>
-          <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#8B5CF6' }]}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-              <View style={{ backgroundColor: '#F3E8FF', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 }}>
-                <Text style={{ fontSize: 11, fontWeight: '800', color: '#7C3AED' }}>Active poll 🗳️</Text>
-              </View>
-            </View>
-            <Text style={styles.pollClosesLabel}>Poll closes in 3 days</Text>
-            <Text style={styles.pollQuestion}>What should our team cheer be?</Text>
-            {pollOptions.map((option, i) => {
-              const total = pollOptions.reduce((sum, o) => sum + o.votes, 0)
-              const pct = total > 0 ? option.votes / total : 0
-              const isVoted = votedOption === i
-              return (
-                <TouchableOpacity
-                  key={i}
-                  style={[
-                    styles.pollRow,
-                    isVoted && { borderLeftWidth: 3, borderLeftColor: tc, backgroundColor: '#EEF4FF', borderRadius: 10, paddingLeft: 10 },
-                  ]}
-                  onPress={() => {
-                    setPollOptions(prev => prev.map((o, idx) => {
-                      if (idx === i) return { ...o, votes: o.votes + 1 }
-                      if (idx === votedOption) return { ...o, votes: Math.max(0, o.votes - 1) }
-                      return o
-                    }))
-                    setVotedOption(i)
-                  }}
-                  activeOpacity={0.8}
-                >
-                  <View style={styles.pollLabelRow}>
-                    <Text style={[styles.pollOptionLabel, { fontWeight: isVoted ? '700' : '500', color: isVoted ? tc : '#1a1a1a' }]}>
-                      {option.label}
-                    </Text>
-                    <Text style={styles.pollVoteCount}>{option.votes}</Text>
-                  </View>
-                  <View style={styles.pollBarBg}>
-                    <View style={[styles.pollBarFill, { width: `${Math.round(pct * 100)}%` as any, backgroundColor: isVoted ? tc : tc + '40' }]} />
-                  </View>
-                </TouchableOpacity>
-              )
-            })}
-            {isCoach && (
-              <TouchableOpacity style={[styles.newPollBtn, { borderColor: tc }]}>
-                <Text style={[styles.newPollBtnText, { color: tc }]}>Create new poll +</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </ScrollView>
-      )}
+
     </SafeAreaView>
   )
 }
@@ -456,15 +441,4 @@ const styles = StyleSheet.create({
   snackListDate: { fontSize: 11, color: '#aaa', fontWeight: '600', marginBottom: 1 },
   snackClaimBtn: { backgroundColor: '#F59E0B', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 },
   snackClaimBtnText: { fontSize: 13, fontWeight: '800', color: '#fff' },
-  // Polls
-  pollClosesLabel: { fontSize: 11, fontWeight: '700', color: '#888', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 },
-  pollQuestion: { fontSize: 16, fontWeight: '800', color: '#1a1a1a', marginBottom: 14 },
-  pollRow: { marginBottom: 12, paddingVertical: 4 },
-  pollLabelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
-  pollOptionLabel: { fontSize: 14 },
-  pollVoteCount: { fontSize: 12, color: '#aaa', fontWeight: '600' },
-  pollBarBg: { height: 6, backgroundColor: '#f0f0f0', borderRadius: 3, overflow: 'hidden' },
-  pollBarFill: { height: 6, borderRadius: 3 },
-  newPollBtn: { borderRadius: 12, paddingVertical: 11, alignItems: 'center', borderWidth: 1.5, marginTop: 8 },
-  newPollBtnText: { fontSize: 13, fontWeight: '700' },
 })
