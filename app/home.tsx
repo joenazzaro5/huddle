@@ -6,7 +6,7 @@ import { AppHeader } from '../lib/header'
 import { useRole } from '../lib/roleStore'
 import { supabase } from '../lib/supabase'
 import { generatePracticePlan } from '../lib/ai'
-import { getScheduleEvents } from '../lib/season'
+import { getScheduleEvents, SEASON_SCHEDULE } from '../lib/season'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
 const FALLBACK_PLAN = {
@@ -19,12 +19,18 @@ const FALLBACK_PLAN = {
   coachTip: "Remind players to check their shoulder before receiving. The best passers always know what's around them before the ball arrives.",
 }
 
-const SNACK_DATA = [
-  { date: 'Apr 5', type: 'Practice', name: 'Sarah M', claimed: true },
-  { date: 'Apr 12', type: 'Practice', name: null as string | null, claimed: false },
-  { date: 'Apr 19', type: 'Game', name: 'Tom K', claimed: true },
-  { date: 'Apr 26', type: 'Practice', name: null as string | null, claimed: false },
-]
+function getUpcomingSnackSlots(count = 4) {
+  const now = new Date()
+  return SEASON_SCHEDULE
+    .filter(e => (e.type === 'practice' || e.type === 'game') && new Date(e.starts_at) >= now)
+    .slice(0, count)
+    .map(e => ({
+      date: new Date(e.starts_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      type: (e.type.charAt(0).toUpperCase() + e.type.slice(1)) as string,
+      name: null as string | null,
+      claimed: false,
+    }))
+}
 
 const DRILLS_OF_DAY = [
   { title: 'Cone Weaving',         focus: 'Dribbling',    level: 'Beginner',     duration: '10 min', desc: 'Set up 6 cones in a line. Dribble through using both feet. Focus on soft touches.' },
@@ -53,7 +59,7 @@ export default function HomeScreen() {
   const [lastMessage, setLastMessage] = useState<any>(null)
   const [allTeams, setAllTeams] = useState<any[]>([])
   const [heroSwitching, setHeroSwitching] = useState(false)
-  const [snacks] = useState(SNACK_DATA)
+  const [snacks] = useState(() => getUpcomingSnackSlots())
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [myRsvp, setMyRsvp] = useState<'yes' | 'no' | null>(null)
   const [toastVisible, setToastVisible] = useState(false)
