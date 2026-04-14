@@ -15,7 +15,7 @@ const MOCK_TEAM_MEMBERS = [
 ]
 
 export default function ChatScreen() {
-  const { activeTeamId } = useRole()
+  const { activeTeamId, setActiveTeamId } = useRole()
   const [team, setTeam] = useState<any>(null)
   const [allTeams, setAllTeams] = useState<any[]>([])
   const [messages, setMessages] = useState<any[]>([])
@@ -308,9 +308,8 @@ export default function ChatScreen() {
         allTeams={allTeams}
         onTeamSelect={async (t) => {
           setMessages([])
-          if (teamIdRef.current) {
-            if (pollInterval.current) clearInterval(pollInterval.current)
-          }
+          if (pollInterval.current) clearInterval(pollInterval.current)
+          setActiveTeamId(t.id)
         }}
       />
 
@@ -365,34 +364,19 @@ export default function ChatScreen() {
                   <View style={[styles.bubbleWrap, isMe && styles.bubbleWrapMe]}>
                     {!isMe && <View style={styles.avatarSpacer} />}
                     {msg.body?.startsWith('POLL:') ? (() => {
-                      try {
-                        const poll = JSON.parse(msg.body.slice(5))
-                        const myVote = pollVotes[msg.id]
-                        return (
-                          <View style={styles.pollCard}>
-                            <Text style={styles.pollCardQuestion}>{poll.question}</Text>
-                            {poll.options.map((opt: string, i: number) => {
-                              const isVoted = myVote === i
-                              return (
-                                <TouchableOpacity key={i} onPress={() => votePoll(msg.id, i)} activeOpacity={0.75}>
-                                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 3 }}>
-                                    <Text style={{ fontSize: 13, fontWeight: isVoted ? '700' : '500', color: isVoted ? '#7C3AED' : '#333', flex: 1 }}>{opt}</Text>
-                                    {isVoted && <Text style={{ fontSize: 11, color: '#7C3AED', fontWeight: '600' }}>✓</Text>}
-                                  </View>
-                                  <View style={{ height: 5, backgroundColor: '#f0f0f0', borderRadius: 3, marginBottom: 8, overflow: 'hidden' }}>
-                                    <View style={{ height: 5, borderRadius: 3, backgroundColor: isVoted ? '#7C3AED' : '#E9D5FF', width: isVoted ? '100%' : '0%' }} />
-                                  </View>
-                                </TouchableOpacity>
-                              )
-                            })}
-                            <Text style={{ fontSize: 11, color: '#9CA3AF', marginTop: 2 }}>
-                              {typeof myVote === 'number' ? 'Voted' : 'Tap to vote'}
-                            </Text>
-                          </View>
-                        )
-                      } catch { return null }
-                    })() : msg.body?.startsWith('https://media') ? (
-                      <Image source={{ uri: msg.body }} style={styles.gifBubble} resizeMode="cover" />
+                      let question = 'Poll'
+                      try { question = JSON.parse(msg.body.slice(5)).question ?? 'Poll' } catch {}
+                      return (
+                        <View style={{ backgroundColor: '#7C3AED', borderRadius: 16, padding: 14, maxWidth: width * 0.72 }}>
+                          <Text style={{ fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.7)', marginBottom: 6 }}>📊 POLL</Text>
+                          <Text style={{ fontSize: 15, fontWeight: '700', color: '#fff', marginBottom: 8 }}>{question}</Text>
+                          <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)' }}>Tap to vote</Text>
+                        </View>
+                      )
+                    })() : msg.body?.startsWith('https://') ? (
+                      <View style={[styles.bubble, isMe ? [styles.bubbleMe, { backgroundColor: tc }] : styles.bubbleOther]}>
+                        <Text style={[styles.bubbleText, isMe && styles.bubbleTextMe]}>Sent a GIF 🎬</Text>
+                      </View>
                     ) : (
                       <View style={[styles.bubble, isMe ? [styles.bubbleMe, { backgroundColor: tc }] : styles.bubbleOther]}>
                         {replyData && (

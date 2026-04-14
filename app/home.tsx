@@ -572,7 +572,7 @@ export default function HomeScreen() {
               <View style={styles.chatPreviewRow}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.chatSender}>{getSenderName(lastMessage)}</Text>
-                  <Text style={styles.chatPreviewBody} numberOfLines={2}>{lastMessage.body?.startsWith('https://') ? 'Sent a GIF 🎬' : lastMessage.body}</Text>
+                  <Text style={styles.chatPreviewBody} numberOfLines={2}>{lastMessage.body?.startsWith('POLL:') ? '📊 New poll - tap to vote' : lastMessage.body?.startsWith('https://') ? 'Sent a GIF 🎬' : lastMessage.body}</Text>
                 </View>
                 <Text style={styles.chatPreviewTime}>{formatMsgTime(lastMessage.created_at)}</Text>
               </View>
