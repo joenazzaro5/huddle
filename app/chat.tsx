@@ -3,6 +3,7 @@ import { View, Text, ScrollView, FlatList, StyleSheet, TextInput, TouchableOpaci
 import { SafeAreaView } from 'react-native-safe-area-context'
 import * as ImagePicker from 'expo-image-picker'
 import { supabase } from '../lib/supabase'
+import { useRole } from '../lib/roleStore'
 import { AppHeader } from '../lib/header'
 
 const MOCK_TEAM_MEMBERS = [
@@ -14,7 +15,9 @@ const MOCK_TEAM_MEMBERS = [
 ]
 
 export default function ChatScreen() {
+  const { activeTeamId } = useRole()
   const [team, setTeam] = useState<any>(null)
+  const [allTeams, setAllTeams] = useState<any[]>([])
   const [messages, setMessages] = useState<any[]>([])
   const [newMessage, setNewMessage] = useState('')
   const [loading, setLoading] = useState(true)
@@ -45,28 +48,49 @@ export default function ChatScreen() {
   }, [])
 
   useEffect(() => {
+    if (activeTeamId) {
+      loadTeamData(activeTeamId)
+    }
+  }, [activeTeamId])
+
+  useEffect(() => {
     if (gifModalVisible) loadGifs('soccer')
   }, [gifModalVisible])
 
-  const loadData = async () => {
+  const loadTeamData = async (teamId: string) => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
-    setCurrentUser(user)
 
     const { data: membership } = await supabase
       .from('team_members')
       .select('team:teams(*)')
       .eq('user_id', user.id)
-      .eq('role', 'coach')
+      .eq('team_id', teamId)
       .limit(1)
       .single()
 
     if (membership?.team) {
       setTeam(membership.team)
       teamIdRef.current = membership.team.id
+      setMessages([])
+      latestMessageRef.current = null
+      if (pollInterval.current) clearInterval(pollInterval.current)
       await loadMessages(membership.team.id)
       startPolling(membership.team.id)
     }
+  }
+
+  const loadData = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    setCurrentUser(user)
+
+    const { data: memberships } = await supabase
+      .from('team_members')
+      .select('team:teams(*), role')
+      .eq('user_id', user.id)
+    setAllTeams(memberships ?? [])
+
     setLoading(false)
   }
 
@@ -278,7 +302,17 @@ export default function ChatScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <AppHeader teamColor={tc} teamName={team?.name} />
+      <AppHeader
+        teamColor={tc}
+        teamName={team?.name}
+        allTeams={allTeams}
+        onTeamSelect={async (t) => {
+          setMessages([])
+          if (teamIdRef.current) {
+            if (pollInterval.current) clearInterval(pollInterval.current)
+          }
+        }}
+      />
 
       {/* Chat header with DM button */}
       <View style={styles.chatHeader}>
