@@ -156,19 +156,18 @@ export default function HomeScreen() {
   const autoGeneratePlan = async (event: any, teamData: any) => {
     setPlanLoading(true)
     setIsOfflinePlan(false)
-    const focus = event?.focus ?? 'general skills'
     try {
       const timeoutPromise = new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error('timeout')), 8000)
       )
       const result = await Promise.race([
         generatePracticePlan(
-          `${event?.duration_min ?? 60} minute ${focus} session`,
+          `${event?.focus ?? 'Passing and Movement'} focus, ${event?.duration_min ?? 60} minutes`,
           teamData?.name, teamData?.age_group
         ),
         timeoutPromise
       ])
-      await AsyncStorage.setItem(cacheKey, JSON.stringify({ plan: result, timestamp: Date.now() }))
+      await AsyncStorage.setItem('huddle_active_plan', JSON.stringify({ plan: result, timestamp: Date.now() }))
       setPlan(result)
       setIsAiPlan(true)
     } catch {
