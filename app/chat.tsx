@@ -22,7 +22,7 @@ export default function ChatScreen() {
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [pendingImage, setPendingImage] = useState<string | null>(null)
   const [gifModalVisible, setGifModalVisible] = useState(false)
-  const [gifQuery, setGifQuery] = useState('soccer celebration')
+  const [gifQuery, setGifQuery] = useState('')
   const [gifs, setGifs] = useState<any[]>([])
   const [gifsLoading, setGifsLoading] = useState(false)
   const [gifError, setGifError] = useState<string | null>(null)
@@ -45,7 +45,7 @@ export default function ChatScreen() {
   }, [])
 
   useEffect(() => {
-    if (gifModalVisible) loadGifs('soccer celebration')
+    if (gifModalVisible) loadGifs('soccer')
   }, [gifModalVisible])
 
   const loadData = async () => {
