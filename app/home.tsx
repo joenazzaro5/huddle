@@ -423,7 +423,12 @@ export default function HomeScreen() {
                 const isPicDay = event.type === 'picture_day'
                 const dotColor = isGame ? '#F59E0B' : isParty ? '#8B5CF6' : isPicDay ? '#9C27B0' : '#1A56DB'
                 return (
-                  <View key={event.id} style={[styles.eventRow, i < upcomingEvents.length - 1 && styles.eventBorder]}>
+                  <TouchableOpacity
+                    key={event.id}
+                    style={[styles.eventRow, i < upcomingEvents.length - 1 && styles.eventBorder]}
+                    onPress={() => isGame ? router.push({ pathname: '/games', params: { tab: 'games' } }) : null}
+                    activeOpacity={isGame ? 0.7 : 1}
+                  >
                     <View style={[styles.upcomingDot, { backgroundColor: dotColor }]} />
                     <View style={{ flex: 1 }}>
                       <Text style={styles.eventTitle}>
@@ -435,7 +440,7 @@ export default function HomeScreen() {
                       <Text style={styles.eventSub}>{formatDay(event.starts_at)}</Text>
                       <Text style={styles.eventTime}>{formatTimeRange(event.starts_at, event.duration_min ?? 60)}</Text>
                     </View>
-                  </View>
+                  </TouchableOpacity>
                 )
               })}
               <TouchableOpacity onPress={() => router.push({ pathname: '/games', params: { tab: 'schedule' } })}>
