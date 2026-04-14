@@ -156,7 +156,12 @@ export default function HomeScreen() {
       .eq('team_id', teamData.id)
       .eq('is_active', true)
       .order('number', { ascending: true })
-    setPlayers(playerData ?? [])
+    setPlayers(playerData?.length ? playerData : [
+      { id: '1', number: 1, name: 'Sofia',  position: 'GK',         is_active: true },
+      { id: '2', number: 2, name: 'Emma',   position: 'Defender',   is_active: true },
+      { id: '3', number: 3, name: 'Olivia', position: 'Midfielder', is_active: true },
+      { id: '4', number: 4, name: 'Mia',    position: 'Forward',    is_active: true },
+    ])
     setPlayerCount(playerData?.length ?? 0)
 
     const cacheKey = `huddle_active_plan`
