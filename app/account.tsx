@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import { useRouter } from 'expo-router'
 import { AppHeader } from '../lib/header'
 import { useRole } from '../lib/roleStore'
+import { seedMultiTeamData } from '../lib/seedTestData'
 
 export default function AccountScreen() {
   const router = useRouter()
@@ -89,6 +90,22 @@ export default function AccountScreen() {
           <View style={[styles.infoRow, { borderBottomWidth: 0 }]}><Text style={styles.infoKey}>Build</Text><Text style={styles.infoVal}>Expo Go</Text></View>
         </View>
 
+        {__DEV__ && (
+          <TouchableOpacity
+            style={styles.devBtn}
+            onPress={async () => {
+              try {
+                await seedMultiTeamData()
+                Alert.alert('Done', 'Test teams seeded. Restart the app to see them.')
+              } catch (e: any) {
+                Alert.alert('Error', e.message ?? 'Seed failed')
+              }
+            }}
+          >
+            <Text style={styles.devBtnText}>Seed test data (dev only)</Text>
+          </TouchableOpacity>
+        )}
+
         <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>
           <Text style={styles.signOutText}>Sign out</Text>
         </TouchableOpacity>
@@ -115,4 +132,6 @@ const styles = StyleSheet.create({
   infoVal: { fontSize: 14, color: '#1a1a1a', fontWeight: '500' },
   signOutBtn: { backgroundColor: '#fff', borderRadius: 14, padding: 16, alignItems: 'center', borderWidth: 0.5, borderColor: '#ffcccc' },
   signOutText: { fontSize: 15, fontWeight: '700', color: '#E24B4A' },
+  devBtn: { backgroundColor: '#fff', borderRadius: 14, padding: 16, alignItems: 'center', borderWidth: 0.5, borderColor: '#D1D5DB', marginBottom: 10 },
+  devBtnText: { fontSize: 14, fontWeight: '600', color: '#6B7280' },
 })

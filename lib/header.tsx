@@ -10,10 +10,13 @@ type Props = {
   showTeamSwitch?: boolean
   allTeams?: any[]
   onTeamSelect?: (team: any) => void
+  activeTeamId?: string
 }
 
-export function AppHeader({ teamColor = '#1A56DB', teamName, onTeamPress, showTeamSwitch, allTeams, onTeamSelect }: Props) {
-  const hasMultiple = (allTeams?.length ?? 0) > 1
+export function AppHeader({ teamColor = '#1A56DB', teamName, onTeamPress, showTeamSwitch, allTeams, onTeamSelect, activeTeamId }: Props) {
+  const count = allTeams?.length ?? 0
+  const hasMultiple = count > 1
+  const showPills = count >= 2 && count <= 3
   const { currentRole, setRole } = useRole()
   const isParent = currentRole === 'parent'
   const fadeAnim = useRef(new Animated.Value(1)).current
@@ -21,7 +24,7 @@ export function AppHeader({ teamColor = '#1A56DB', teamName, onTeamPress, showTe
 
   const handleTeamPress = () => {
     if (onTeamPress) { onTeamPress(); return }
-    if (hasMultiple && onTeamSelect && allTeams) {
+    if (hasMultiple && !showPills && onTeamSelect && allTeams) {
       Alert.alert(
         'Switch team',
         undefined,
@@ -63,18 +66,12 @@ export function AppHeader({ teamColor = '#1A56DB', teamName, onTeamPress, showTe
   const handleRolePress = () => {
     if (isParent) {
       Alert.alert('Switch role', 'You are viewing as Parent.', [
-        {
-          text: 'Switch to Coach view',
-          onPress: () => switchRoleWithAnimation('coach'),
-        },
+        { text: 'Switch to Coach view', onPress: () => switchRoleWithAnimation('coach') },
         { text: 'Stay as Parent', style: 'cancel' },
       ])
     } else {
       Alert.alert('Switch role', 'You are viewing as Coach.', [
-        {
-          text: 'Switch to Parent view',
-          onPress: () => switchRoleWithAnimation('parent'),
-        },
+        { text: 'Switch to Parent view', onPress: () => switchRoleWithAnimation('parent') },
         { text: 'Stay as Coach', style: 'cancel' },
       ])
     }
@@ -85,30 +82,59 @@ export function AppHeader({ teamColor = '#1A56DB', teamName, onTeamPress, showTe
   const chipLabel = isParent ? 'Parent' : 'Coach'
 
   return (
-    <Animated.View style={[styles.header, { opacity: fadeAnim }]}>
-      <TouchableOpacity style={styles.left} onPress={handleTeamPress} disabled={!onTeamPress && !hasMultiple}>
-        <View style={[styles.dot, { backgroundColor: teamColor }]} />
-        <View>
-          <Text style={styles.teamName} numberOfLines={1}>{teamName ?? 'My Team'}</Text>
-          {(showTeamSwitch || hasMultiple) && <Text style={styles.switch}>Switch ↓</Text>}
-        </View>
-      </TouchableOpacity>
-
-      <View style={styles.center} pointerEvents="none">
-        <Text style={styles.ball}>⚽</Text>
-        <Text style={[styles.wordmark, { color: '#1A56DB' }]}>Huddle</Text>
-        <Text style={styles.ball}>⚽</Text>
-      </View>
-
-      <View style={styles.right}>
+    <View>
+      <Animated.View style={[styles.header, { opacity: fadeAnim }]}>
         <TouchableOpacity
-          style={[styles.roleChip, { backgroundColor: chipBg }, isParent && { borderWidth: 1, borderColor: '#059669' }]}
-          onPress={handleRolePress}
+          style={styles.left}
+          onPress={handleTeamPress}
+          disabled={!onTeamPress && (!hasMultiple || showPills)}
         >
-          <Text style={[styles.roleText, { color: chipText }]}>{chipLabel}</Text>
+          <View style={[styles.dot, { backgroundColor: teamColor }]} />
+          <View>
+            <Text style={styles.teamName} numberOfLines={1}>{teamName ?? 'My Team'}</Text>
+            {(showTeamSwitch || (hasMultiple && !showPills)) && (
+              <Text style={styles.switch}>Switch ↓</Text>
+            )}
+          </View>
         </TouchableOpacity>
-      </View>
-    </Animated.View>
+
+        <View style={styles.center} pointerEvents="none">
+          <Text style={styles.ball}>⚽</Text>
+          <Text style={[styles.wordmark, { color: '#1A56DB' }]}>Huddle</Text>
+          <Text style={styles.ball}>⚽</Text>
+        </View>
+
+        <View style={styles.right}>
+          <TouchableOpacity
+            style={[styles.roleChip, { backgroundColor: chipBg }, isParent && { borderWidth: 1, borderColor: '#059669' }]}
+            onPress={handleRolePress}
+          >
+            <Text style={[styles.roleText, { color: chipText }]}>{chipLabel}</Text>
+          </TouchableOpacity>
+        </View>
+      </Animated.View>
+
+      {showPills && allTeams && onTeamSelect && (
+        <View style={styles.pillsRow}>
+          {allTeams.map(m => {
+            const isActive = activeTeamId ? m.team.id === activeTeamId : m.team.name === teamName
+            const abbreviated = m.team.name.split(' ')[0]
+            const dotColor = m.team.color ?? '#1A56DB'
+            return (
+              <TouchableOpacity
+                key={m.team.id}
+                style={[styles.teamPill, isActive && styles.teamPillActive]}
+                onPress={() => onTeamSelect(m.team)}
+                activeOpacity={0.75}
+              >
+                <View style={[styles.pillDot, { backgroundColor: isActive ? '#fff' : dotColor }]} />
+                <Text style={[styles.pillText, isActive && styles.pillTextActive]}>{abbreviated}</Text>
+              </TouchableOpacity>
+            )
+          })}
+        </View>
+      )}
+    </View>
   )
 }
 
@@ -124,4 +150,28 @@ const styles = StyleSheet.create({
   right: { flex: 1, alignItems: 'flex-end', zIndex: 10 },
   roleChip: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
   roleText: { fontSize: 12, fontWeight: '700' },
+  pillsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    backgroundColor: '#fff',
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#f0f0f0',
+  },
+  teamPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  teamPillActive: { backgroundColor: '#1A56DB', borderColor: '#1A56DB' },
+  pillDot: { width: 7, height: 7, borderRadius: 3.5 },
+  pillText: { fontSize: 12, fontWeight: '700', color: '#374151' },
+  pillTextActive: { color: '#fff' },
 })

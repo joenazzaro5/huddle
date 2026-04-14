@@ -55,7 +55,7 @@ export default function HomeScreen() {
   const [playerCount, setPlayerCount] = useState(0)
   const [lastMessage, setLastMessage] = useState<any>(null)
   const [allTeams, setAllTeams] = useState<any[]>([])
-  const [showTeamPicker, setShowTeamPicker] = useState(false)
+  const [heroSwitching, setHeroSwitching] = useState(false)
   const [snacks] = useState(SNACK_DATA)
   const [pollOptions] = useState(POLL_OPTS)
   const [currentUser, setCurrentUser] = useState<any>(null)
@@ -164,8 +164,9 @@ export default function HomeScreen() {
   }
 
   const switchTeam = async (teamData: any) => {
+    if (teamData.id === team?.id) return
     setTeam(teamData)
-    setShowTeamPicker(false)
+    setHeroSwitching(true)
     setPlan(null)
 
     const { data: eventData } = await supabase
@@ -207,6 +208,7 @@ export default function HomeScreen() {
       .limit(1)
       .maybeSingle()
     setLastMessage(msgData)
+    setHeroSwitching(false)
   }
 
   const formatDay = (dateStr: string) =>
@@ -296,51 +298,13 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
 
-      {/* Header — three zone */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.headerTeam}
-          onPress={() => allTeams.length > 1 && setShowTeamPicker(true)}
-        >
-          <View style={[styles.teamDot, { backgroundColor: tc }]} />
-          <View>
-            <Text style={styles.headerTeamName} numberOfLines={1}>{team?.name ?? 'My Team'}</Text>
-            {allTeams.length > 1 && <Text style={styles.headerSwitch}>Switch ↓</Text>}
-          </View>
-        </TouchableOpacity>
-
-        <View style={styles.headerCenter}>
-          <Text style={styles.headerBall}>⚽</Text>
-          <Text style={[styles.wordmark, { color: tc }]}>Huddle</Text>
-          <Text style={styles.headerBall}>⚽</Text>
-        </View>
-
-        <View style={[styles.roleChip, { backgroundColor: tc + '20' }]}>
-          <Text style={[styles.roleText, { color: tc }]}>Coach</Text>
-        </View>
-      </View>
-
-      {showTeamPicker && (
-        <View style={styles.teamPicker}>
-          <Text style={styles.teamPickerTitle}>Switch team</Text>
-          {allTeams.map(m => (
-            <TouchableOpacity
-              key={m.team.id}
-              style={styles.teamPickerRow}
-              onPress={() => switchTeam(m.team)}
-            >
-              <View style={[styles.teamPickerSwatch, { backgroundColor: m.team.color ?? tc }]} />
-              <View>
-                <Text style={styles.teamPickerName}>{m.team.name}</Text>
-                <Text style={styles.teamPickerMeta}>{m.team.age_group} · {m.role}</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
-          <TouchableOpacity onPress={() => setShowTeamPicker(false)}>
-            <Text style={styles.teamPickerCancel}>Cancel</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      <AppHeader
+        teamColor={tc}
+        teamName={team?.name}
+        allTeams={allTeams}
+        onTeamSelect={switchTeam}
+        activeTeamId={team?.id}
+      />
 
       {toastVisible && (
         <Animated.View style={[styles.toast, { transform: [{ translateY: toastAnim }] }]}>
@@ -351,7 +315,11 @@ export default function HomeScreen() {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
         {/* 1. Hero event card */}
-        {nextEvent ? (
+        {heroSwitching ? (
+          <View style={[styles.heroCard, { backgroundColor: tc, minHeight: 120, alignItems: 'center', justifyContent: 'center' }]}>
+            <ActivityIndicator color="rgba(255,255,255,0.8)" size="large" />
+          </View>
+        ) : nextEvent ? (
           <View style={[styles.heroCard, { backgroundColor: tc }]}>
             <View style={styles.heroTopRow}>
               <Text style={styles.heroMeta}>
