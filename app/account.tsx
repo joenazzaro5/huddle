@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router'
 import { AppHeader } from '../lib/header'
 import { useRole } from '../lib/roleStore'
 import { seedMultiTeamData } from '../lib/seedTestData'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
 export default function AccountScreen() {
   const router = useRouter()
@@ -109,6 +110,29 @@ export default function AccountScreen() {
         <TouchableOpacity style={styles.signOutBtn} onPress={handleSignOut}>
           <Text style={styles.signOutText}>Sign out</Text>
         </TouchableOpacity>
+
+        {__DEV__ && (
+          <View style={styles.devGroup}>
+            <TouchableOpacity
+              style={styles.devResetBtn}
+              onPress={async () => {
+                await AsyncStorage.removeItem('huddle_onboarding_complete')
+                Alert.alert('Onboarding reset', 'Restart the app to see it again.')
+              }}
+            >
+              <Text style={styles.devResetText}>Reset onboarding (dev)</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.devResetBtn}
+              onPress={async () => {
+                await AsyncStorage.removeItem('huddle_cached_plan')
+                Alert.alert('Plan cache cleared', 'The cached practice plan has been removed.')
+              }}
+            >
+              <Text style={styles.devResetText}>Clear plan cache (dev)</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   )
@@ -134,4 +158,7 @@ const styles = StyleSheet.create({
   signOutText: { fontSize: 15, fontWeight: '700', color: '#E24B4A' },
   devBtn: { backgroundColor: '#fff', borderRadius: 14, padding: 16, alignItems: 'center', borderWidth: 0.5, borderColor: '#D1D5DB', marginBottom: 10 },
   devBtnText: { fontSize: 14, fontWeight: '600', color: '#6B7280' },
+  devGroup: { gap: 8, marginTop: 10 },
+  devResetBtn: { borderRadius: 12, paddingVertical: 10, paddingHorizontal: 16, alignItems: 'center', borderWidth: 1, borderColor: '#D1D5DB', backgroundColor: '#fff' },
+  devResetText: { fontSize: 12, fontWeight: '600', color: '#9CA3AF' },
 })
