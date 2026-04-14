@@ -70,7 +70,7 @@ export default function HomeScreen() {
 
   useEffect(() => { loadData() }, [])
 
-  const loadData = async () => {
+  const loadData = async (preferredTeamId?: string) => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
     setCurrentUser(user)
@@ -81,7 +81,9 @@ export default function HomeScreen() {
       .eq('user_id', user.id)
     setAllTeams(memberships ?? [])
 
-    const coachMembership = memberships?.find(m => m.role === 'coach')
+    const coachMembership = preferredTeamId
+      ? memberships?.find(m => m.role === 'coach' && m.team?.id === preferredTeamId)
+      : memberships?.find(m => m.role === 'coach')
     if (!coachMembership?.team) { setLoading(false); return }
 
     const teamData = coachMembership.team
@@ -167,56 +169,21 @@ export default function HomeScreen() {
 
   const switchTeam = async (teamData: any) => {
     if (teamData.id === team?.id) return
-    setTeam(teamData)
     const membership = allTeams.find(m => m.team?.id === teamData.id)
     const memberRole = membership?.role ?? 'coach'
     setRole(memberRole)
+
     if (memberRole === 'parent') {
       router.replace('/parent-home')
       return
     }
+
+    router.replace('/home')
+    setLoading(true)
     setHeroSwitching(true)
     setPlan(null)
 
-    const { data: eventData } = await supabase
-      .from('events')
-      .select('*')
-      .eq('team_id', teamData.id)
-      .gte('starts_at', new Date().toISOString())
-      .order('starts_at', { ascending: true })
-    setEvents(eventData ?? [])
-
-    const { count: pc } = await supabase
-      .from('players')
-      .select('*', { count: 'exact', head: true })
-      .eq('team_id', teamData.id)
-      .eq('is_active', true)
-    setPlayerCount(pc ?? 0)
-
-    if (eventData && eventData.length > 0) {
-      const { count: yes } = await supabase
-        .from('rsvps').select('*', { count: 'exact', head: true })
-        .eq('event_id', eventData[0].id).eq('status', 'yes')
-      const { count: no } = await supabase
-        .from('rsvps').select('*', { count: 'exact', head: true })
-        .eq('event_id', eventData[0].id).eq('status', 'no')
-      setRsvpYes(yes ?? 0)
-      setRsvpNo(no ?? 0)
-      autoGeneratePlan(eventData[0], teamData)
-    } else {
-      setRsvpYes(0)
-      setRsvpNo(0)
-      autoGeneratePlan(getScheduleEvents()[0] ?? null, teamData)
-    }
-
-    const { data: msgData } = await supabase
-      .from('messages')
-      .select('*, sender:users(display_name, email)')
-      .eq('team_id', teamData.id)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-    setLastMessage(msgData)
+    await loadData(teamData.id)
     setHeroSwitching(false)
   }
 
