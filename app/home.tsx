@@ -49,6 +49,7 @@ export default function HomeScreen() {
   const [rsvpYes, setRsvpYes] = useState(0)
   const [rsvpNo, setRsvpNo] = useState(0)
   const [playerCount, setPlayerCount] = useState(0)
+  const [players, setPlayers] = useState<any[]>([])
   const [lastMessage, setLastMessage] = useState<any>(null)
   const [allTeams, setAllTeams] = useState<any[]>([])
   const [heroSwitching, setHeroSwitching] = useState(false)
@@ -105,12 +106,14 @@ export default function HomeScreen() {
       .order('starts_at', { ascending: true })
     setEvents(eventData ?? [])
 
-    const { count: pc } = await supabase
+    const { data: playerData } = await supabase
       .from('players')
-      .select('*', { count: 'exact', head: true })
+      .select('*')
       .eq('team_id', teamData.id)
       .eq('is_active', true)
-    setPlayerCount(pc ?? 0)
+      .order('number', { ascending: true })
+    setPlayers(playerData ?? [])
+    setPlayerCount(playerData?.length ?? 0)
 
     const cacheKey = `huddle_cached_plan_${teamData.id}`
     const rawCache = await AsyncStorage.getItem(cacheKey)
@@ -185,6 +188,7 @@ export default function HomeScreen() {
     setTeam(null)
     setEvents([])
     setPlayerCount(0)
+    setPlayers([])
     setRsvpYes(0)
     setRsvpNo(0)
     setLastMessage(null)
@@ -523,17 +527,29 @@ export default function HomeScreen() {
             <Text style={styles.cardLabel}>Your team</Text>
           </View>
           <View style={styles.teamCardBody}>
-            <View style={styles.teamRow}>
-              <View style={[styles.teamAvatar, { backgroundColor: tc, shadowColor: tc }]}>
-                <Text style={styles.teamAvatarLetter}>{team?.name?.[0] ?? 'T'}</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.teamName}>{team?.name}</Text>
-                <Text style={styles.teamMeta}>{team?.age_group} · {team?.gender} · {playerCount} players</Text>
-              </View>
-            </View>
-            <TouchableOpacity style={[styles.viewRosterBtn, { borderColor: tc }]} onPress={() => router.push({ pathname: '/games', params: { tab: 'roster' } })}>
-              <Text style={[styles.viewRosterText, { color: tc }]}>View roster →</Text>
+            <Text style={styles.teamMeta}>{team?.age_group} · {team?.gender} · {playerCount} players</Text>
+            {players.slice(0, 3).map((player, i) => {
+              const firstPos = (player.positions?.[0] ?? player.position ?? '').toUpperCase()
+              const posColor = firstPos === 'GK' ? '#F59E0B'
+                : ['CB','LB','RB','LWB','RWB'].includes(firstPos) ? tc
+                : ['CM','LM','RM','DM','AM','CAM','CDM'].includes(firstPos) ? '#10B981'
+                : firstPos ? '#FF6B35' : null
+              return (
+                <View key={player.id ?? i} style={[styles.squadRow, i < Math.min(players.length, 3) - 1 && styles.squadBorder]}>
+                  <View style={[styles.squadNumBadge, { backgroundColor: tc + '18' }]}>
+                    <Text style={[styles.squadNum, { color: tc }]}>{player.number ?? '—'}</Text>
+                  </View>
+                  <Text style={styles.squadName}>{player.name ?? `${player.first_name ?? ''} ${player.last_name ?? ''}`.trim()}</Text>
+                  {posColor && (
+                    <View style={{ backgroundColor: posColor + '22', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
+                      <Text style={{ fontSize: 10, fontWeight: '800', color: posColor }}>{firstPos}</Text>
+                    </View>
+                  )}
+                </View>
+              )
+            })}
+            <TouchableOpacity style={{ marginTop: 6 }} onPress={() => router.push({ pathname: '/games', params: { tab: 'roster' } })}>
+              <Text style={[styles.viewLink, { color: tc }]}>View roster →</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -657,17 +673,12 @@ const styles = StyleSheet.create({
   // Team card
   teamCardHeader: { backgroundColor: '#F0F4FF', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 },
   teamCardBody: { paddingHorizontal: 16, paddingBottom: 14, paddingTop: 10 },
-  teamRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 6, marginTop: 8 },
-  teamAvatar: {
-    width: 52, height: 52, borderRadius: 26,
-    alignItems: 'center', justifyContent: 'center',
-    shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4, elevation: 3,
-  },
-  teamAvatarLetter: { fontSize: 22, fontWeight: '900', color: '#fff' },
-  teamName: { fontSize: 17, fontWeight: '800', color: '#1a1a1a' },
-  teamMeta: { fontSize: 12, color: '#888', marginTop: 1 },
-  viewRosterBtn: { borderRadius: 10, paddingVertical: 10, alignItems: 'center', borderWidth: 1.5 },
-  viewRosterText: { fontSize: 13, fontWeight: '700' },
+  teamMeta: { fontSize: 12, color: '#888', marginBottom: 4 },
+  squadRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 9 },
+  squadBorder: { borderBottomWidth: 0.5, borderBottomColor: '#f5f5f5' },
+  squadNumBadge: { width: 30, height: 30, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  squadNum: { fontSize: 13, fontWeight: '700' },
+  squadName: { flex: 1, fontSize: 14, fontWeight: '600', color: '#111827' },
   // Snack card
   snackCardHeader: { backgroundColor: '#FFFBEB', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 },
   snackRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10 },
