@@ -6,8 +6,7 @@ import { AppHeader } from '../lib/header'
 import { supabase } from '../lib/supabase'
 import { generatePracticePlan } from '../lib/ai'
 import { getScheduleEvents } from '../lib/season'
-
-let cachedPlan: any = null
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
 const FALLBACK_PLAN = {
   title: 'Dribbling Focus',
@@ -47,10 +46,10 @@ export default function HomeScreen() {
   const [team, setTeam] = useState<any>(null)
   const [events, setEvents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [plan, setPlan] = useState<any>(cachedPlan ?? FALLBACK_PLAN)
+  const [plan, setPlan] = useState<any>(FALLBACK_PLAN)
   const [planLoading, setPlanLoading] = useState(false)
   const [isOfflinePlan, setIsOfflinePlan] = useState(false)
-  const [isAiPlan, setIsAiPlan] = useState(cachedPlan !== null)
+  const [isAiPlan, setIsAiPlan] = useState(false)
   const [rsvpYes, setRsvpYes] = useState(0)
   const [rsvpNo, setRsvpNo] = useState(0)
   const [playerCount, setPlayerCount] = useState(0)
@@ -101,6 +100,14 @@ export default function HomeScreen() {
       .eq('is_active', true)
     setPlayerCount(pc ?? 0)
 
+    const rawCache = await AsyncStorage.getItem('huddle_cached_plan')
+    let needsGenerate = true
+    if (rawCache) {
+      const { plan: p, timestamp } = JSON.parse(rawCache)
+      setPlan(p); setIsAiPlan(true)
+      needsGenerate = Date.now() - timestamp > 86400000
+    }
+
     if (eventData && eventData.length > 0) {
       const { count: yes } = await supabase
         .from('rsvps').select('*', { count: 'exact', head: true })
@@ -110,9 +117,9 @@ export default function HomeScreen() {
         .eq('event_id', eventData[0].id).eq('status', 'no')
       setRsvpYes(yes ?? 0)
       setRsvpNo(no ?? 0)
-      if (cachedPlan === null) autoGeneratePlan(eventData[0], teamData)
+      if (needsGenerate) autoGeneratePlan(eventData[0], teamData)
     } else {
-      if (cachedPlan === null) autoGeneratePlan(getScheduleEvents()[0] ?? null, teamData)
+      if (needsGenerate) autoGeneratePlan(getScheduleEvents()[0] ?? null, teamData)
     }
 
     const { data: msgData } = await supabase
@@ -142,12 +149,15 @@ export default function HomeScreen() {
         ),
         timeoutPromise
       ])
-      cachedPlan = result
+      await AsyncStorage.setItem('huddle_cached_plan', JSON.stringify({ plan: result, timestamp: Date.now() }))
       setPlan(result)
       setIsAiPlan(true)
     } catch {
       setIsOfflinePlan(true)
-      // keep current plan (FALLBACK_PLAN or last AI plan)
+      const existing = await AsyncStorage.getItem('huddle_cached_plan')
+      if (!existing) {
+        await AsyncStorage.setItem('huddle_cached_plan', JSON.stringify({ plan: FALLBACK_PLAN, timestamp: 0 }))
+      }
     } finally {
       setPlanLoading(false)
     }

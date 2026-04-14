@@ -5,8 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { supabase } from '../lib/supabase'
 import { generatePracticePlan } from '../lib/ai'
 import { AppHeader } from '../lib/header'
-
-let cachedPlan: any = null
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
 const FALLBACK_PLAN = {
   title: 'Dribbling Focus',
@@ -107,10 +106,10 @@ export default function PracticeScreen() {
   const [prompt, setPrompt] = useState('')
   const [selectedFocuses, setSelectedFocuses] = useState<string[]>([])
   const [aiLoading, setAiLoading] = useState(false)
-  const [plan, setPlan] = useState<any>(cachedPlan ?? FALLBACK_PLAN)
+  const [plan, setPlan] = useState<any>(FALLBACK_PLAN)
   const [planLoading, setPlanLoading] = useState(false)
   const [isOfflinePlan, setIsOfflinePlan] = useState(false)
-  const [isAiPlan, setIsAiPlan] = useState(cachedPlan !== null)
+  const [isAiPlan, setIsAiPlan] = useState(false)
   const [showDrillPicker, setShowDrillPicker] = useState(false)
   const [selectedPickDrills, setSelectedPickDrills] = useState<Set<string>>(new Set())
   const [activeFilter, setActiveFilter] = useState('All')
@@ -155,7 +154,14 @@ export default function PracticeScreen() {
         .limit(1)
         .maybeSingle()
       setNextEvent(eventData)
-      if (cachedPlan === null) autoGenerate(eventData ?? null, membership.team)
+      const rawCache = await AsyncStorage.getItem('huddle_cached_plan')
+      let needsGenerate = true
+      if (rawCache) {
+        const { plan: p, timestamp } = JSON.parse(rawCache)
+        setPlan(p); setIsAiPlan(true)
+        needsGenerate = Date.now() - timestamp > 86400000
+      }
+      if (needsGenerate) autoGenerate(eventData ?? null, membership.team)
     }
   }
 
@@ -175,12 +181,15 @@ export default function PracticeScreen() {
         ),
         timeoutPromise
       ])
-      cachedPlan = result
+      await AsyncStorage.setItem('huddle_cached_plan', JSON.stringify({ plan: result, timestamp: Date.now() }))
       setPlan(result)
       setIsAiPlan(true)
     } catch {
       setIsOfflinePlan(true)
-      // keep current plan (FALLBACK_PLAN or last AI plan)
+      const existing = await AsyncStorage.getItem('huddle_cached_plan')
+      if (!existing) {
+        await AsyncStorage.setItem('huddle_cached_plan', JSON.stringify({ plan: FALLBACK_PLAN, timestamp: 0 }))
+      }
     } finally {
       setPlanLoading(false)
     }
@@ -331,7 +340,7 @@ export default function PracticeScreen() {
               </View>
               {!planLoading && (
                 <TouchableOpacity
-                  onPress={() => autoGenerate(nextEvent, team)}
+                  onPress={async () => { await AsyncStorage.removeItem('huddle_cached_plan'); autoGenerate(nextEvent, team) }}
                   style={{ flexDirection: 'row', alignItems: 'center', gap: 4, padding: 6 }}
                 >
                   <Text style={{ fontSize: 18 }}>🔀</Text>
