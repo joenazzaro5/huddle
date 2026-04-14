@@ -27,7 +27,7 @@ const ONBOARDING = {
     {
       emoji: '💬',
       title: 'Keep everyone together',
-      desc: 'Chat, RSVPs, polls, and snack duty. One place for all of it.',
+      desc: 'Chat, RSVPs, and snack duty. One place for all of it.',
       nextLabel: null,
     },
   ],
