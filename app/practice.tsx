@@ -477,7 +477,7 @@ export default function PracticeScreen() {
             <Text style={styles.streakText}>
               {drillStreak > 0
                 ? `🔥 ${drillStreak} drill streak`
-                : 'Start your streak — watch a drill or practice today'}
+                : 'Your drill streak 🔥'}
             </Text>
           </View>
 
