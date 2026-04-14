@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router'
 import { AppHeader } from '../lib/header'
 import { useRole } from '../lib/roleStore'
 import { supabase } from '../lib/supabase'
-import { getScheduleEvents } from '../lib/season'
+import { getScheduleEvents, SEASON_SCHEDULE } from '../lib/season'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
 const tc = '#1A56DB'
@@ -39,7 +39,17 @@ export default function ParentHomeScreen() {
   const [practicedDays, setPracticedDays] = useState<number[]>([])
   const [watchedToday, setWatchedToday] = useState(false)
   const [practicedToday, setPracticedToday] = useState(false)
-  const [snackSignedUp, setSnackSignedUp] = useState(false)
+  const [snacks] = useState(() => {
+    const now = new Date()
+    return SEASON_SCHEDULE
+      .filter(e => e.type === 'game' && new Date(e.starts_at) >= now)
+      .map(e => ({
+        date: new Date(e.starts_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        type: 'Game' as string,
+        name: null as string | null,
+        claimed: false,
+      }))
+  })
 
   useEffect(() => { loadData() }, [])
 
@@ -434,29 +444,29 @@ export default function ParentHomeScreen() {
           </TouchableOpacity>
         )}
 
-        {/* Snack duty card */}
-        <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#F59E0B', padding: 0, overflow: 'hidden' }]}>
-          <View style={{ backgroundColor: '#FFFBEB', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 }}>
-            <Text style={styles.cardLabel}>Snack duty 🍊</Text>
+        {/* Snack schedule card */}
+        <TouchableOpacity
+          style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#F59E0B', padding: 0, overflow: 'hidden' }]}
+          onPress={() => router.push({ pathname: '/parent-team', params: { tab: 'snacks' } })}
+          activeOpacity={0.85}
+        >
+          <View style={styles.snackCardHeader}>
+            <Text style={styles.cardLabel}>🍊 Snack schedule</Text>
           </View>
-          <View style={{ paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center' }}>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }}>Apr 26 · Practice</Text>
-              <Text style={{ fontSize: 12, color: snackSignedUp ? '#059669' : '#888', marginTop: 3, fontWeight: snackSignedUp ? '600' : '400' }}>
-                {snackSignedUp ? '✓ You signed up!' : 'Nobody signed up yet'}
-              </Text>
-            </View>
-            {!snackSignedUp && (
-              <TouchableOpacity
-                style={{ backgroundColor: '#F59E0B', borderRadius: 10, paddingHorizontal: 16, paddingVertical: 8 }}
-                onPress={() => router.push({ pathname: '/parent-team', params: { tab: 'snacks' } })}
-                activeOpacity={0.8}
-              >
-                <Text style={{ fontSize: 13, fontWeight: '700', color: '#fff' }}>Sign up →</Text>
-              </TouchableOpacity>
-            )}
+          <View style={styles.cardBody}>
+            {snacks.filter(s => !s.claimed).slice(0, 2).map((item, i) => (
+              <View key={i} style={[styles.snackRow, i < 1 && styles.snackBorder]}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.snackDate}>{item.date} · {item.type}</Text>
+                  <Text style={[styles.snackName, { color: item.claimed ? '#1a1a1a' : '#888' }]}>
+                    {item.claimed ? item.name : 'Open'}
+                  </Text>
+                </View>
+              </View>
+            ))}
+            <Text style={[styles.viewLink, { color: tc }]}>Snack me! 🍊 →</Text>
           </View>
-        </View>
+        </TouchableOpacity>
 
       </ScrollView>
     </SafeAreaView>
@@ -501,6 +511,12 @@ const styles = StyleSheet.create({
   eventDays: { fontSize: 11, fontWeight: '700' },
   rsvpDot: { width: 8, height: 8, borderRadius: 4 },
   viewLink: { fontSize: 13, fontWeight: '700', marginTop: 8 },
+  cardBody: { paddingHorizontal: 16, paddingBottom: 14, paddingTop: 10 },
+  snackCardHeader: { backgroundColor: '#FFFBEB', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 },
+  snackRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10 },
+  snackBorder: { borderBottomWidth: 0.5, borderBottomColor: '#f5f5f5' },
+  snackDate: { fontSize: 11, color: '#aaa', fontWeight: '600', marginBottom: 2 },
+  snackName: { fontSize: 14, fontWeight: '600' },
   chatPreviewRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginTop: 6, marginBottom: 6 },
   chatSender: { fontSize: 12, fontWeight: '700', color: '#1a1a1a', marginBottom: 2 },
   chatPreviewBody: { fontSize: 13, color: '#6B7280', lineHeight: 20 },

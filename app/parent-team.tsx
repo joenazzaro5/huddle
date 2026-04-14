@@ -46,14 +46,16 @@ export default function ParentTeamScreen() {
   const [activeTab, setActiveTab] = useState<'schedule' | 'roster' | 'standings' | 'snacks'>((params.tab as any) || 'schedule')
   const [rsvpMap, setRsvpMap] = useState<Record<string, 'yes' | 'no' | 'maybe'>>({})
   const [currentUser, setCurrentUser] = useState<any>(null)
-  const [snackData, setSnackData] = useState([
-    { date: 'Apr 5',  type: 'Practice', name: 'Sarah M',      claimed: true  },
-    { date: 'Apr 12', type: 'Practice', name: null as string | null, claimed: false },
-    { date: 'Apr 19', type: 'Game',     name: 'Tom K',         claimed: true  },
-    { date: 'Apr 26', type: 'Practice', name: null as string | null, claimed: false },
-    { date: 'May 3',  type: 'Practice', name: 'Lisa R',        claimed: true  },
-    { date: 'May 10', type: 'Game',     name: null as string | null, claimed: false },
-  ])
+  const [snackData, setSnackData] = useState(() =>
+    SEASON_SCHEDULE
+      .filter(e => e.type === 'game')
+      .map(e => ({
+        date: new Date(e.starts_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        type: 'Game' as string,
+        name: null as string | null,
+        claimed: false,
+      }))
+  )
 
 
   useEffect(() => { loadData() }, [])

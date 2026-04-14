@@ -19,14 +19,13 @@ const FALLBACK_PLAN = {
   coachTip: "Remind players to check their shoulder before receiving. The best passers always know what's around them before the ball arrives.",
 }
 
-function getUpcomingSnackSlots(count = 4) {
+function getUpcomingSnackSlots() {
   const now = new Date()
   return SEASON_SCHEDULE
-    .filter(e => (e.type === 'practice' || e.type === 'game') && new Date(e.starts_at) >= now)
-    .slice(0, count)
+    .filter(e => e.type === 'game' && new Date(e.starts_at) >= now)
     .map(e => ({
       date: new Date(e.starts_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      type: (e.type.charAt(0).toUpperCase() + e.type.slice(1)) as string,
+      type: 'Game' as string,
       name: null as string | null,
       claimed: false,
     }))
@@ -620,7 +619,7 @@ export default function HomeScreen() {
             <Text style={styles.cardLabel}>🍊 Snack schedule</Text>
           </View>
           <View style={styles.cardBody}>
-            {snacks.slice(0, 2).map((item, i) => (
+            {snacks.filter(s => !s.claimed).slice(0, 2).map((item, i) => (
               <View key={i} style={[styles.snackRow, i < 1 && styles.snackBorder]}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.snackDate}>{item.date} · {item.type}</Text>
