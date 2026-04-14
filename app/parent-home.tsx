@@ -351,7 +351,7 @@ export default function ParentHomeScreen() {
                   </View>
                 )
               })}
-              <TouchableOpacity onPress={() => router.push('/parent-schedule')}>
+              <TouchableOpacity onPress={() => router.push({ pathname: '/parent-team', params: { tab: 'schedule' } })}>
                 <Text style={[styles.viewLink, { color: tc }]}>View schedule →</Text>
               </TouchableOpacity>
             </View>
@@ -388,7 +388,7 @@ export default function ParentHomeScreen() {
                 <Text style={[styles.standingsVal, row.isUs && { fontWeight: '700', color: tc }]}>{row.pts}</Text>
               </View>
             ))}
-            <TouchableOpacity onPress={() => router.push('/parent-standings')}>
+            <TouchableOpacity onPress={() => router.push({ pathname: '/parent-team', params: { tab: 'standings' } })}>
               <Text style={[styles.viewLink, { color: tc }]}>View standings →</Text>
             </TouchableOpacity>
           </View>
@@ -409,7 +409,7 @@ export default function ParentHomeScreen() {
             {!snackSignedUp && (
               <TouchableOpacity
                 style={{ backgroundColor: '#F59E0B', borderRadius: 10, paddingHorizontal: 16, paddingVertical: 8 }}
-                onPress={() => router.push('/parent-snacks')}
+                onPress={() => router.push({ pathname: '/parent-team', params: { tab: 'snacks' } })}
                 activeOpacity={0.8}
               >
                 <Text style={{ fontSize: 13, fontWeight: '700', color: '#fff' }}>Sign up →</Text>
@@ -466,7 +466,7 @@ export default function ParentHomeScreen() {
                 </View>
               ))
             )}
-            <TouchableOpacity onPress={() => router.push('/parent-roster')}>
+            <TouchableOpacity onPress={() => router.push({ pathname: '/parent-team', params: { tab: 'roster' } })}>
               <Text style={[styles.viewLink, { color: tc }]}>View full roster →</Text>
             </TouchableOpacity>
           </View>
