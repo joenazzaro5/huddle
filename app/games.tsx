@@ -105,7 +105,7 @@ export default function GamesScreen() {
   const [players, setPlayers] = useState<Player[]>([])
   const [events, setEvents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'schedule' | 'games' | 'roster' | 'standings' | 'snacks' | 'polls'>('schedule')
+  const [activeTab, setActiveTab] = useState<'schedule' | 'games' | 'roster' | 'standings' | 'snacks'>('schedule')
   const [lineupPrompt, setLineupPrompt] = useState('')
   const [lineupLoading, setLineupLoading] = useState(false)
   const [lineupGenerated, setLineupGenerated] = useState(true)
@@ -128,12 +128,6 @@ export default function GamesScreen() {
     { date: 'May 3', type: 'Practice', name: 'Lisa R', claimed: true },
     { date: 'May 10', type: 'Game', name: null as string | null, claimed: false },
   ])
-  const [pollOptions, setPollOptions] = useState([
-    { label: "Let's go, team!", votes: 12 },
-    { label: 'Hustle hard!', votes: 8 },
-    { label: 'All day, every day!', votes: 5 },
-  ])
-  const [votedOption, setVotedOption] = useState<number | null>(null)
   const [playerStats, setPlayerStats] = useState(PLAYER_STATS_INIT)
   const [logModalVisible, setLogModalVisible] = useState(false)
   const [logPlayerName, setLogPlayerName] = useState(PLAYER_STATS_INIT[0].name)
@@ -350,8 +344,8 @@ Slots: ${formationSlots}`
 
       <View style={{ height: 44, backgroundColor: '#fff', borderBottomWidth: 0.5, borderBottomColor: '#eee' }}>
         <ScrollView horizontal={true} showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingLeft: 0 }}>
-          {(['schedule', 'games', 'roster', 'standings', 'snacks', 'polls'] as const).map((tab) => {
-            const labels: Record<string, string> = { schedule: 'Schedule', games: 'Games', roster: 'Roster', standings: 'Standings', snacks: 'Snacks', polls: 'Polls' }
+          {(['schedule', 'games', 'roster', 'standings', 'snacks'] as const).map((tab) => {
+            const labels: Record<string, string> = { schedule: 'Schedule', games: 'Games', roster: 'Roster', standings: 'Standings', snacks: 'Snacks' }
             const isActive = activeTab === tab
             return (
               <TouchableOpacity
@@ -521,55 +515,6 @@ Slots: ${formationSlots}`
                 Remember: orange slices &gt; juice boxes 🍊
               </Text>
             </View>
-          </View>
-        </ScrollView>
-      ) : activeTab === 'polls' ? (
-        <ScrollView contentContainerStyle={styles.content}>
-          <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#8B5CF6' }]}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-              <View style={{ backgroundColor: '#F3E8FF', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 }}>
-                <Text style={{ fontSize: 11, fontWeight: '800', color: '#7C3AED' }}>Active poll 🗳️</Text>
-              </View>
-            </View>
-            <Text style={styles.pollClosesLabel}>Poll closes in 3 days</Text>
-            <Text style={styles.pollQuestion}>What should our team cheer be?</Text>
-            {pollOptions.map((option, i) => {
-              const total = pollOptions.reduce((sum, o) => sum + o.votes, 0)
-              const pct = total > 0 ? option.votes / total : 0
-              const isVoted = votedOption === i
-              return (
-                <TouchableOpacity
-                  key={i}
-                  style={[
-                    styles.pollRow,
-                    isVoted && { borderLeftWidth: 3, borderLeftColor: tc, backgroundColor: '#EEF4FF', borderRadius: 10, paddingLeft: 10 },
-                  ]}
-                  onPress={() => {
-                    if (votedOption === i) return
-                    setPollOptions(prev => prev.map((o, idx) => {
-                      if (idx === i) return { ...o, votes: o.votes + 1 }
-                      if (idx === votedOption) return { ...o, votes: Math.max(0, o.votes - 1) }
-                      return o
-                    }))
-                    setVotedOption(i)
-                  }}
-                  activeOpacity={0.8}
-                >
-                  <View style={styles.pollLabelRow}>
-                    <Text style={[styles.pollOptionLabel, { fontWeight: isVoted ? '700' : '500', color: isVoted ? tc : '#1a1a1a' }]}>
-                      {option.label}
-                    </Text>
-                    <Text style={styles.pollVoteCount}>{option.votes}</Text>
-                  </View>
-                  <View style={styles.pollBarBg}>
-                    <View style={[styles.pollBarFill, { width: `${Math.round(pct * 100)}%` as any, backgroundColor: isVoted ? tc : tc + '40' }]} />
-                  </View>
-                </TouchableOpacity>
-              )
-            })}
-            <TouchableOpacity style={[styles.newPollBtn, { borderColor: tc }]}>
-              <Text style={[styles.newPollBtnText, { color: tc }]}>Create new poll +</Text>
-            </TouchableOpacity>
           </View>
         </ScrollView>
       ) : activeTab === 'standings' ? (

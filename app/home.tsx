@@ -26,12 +26,6 @@ const SNACK_DATA = [
   { date: 'Apr 26', type: 'Practice', name: null as string | null, claimed: false },
 ]
 
-const POLL_OPTS = [
-  { label: "Let's go, team!", votes: 12 },
-  { label: 'Hustle hard!', votes: 8 },
-  { label: 'All day, every day!', votes: 5 },
-]
-
 const DRILLS_OF_DAY = [
   { title: 'Cone Weaving',         focus: 'Dribbling',    level: 'Beginner',     duration: '10 min', desc: 'Set up 6 cones in a line. Dribble through using both feet. Focus on soft touches.' },
   { title: 'Wall Pass',            focus: 'Passing',      level: 'Intermediate', duration: '15 min', desc: 'Pass against a wall and control the return. Aim for the same spot each time.' },
@@ -557,40 +551,7 @@ export default function HomeScreen() {
           </TouchableOpacity>
         )}
 
-        {/* 6. Team poll */}
-        <TouchableOpacity
-          style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#8B5CF6', padding: 0, overflow: 'hidden' }]}
-          onPress={() => router.push('/chat')}
-          activeOpacity={0.85}
-        >
-          <View style={styles.pollCardHeader}>
-            <Text style={styles.cardLabel}>🗳️ Team poll</Text>
-          </View>
-          <View style={styles.cardBody}>
-            <Text style={styles.pollQuestion}>What should our team cheer be?</Text>
-            {(() => {
-              const total = pollOptions.reduce((sum, o) => sum + o.votes, 0)
-              return pollOptions.map((option, i) => {
-                const pct = total > 0 ? option.votes / total : 0
-                const isLeading = i === 0
-                return (
-                  <View key={i} style={{ marginTop: 8 }}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                      <Text style={{ fontSize: 13, fontWeight: isLeading ? '700' : '500', color: isLeading ? '#1a1a1a' : '#555', flex: 1 }}>{option.label}</Text>
-                      <Text style={{ fontSize: 12, color: '#888', fontWeight: '600', marginLeft: 8 }}>{option.votes}</Text>
-                    </View>
-                    <View style={{ height: 5, backgroundColor: '#f0f0f0', borderRadius: 3, overflow: 'hidden' }}>
-                      <View style={{ height: 5, backgroundColor: '#8B5CF6', borderRadius: 3, width: `${Math.round(pct * 100)}%` as any, opacity: isLeading ? 1 : 0.45 }} />
-                    </View>
-                  </View>
-                )
-              })
-            })()}
-            <Text style={[styles.viewLink, { color: tc }]}>Open chat →</Text>
-          </View>
-        </TouchableOpacity>
-
-        {/* 7. Snack schedule */}
+        {/* 6. Snack schedule */}
         <TouchableOpacity
           style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#F59E0B', padding: 0, overflow: 'hidden' }]}
           onPress={() => router.push({ pathname: '/games', params: { tab: 'snacks' } })}
