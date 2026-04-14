@@ -1,13 +1,20 @@
 # Huddle — Open Issues
 
-Last updated: April 13 2026
+Last updated: April 14 2026
+
+## Fixed today
+
+- [x] GIFs broken — FIXED
+- [x] Parent home entry point links — FIXED
+- [x] Multi-team not showing — FIXED
+- [x] Poll entry point routing — FIXED
 
 ## P0 — Broken (fix first, test locally before building)
 
 - [x] GIFs broken — GIPHY integration not returning results
-- [ ] Multi-team not showing — seed data function not running correctly
-- [ ] Poll entry point on home screen not displaying correctly
-- [ ] Parent home entry point links going to wrong destinations
+- [x] Multi-team not showing — seed data function not running correctly
+- [x] Poll entry point on home screen not displaying correctly
+- [x] Parent home entry point links going to wrong destinations
 
 ## P1 — Missing features
 
