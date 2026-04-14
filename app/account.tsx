@@ -116,6 +116,19 @@ export default function AccountScreen() {
             <TouchableOpacity
               style={styles.devResetBtn}
               onPress={async () => {
+                try {
+                  const { team1, team2 } = await seedMultiTeamData()
+                  Alert.alert('Seeded', `Coach: ${team1.name}\nParent: ${team2.name}\n\nRestart the app to see them.`)
+                } catch (e: any) {
+                  Alert.alert('Seed failed', e.message ?? 'Unknown error')
+                }
+              }}
+            >
+              <Text style={styles.devResetText}>Seed multi-team data (dev)</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.devResetBtn}
+              onPress={async () => {
                 await AsyncStorage.removeItem('huddle_onboarding_complete')
                 Alert.alert('Onboarding reset', 'Restart the app to see it again.')
               }}

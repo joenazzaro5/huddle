@@ -9,13 +9,13 @@ import { getScheduleEvents } from '../lib/season'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
 const FALLBACK_PLAN = {
-  title: 'Dribbling Focus',
+  title: 'Passing & Movement',
   plan: [
-    { phase: 'Opening Play',    duration: '15 min', drill: 'Dribble Tag',     desc: 'Players dribble freely. Coach calls out a color cone to dribble to.' },
-    { phase: 'Practice Phase',  duration: '30 min', drill: 'Cone Weaving',    desc: 'Dribble through a line of cones using both feet. Focus on soft touches.' },
-    { phase: 'Final Play',      duration: '15 min', drill: '3v3 Small Sided', desc: 'Free play. Let them express themselves.' },
+    { phase: 'Opening Play',   duration: '15 min', drill: 'Rondo 4v2',                    desc: '4 players keep ball away from 2 defenders in a small square. First touch only. High energy, competitive.' },
+    { phase: 'Practice Phase', duration: '30 min', drill: 'Triangle Passing + Overlap',   desc: 'Three players form a triangle. After each pass, the passer runs to a new position. Add a wall pass variation after 10 minutes.' },
+    { phase: 'Final Play',     duration: '15 min', drill: 'Possession Game 5v5',          desc: 'Keep the ball. Every 5 consecutive passes = 1 point. No long balls — short and sharp only.' },
   ],
-  coachTip: 'Encourage players to use their weaker foot.',
+  coachTip: "Remind players to check their shoulder before receiving. The best passers always know what's around them before the ball arrives.",
 }
 
 const SNACK_DATA = [
