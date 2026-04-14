@@ -41,6 +41,24 @@ const DRILLS_OF_DAY = [
   { title: 'Agility Ladder',       focus: 'Footwork',     level: 'All levels',   duration: '10 min', desc: 'Quick feet through the ladder pattern. Keep your eyes up and stay light.' },
 ]
 
+function todayDateStr() {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+function thisWeekDayIndices(dates: string[]): number[] {
+  const now = new Date()
+  const dow = now.getDay()
+  const monday = new Date(now)
+  monday.setDate(now.getDate() - (dow === 0 ? 6 : dow - 1))
+  monday.setHours(0, 0, 0, 0)
+  const nextMonday = new Date(monday)
+  nextMonday.setDate(monday.getDate() + 7)
+  return dates
+    .filter(d => { const dt = new Date(d + 'T00:00:00'); return dt >= monday && dt < nextMonday })
+    .map(d => { const day = new Date(d + 'T00:00:00').getDay(); return (day + 6) % 7 })
+}
+
 function getChatPreviewText(body: string | null | undefined): string {
   if (!body) return ''
   if (body.startsWith('POLL:')) {
@@ -175,6 +193,10 @@ export default function HomeScreen() {
 
     const storedStreak = await AsyncStorage.getItem('huddle_practice_streak')
     if (storedStreak) setPracticeStreak(parseInt(storedStreak, 10))
+    const storedDates = await AsyncStorage.getItem('huddle_practiced_dates')
+    const allDates: string[] = storedDates ? JSON.parse(storedDates) : []
+    setPracticedDays(thisWeekDayIndices(allDates))
+    setPracticedToday(allDates.includes(todayDateStr()))
 
     setLoading(false)
   }
@@ -491,14 +513,18 @@ export default function HomeScreen() {
             <TouchableOpacity
               style={{ backgroundColor: practicedToday ? '#F0FDF4' : '#F59E0B', borderRadius: 10, paddingVertical: 11, alignItems: 'center', borderWidth: practicedToday ? 1 : 0, borderColor: '#D97706' }}
               onPress={async () => {
-                if (!practicedToday) {
-                  setPracticedToday(true)
+                const today = todayDateStr()
+                const raw = await AsyncStorage.getItem('huddle_practiced_dates')
+                const allDates: string[] = raw ? JSON.parse(raw) : []
+                if (!allDates.includes(today)) {
+                  const newDates = [...allDates, today]
+                  await AsyncStorage.setItem('huddle_practiced_dates', JSON.stringify(newDates))
                   const newStreak = practiceStreak + 1
                   setPracticeStreak(newStreak)
-                  const todayIdx = (new Date().getDay() + 6) % 7
-                  setPracticedDays(prev => prev.includes(todayIdx) ? prev : [...prev, todayIdx])
                   await AsyncStorage.setItem('huddle_practice_streak', String(newStreak))
+                  setPracticedDays(thisWeekDayIndices(newDates))
                 }
+                setPracticedToday(true)
               }}
               disabled={practicedToday}
               activeOpacity={practicedToday ? 1 : 0.8}

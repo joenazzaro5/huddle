@@ -19,6 +19,24 @@ const FALLBACK_PLAN = {
 
 const PHASE_COLORS = ['#4CAF50', '#1A56DB', '#FF6B35']
 
+function todayDateStr() {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+function thisWeekDayIndices(dates: string[]): number[] {
+  const now = new Date()
+  const dow = now.getDay()
+  const monday = new Date(now)
+  monday.setDate(now.getDate() - (dow === 0 ? 6 : dow - 1))
+  monday.setHours(0, 0, 0, 0)
+  const nextMonday = new Date(monday)
+  nextMonday.setDate(monday.getDate() + 7)
+  return dates
+    .filter(d => { const dt = new Date(d + 'T00:00:00'); return dt >= monday && dt < nextMonday })
+    .map(d => { const day = new Date(d + 'T00:00:00').getDay(); return (day + 6) % 7 })
+}
+
 const DRILLS = [
   { id: '1', title: 'Cone dribbling', focus: 'Dribbling', duration: '10 min', level: 'Beginner', desc: 'Set up 6 cones in a line 2 yards apart. Players dribble through using both feet.', videoId: 'RukcQggHAZU' },
   { id: '2', title: 'Ball mastery', focus: 'Dribbling', duration: '12 min', level: 'Beginner', desc: 'Touches, rolls, and stepovers to build close control and confidence on the ball.', videoId: 'YqAyi27WejY' },
@@ -118,6 +136,8 @@ export default function PracticeScreen() {
   const [inputFocused, setInputFocused] = useState(false)
   const [favoriteDrills, setFavoriteDrills] = useState<Set<string>>(new Set())
   const [drillStreak, setDrillStreak] = useState(0)
+  const [practicedDays, setPracticedDays] = useState<number[]>([])
+  const [practicedToday, setPracticedToday] = useState(false)
   const [lastDrillDate, setLastDrillDate] = useState('')
   const [practicedDrills, setPracticedDrills] = useState<Set<string>>(new Set())
   const [drillFeedback, setDrillFeedback] = useState<Record<string, string>>({})
@@ -156,6 +176,10 @@ export default function PracticeScreen() {
       setNextEvent(eventData)
       const storedStreak = await AsyncStorage.getItem('huddle_practice_streak')
       if (storedStreak) setDrillStreak(parseInt(storedStreak, 10))
+      const storedDates = await AsyncStorage.getItem('huddle_practiced_dates')
+      const allDates: string[] = storedDates ? JSON.parse(storedDates) : []
+      setPracticedDays(thisWeekDayIndices(allDates))
+      setPracticedToday(allDates.includes(todayDateStr()))
       const rawCache = await AsyncStorage.getItem('huddle_active_plan')
       let needsGenerate = true
       if (rawCache) {
@@ -260,21 +284,31 @@ export default function PracticeScreen() {
     setAiLoading(false)
   }
 
+  const recordPracticeDay = async () => {
+    const today = todayDateStr()
+    const raw = await AsyncStorage.getItem('huddle_practiced_dates')
+    const allDates: string[] = raw ? JSON.parse(raw) : []
+    if (!allDates.includes(today)) {
+      const newDates = [...allDates, today]
+      await AsyncStorage.setItem('huddle_practiced_dates', JSON.stringify(newDates))
+      const newStreak = drillStreak + 1
+      setDrillStreak(newStreak)
+      await AsyncStorage.setItem('huddle_practice_streak', String(newStreak))
+      setPracticedDays(thisWeekDayIndices(newDates))
+    }
+    setPracticedToday(true)
+    setLastDrillDate(today)
+  }
+
   const markDrillPracticed = async (drillId: string) => {
     if (practicedDrills.has(drillId)) return
     setPracticedDrills(prev => { const n = new Set(prev); n.add(drillId); return n })
-    const newStreak = drillStreak + 1
-    setDrillStreak(newStreak)
-    setLastDrillDate(new Date().toISOString().split('T')[0])
-    await AsyncStorage.setItem('huddle_practice_streak', String(newStreak))
+    await recordPracticeDay()
   }
 
   const onVideoTap = async (drillId: string, videoId: string) => {
     WebBrowser.openBrowserAsync('https://www.youtube.com/watch?v=' + videoId)
-    const newStreak = drillStreak + 1
-    setDrillStreak(newStreak)
-    setLastDrillDate(new Date().toISOString().split('T')[0])
-    await AsyncStorage.setItem('huddle_practice_streak', String(newStreak))
+    await recordPracticeDay()
   }
 
   const canGenerate = buildPrompt().length > 0
@@ -480,11 +514,21 @@ export default function PracticeScreen() {
 
           {/* Streak banner */}
           <View style={styles.streakBanner}>
-            <Text style={styles.streakText}>
-              {drillStreak > 0
-                ? `🔥 ${drillStreak} drill streak`
-                : 'Your drill streak 🔥'}
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+              <Text style={[styles.streakText, { flex: 1 }]}>Your drill streak 🔥</Text>
+              <Text style={{ fontSize: 22, fontWeight: '800', color: '#F57F17' }}>{drillStreak}</Text>
+              <Text style={{ fontSize: 13, color: '#9CA3AF', marginLeft: 4 }}>day{drillStreak !== 1 ? 's' : ''}</Text>
+            </View>
+            <View style={{ flexDirection: 'row', gap: 6 }}>
+              {['M','T','W','T','F','S','S'].map((d, i) => (
+                <View key={i} style={{ alignItems: 'center', flex: 1 }}>
+                  <View style={{ width: 28, height: 28, borderRadius: 14, marginBottom: 3, alignItems: 'center', justifyContent: 'center', backgroundColor: practicedDays.includes(i) ? '#F59E0B' : '#F3F4F6' }}>
+                    {practicedDays.includes(i) && <Text style={{ fontSize: 11, color: '#fff', fontWeight: '700' }}>✓</Text>}
+                  </View>
+                  <Text style={{ fontSize: 9, color: '#9CA3AF', fontWeight: '600' }}>{d}</Text>
+                </View>
+              ))}
+            </View>
           </View>
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }}>
