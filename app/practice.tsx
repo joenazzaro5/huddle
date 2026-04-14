@@ -154,6 +154,8 @@ export default function PracticeScreen() {
         .limit(1)
         .maybeSingle()
       setNextEvent(eventData)
+      const storedStreak = await AsyncStorage.getItem('huddle_practice_streak')
+      if (storedStreak) setDrillStreak(parseInt(storedStreak, 10))
       const rawCache = await AsyncStorage.getItem('huddle_active_plan')
       let needsGenerate = true
       if (rawCache) {
@@ -258,17 +260,21 @@ export default function PracticeScreen() {
     setAiLoading(false)
   }
 
-  const markDrillPracticed = (drillId: string) => {
+  const markDrillPracticed = async (drillId: string) => {
     if (practicedDrills.has(drillId)) return
     setPracticedDrills(prev => { const n = new Set(prev); n.add(drillId); return n })
-    setDrillStreak(s => s + 1)
+    const newStreak = drillStreak + 1
+    setDrillStreak(newStreak)
     setLastDrillDate(new Date().toISOString().split('T')[0])
+    await AsyncStorage.setItem('huddle_practice_streak', String(newStreak))
   }
 
-  const onVideoTap = (drillId: string, videoId: string) => {
+  const onVideoTap = async (drillId: string, videoId: string) => {
     WebBrowser.openBrowserAsync('https://www.youtube.com/watch?v=' + videoId)
-    setDrillStreak(s => s + 1)
+    const newStreak = drillStreak + 1
+    setDrillStreak(newStreak)
     setLastDrillDate(new Date().toISOString().split('T')[0])
+    await AsyncStorage.setItem('huddle_practice_streak', String(newStreak))
   }
 
   const canGenerate = buildPrompt().length > 0

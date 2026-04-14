@@ -147,6 +147,9 @@ export default function HomeScreen() {
       .maybeSingle()
     setLastMessage(msgData)
 
+    const storedStreak = await AsyncStorage.getItem('huddle_practice_streak')
+    if (storedStreak) setPracticeStreak(parseInt(storedStreak, 10))
+
     setLoading(false)
   }
 
@@ -462,12 +465,14 @@ export default function HomeScreen() {
             </View>
             <TouchableOpacity
               style={{ backgroundColor: practicedToday ? '#F0FDF4' : '#F59E0B', borderRadius: 10, paddingVertical: 11, alignItems: 'center', borderWidth: practicedToday ? 1 : 0, borderColor: '#D97706' }}
-              onPress={() => {
+              onPress={async () => {
                 if (!practicedToday) {
                   setPracticedToday(true)
-                  setPracticeStreak(s => s + 1)
+                  const newStreak = practiceStreak + 1
+                  setPracticeStreak(newStreak)
                   const todayIdx = (new Date().getDay() + 6) % 7
                   setPracticedDays(prev => prev.includes(todayIdx) ? prev : [...prev, todayIdx])
+                  await AsyncStorage.setItem('huddle_practice_streak', String(newStreak))
                 }
               }}
               disabled={practicedToday}
