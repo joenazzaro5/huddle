@@ -10,14 +10,13 @@ type Props = {
   showTeamSwitch?: boolean
   allTeams?: any[]
   onTeamSelect?: (team: any) => void
-  activeTeamId?: string
 }
 
-export function AppHeader({ teamColor = '#1A56DB', teamName, onTeamPress, showTeamSwitch, allTeams, onTeamSelect, activeTeamId }: Props) {
+export function AppHeader({ teamColor = '#1A56DB', teamName, onTeamPress, showTeamSwitch, allTeams, onTeamSelect }: Props) {
   const count = allTeams?.length ?? 0
   const hasMultiple = count > 1
   const showPills = count >= 2 && count <= 3
-  const { currentRole, setRole } = useRole()
+  const { currentRole, setRole, activeTeamId, setActiveTeamId } = useRole()
   const isParent = currentRole === 'parent'
   const fadeAnim = useRef(new Animated.Value(1)).current
   const router = useRouter()
@@ -26,6 +25,7 @@ export function AppHeader({ teamColor = '#1A56DB', teamName, onTeamPress, showTe
     if (!team) return
     const membership = allTeams?.find(m => m.team?.id === team.id)
     const teamRole = membership?.role ?? 'coach'
+    setActiveTeamId(team.id)
     setRole(teamRole)
     router.replace(teamRole === 'parent' ? '/parent-home' : '/home')
     onTeamSelect?.(team)

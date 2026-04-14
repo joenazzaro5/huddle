@@ -44,7 +44,7 @@ const DRILLS_OF_DAY = [
 
 export default function HomeScreen() {
   const router = useRouter()
-  const { setRole } = useRole()
+  const { setRole, setActiveTeamId } = useRole()
   const [team, setTeam] = useState<any>(null)
   const [events, setEvents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -99,6 +99,7 @@ export default function HomeScreen() {
       teamData = coachMembership.team
     }
     setTeam(teamData)
+    setActiveTeamId(teamData.id)
 
     const { data: eventData } = await supabase
       .from('events')
@@ -281,7 +282,6 @@ export default function HomeScreen() {
         teamName={team?.name}
         allTeams={allTeams}
         onTeamSelect={switchTeam}
-        activeTeamId={team?.id}
       />
 
       {toastVisible && (

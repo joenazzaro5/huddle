@@ -3,6 +3,7 @@ import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { AppHeader } from '../lib/header'
+import { useRole } from '../lib/roleStore'
 import { supabase } from '../lib/supabase'
 import { getScheduleEvents } from '../lib/season'
 
@@ -29,6 +30,7 @@ const STANDINGS = [
 
 export default function ParentHomeScreen() {
   const router = useRouter()
+  const { setActiveTeamId } = useRole()
   const [team, setTeam] = useState<any>(null)
   const [allTeams, setAllTeams] = useState<any[]>([])
   const [nextEvent, setNextEvent] = useState<any>(null)
@@ -64,6 +66,7 @@ export default function ParentHomeScreen() {
 
     const teamData = parentMembership.team
     setTeam(teamData)
+    setActiveTeamId(teamData.id)
     await loadTeamData(teamData.id, user.id)
     setLoading(false)
   }
@@ -193,6 +196,7 @@ export default function ParentHomeScreen() {
         showTeamSwitch={allTeams.length > 1}
         allTeams={allTeams}
         onTeamSelect={(t) => {
+          setActiveTeamId(t.id)
           setTeam(t)
           if (currentUser) loadTeamData(t.id, currentUser.id)
         }}
