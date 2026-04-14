@@ -29,6 +29,10 @@ export default function ChatScreen() {
   const [pollQuestion, setPollQuestion] = useState('')
   const [pollOpts, setPollOpts] = useState(['', '', ''])
   const [pollVotes, setPollVotes] = useState<Record<string, number>>({})
+  const [reactions, setReactions] = useState<Record<string, Record<string, number>>>({})
+  const [replyingTo, setReplyingTo] = useState<any | null>(null)
+  const [pinnedMessages, setPinnedMessages] = useState<any[]>([])
+  const [actionMsg, setActionMsg] = useState<any | null>(null)
   const scrollRef = useRef<ScrollView>(null)
   const teamIdRef = useRef<string | null>(null)
   const latestMessageRef = useRef<string | null>(null)
@@ -99,8 +103,12 @@ export default function ChatScreen() {
   const sendMessage = async () => {
     if (!newMessage.trim() || !team || !currentUser) return
     setSending(true)
-    const body = newMessage.trim()
+    const rawText = newMessage.trim()
+    const body = replyingTo
+      ? `> ${replyingTo.body?.startsWith('https://media') ? 'GIF' : (replyingTo.body ?? '').slice(0, 80)}\n${rawText}`
+      : rawText
     setNewMessage('')
+    setReplyingTo(null)
 
     const { error } = await supabase.from('messages').insert({
       team_id: team.id,
@@ -111,7 +119,7 @@ export default function ChatScreen() {
 
     if (error) {
       Alert.alert('Error', error.message)
-      setNewMessage(body)
+      setNewMessage(rawText)
     } else {
       if (teamIdRef.current) await loadMessages(teamIdRef.current)
     }
@@ -148,6 +156,30 @@ export default function ChatScreen() {
 
   const votePoll = (msgId: string, optIndex: number) => {
     setPollVotes(prev => ({ ...prev, [msgId]: optIndex }))
+  }
+
+  const addReaction = (msgId: string, emoji: string) => {
+    setReactions(prev => {
+      const msgReactions = { ...(prev[msgId] ?? {}) }
+      msgReactions[emoji] = (msgReactions[emoji] ?? 0) + 1
+      return { ...prev, [msgId]: msgReactions }
+    })
+    setActionMsg(null)
+  }
+
+  const pinMessage = (msg: any) => {
+    setPinnedMessages(prev => {
+      if (prev.some(m => m.id === msg.id)) return prev
+      return [msg, ...prev]
+    })
+    setActionMsg(null)
+  }
+
+  const parseReply = (body: string): { quote: string; text: string } | null => {
+    if (!body?.startsWith('> ')) return null
+    const newline = body.indexOf('\n')
+    if (newline === -1) return null
+    return { quote: body.slice(2, newline), text: body.slice(newline + 1) }
   }
 
   const sendGif = async (item: any) => {
@@ -245,6 +277,15 @@ export default function ChatScreen() {
         </TouchableOpacity>
       </View>
 
+      {pinnedMessages.length > 0 && (
+        <View style={styles.pinnedBanner}>
+          <Text style={styles.pinnedIcon}>📌</Text>
+          <Text style={styles.pinnedText} numberOfLines={1}>
+            {pinnedMessages[0].body?.startsWith('https://media') ? 'GIF' : pinnedMessages[0].body}
+          </Text>
+        </View>
+      )}
+
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView ref={scrollRef} style={styles.messages} contentContainerStyle={styles.messagesContent} showsVerticalScrollIndicator={false}>
           {messages.length === 0 ? (
@@ -263,8 +304,11 @@ export default function ChatScreen() {
                   </View>
                 )
               }
+              const replyData = parseReply(msg.body)
+              const displayBody = replyData ? replyData.text : msg.body
+              const msgReactions = reactions[msg.id]
               return (
-                <View key={msg.id} style={[styles.msgWrap, isMe && styles.msgWrapMe]}>
+                <TouchableOpacity key={msg.id} style={[styles.msgWrap, isMe && styles.msgWrapMe]} onLongPress={() => setActionMsg(msg)} activeOpacity={1} delayLongPress={350}>
                   {!isMe && (
                     <View style={styles.senderRow}>
                       <View style={[styles.avatar, { backgroundColor: avatarColor(msg.user_id ?? 'x') }]}>
@@ -306,7 +350,12 @@ export default function ChatScreen() {
                       <Image source={{ uri: msg.body }} style={styles.gifBubble} resizeMode="cover" />
                     ) : (
                       <View style={[styles.bubble, isMe ? [styles.bubbleMe, { backgroundColor: tc }] : styles.bubbleOther]}>
-                        <Text style={[styles.bubbleText, isMe && styles.bubbleTextMe]}>{msg.body}</Text>
+                        {replyData && (
+                          <View style={[styles.quoteBlock, !isMe && styles.quoteBlockOther]}>
+                            <Text style={[styles.quoteText, !isMe && styles.quoteTextOther]} numberOfLines={2}>{replyData.quote}</Text>
+                          </View>
+                        )}
+                        <Text style={[styles.bubbleText, isMe && styles.bubbleTextMe]}>{displayBody}</Text>
                       </View>
                     )}
                   </View>
@@ -314,11 +363,39 @@ export default function ChatScreen() {
                     {!isMe && <View style={styles.avatarSpacer} />}
                     <Text style={[styles.msgTime, isMe && styles.msgTimeMe]}>{formatTime(msg.created_at)}</Text>
                   </View>
-                </View>
+                  {msgReactions && Object.keys(msgReactions).length > 0 && (
+                    <View style={[styles.reactionsRow, isMe && styles.reactionsRowMe]}>
+                      {!isMe && <View style={styles.avatarSpacer} />}
+                      <View style={styles.reactionsList}>
+                        {Object.entries(msgReactions).map(([emoji, count]) => (
+                          <View key={emoji} style={styles.reactionPill}>
+                            <Text style={styles.reactionEmoji}>{emoji}</Text>
+                            <Text style={styles.reactionCount}>{count}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                  )}
+                </TouchableOpacity>
               )
             })
           )}
         </ScrollView>
+
+        {/* Reply preview bar */}
+        {replyingTo && (
+          <View style={styles.replyBar}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.replyBarLabel}>Replying to</Text>
+              <Text style={styles.replyBarText} numberOfLines={1}>
+                {replyingTo.body?.startsWith('https://media') ? 'GIF' : replyingTo.body}
+              </Text>
+            </View>
+            <TouchableOpacity onPress={() => setReplyingTo(null)}>
+              <Text style={styles.replyBarClose}>✕</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Image preview above composer */}
         {pendingImage && (
@@ -370,7 +447,7 @@ export default function ChatScreen() {
       </KeyboardAvoidingView>
 
       <Modal visible={pollModalVisible} transparent animationType="slide" onRequestClose={() => setPollModalVisible(false)}>
-        <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+        <KeyboardAvoidingView style={{ flex: 1, justifyContent: 'flex-end' }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.3)' }} activeOpacity={1} onPress={() => setPollModalVisible(false)} />
           <View style={{ backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
@@ -404,7 +481,32 @@ export default function ChatScreen() {
               <Text style={{ fontSize: 15, fontWeight: '700', color: '#fff' }}>Post poll</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Action sheet: long press on a message */}
+      <Modal visible={!!actionMsg} transparent animationType="fade" onRequestClose={() => setActionMsg(null)}>
+        <TouchableOpacity style={styles.actionOverlay} activeOpacity={1} onPress={() => setActionMsg(null)}>
+          <View style={styles.actionSheet}>
+            <View style={styles.emojiRow}>
+              {['👍', '❤️', '😂', '🎉', '⚽'].map(emoji => (
+                <TouchableOpacity key={emoji} style={styles.emojiBtn} onPress={() => addReaction(actionMsg!.id, emoji)}>
+                  <Text style={styles.emojiText}>{emoji}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <View style={styles.actionDivider} />
+            <TouchableOpacity style={styles.actionItem} onPress={() => { setReplyingTo(actionMsg); setActionMsg(null) }}>
+              <Text style={styles.actionItemText}>↩ Reply</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.actionItem} onPress={() => pinMessage(actionMsg!)}>
+              <Text style={styles.actionItemText}>📌 Pin</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.actionItem, { borderTopWidth: 0.5, borderTopColor: '#f0f0f0', marginTop: 4 }]} onPress={() => setActionMsg(null)}>
+              <Text style={[styles.actionItemText, { color: '#9CA3AF' }]}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
       </Modal>
 
       <Modal visible={gifModalVisible} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setGifModalVisible(false)}>
@@ -536,4 +638,29 @@ const styles = StyleSheet.create({
   gifBubble: { width: 200, height: 150, borderRadius: 12 },
   pollCard: { borderLeftWidth: 3, borderLeftColor: '#7C3AED', backgroundColor: '#FAFAFA', borderRadius: 14, padding: 14, maxWidth: 280, borderWidth: 0.5, borderColor: '#E5E7EB' },
   pollCardQuestion: { fontSize: 15, fontWeight: '700', color: '#1a1a1a', marginBottom: 12 },
+  pinnedBanner: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FEF9C3', paddingHorizontal: 14, paddingVertical: 8, borderBottomWidth: 0.5, borderBottomColor: '#FDE68A', gap: 6 },
+  pinnedIcon: { fontSize: 14 },
+  pinnedText: { fontSize: 13, color: '#92400E', flex: 1, fontWeight: '500' },
+  quoteBlock: { backgroundColor: 'rgba(0,0,0,0.12)', borderLeftWidth: 3, borderLeftColor: 'rgba(255,255,255,0.6)', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, marginBottom: 6 },
+  quoteBlockOther: { backgroundColor: 'rgba(0,0,0,0.06)', borderLeftColor: '#9CA3AF' },
+  quoteText: { fontSize: 12, color: 'rgba(255,255,255,0.8)', fontStyle: 'italic' },
+  quoteTextOther: { color: '#6B7280' },
+  reactionsRow: { flexDirection: 'row', alignItems: 'center', marginTop: 3 },
+  reactionsRowMe: { flexDirection: 'row-reverse' },
+  reactionsList: { flexDirection: 'row', gap: 4, flexWrap: 'wrap' },
+  reactionPill: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F3F4F6', borderRadius: 12, paddingHorizontal: 8, paddingVertical: 3, gap: 3, borderWidth: 0.5, borderColor: '#E5E7EB' },
+  reactionEmoji: { fontSize: 13 },
+  reactionCount: { fontSize: 11, fontWeight: '600', color: '#6B7280' },
+  replyBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F0F7FF', paddingHorizontal: 14, paddingVertical: 8, borderTopWidth: 0.5, borderTopColor: '#BFDBFE', gap: 10 },
+  replyBarLabel: { fontSize: 11, fontWeight: '600', color: '#3B82F6', marginBottom: 1 },
+  replyBarText: { fontSize: 13, color: '#374151' },
+  replyBarClose: { fontSize: 16, color: '#9CA3AF', padding: 4 },
+  actionOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' },
+  actionSheet: { backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingBottom: 30, paddingTop: 16 },
+  emojiRow: { flexDirection: 'row', justifyContent: 'space-around', paddingHorizontal: 20, paddingVertical: 12 },
+  emojiBtn: { padding: 8 },
+  emojiText: { fontSize: 28 },
+  actionDivider: { height: 0.5, backgroundColor: '#F0F0F0', marginHorizontal: 16, marginBottom: 4 },
+  actionItem: { paddingHorizontal: 20, paddingVertical: 14 },
+  actionItemText: { fontSize: 15, fontWeight: '600', color: '#1a1a1a' },
 })

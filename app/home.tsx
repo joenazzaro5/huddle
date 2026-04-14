@@ -570,34 +570,10 @@ export default function HomeScreen() {
           </TouchableOpacity>
         )}
 
-        {/* 6. Snack schedule */}
-        <TouchableOpacity
-          style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#F59E0B', padding: 0, overflow: 'hidden' }]}
-          onPress={() => router.push({ pathname: '/games', params: { tab: 'snacks' } })}
-          activeOpacity={0.85}
-        >
-          <View style={styles.snackCardHeader}>
-            <Text style={styles.cardLabel}>🍊 Snack schedule</Text>
-          </View>
-          <View style={styles.cardBody}>
-            {snacks.slice(0, 2).map((item, i) => (
-              <View key={i} style={[styles.snackRow, i < 1 && styles.snackBorder]}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.snackDate}>{item.date} · {item.type}</Text>
-                  <Text style={[styles.snackName, { color: item.claimed ? '#1a1a1a' : '#888' }]}>
-                    {item.claimed ? item.name : 'Open'}
-                  </Text>
-                </View>
-              </View>
-            ))}
-            <Text style={[styles.viewLink, { color: tc }]}>View schedule →</Text>
-          </View>
-        </TouchableOpacity>
-
-        {/* 7. Team poll */}
+        {/* 6. Team poll */}
         <TouchableOpacity
           style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#8B5CF6', padding: 0, overflow: 'hidden' }]}
-          onPress={() => router.push({ pathname: '/games', params: { tab: 'polls' } })}
+          onPress={() => router.push('/chat')}
           activeOpacity={0.85}
         >
           <View style={styles.pollCardHeader}>
@@ -623,7 +599,31 @@ export default function HomeScreen() {
                 )
               })
             })()}
-            <Text style={[styles.viewLink, { color: tc }]}>See results →</Text>
+            <Text style={[styles.viewLink, { color: tc }]}>Open chat →</Text>
+          </View>
+        </TouchableOpacity>
+
+        {/* 7. Snack schedule */}
+        <TouchableOpacity
+          style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#F59E0B', padding: 0, overflow: 'hidden' }]}
+          onPress={() => router.push({ pathname: '/games', params: { tab: 'snacks' } })}
+          activeOpacity={0.85}
+        >
+          <View style={styles.snackCardHeader}>
+            <Text style={styles.cardLabel}>🍊 Snack schedule</Text>
+          </View>
+          <View style={styles.cardBody}>
+            {snacks.slice(0, 2).map((item, i) => (
+              <View key={i} style={[styles.snackRow, i < 1 && styles.snackBorder]}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.snackDate}>{item.date} · {item.type}</Text>
+                  <Text style={[styles.snackName, { color: item.claimed ? '#1a1a1a' : '#888' }]}>
+                    {item.claimed ? item.name : 'Open'}
+                  </Text>
+                </View>
+              </View>
+            ))}
+            <Text style={[styles.viewLink, { color: tc }]}>View schedule →</Text>
           </View>
         </TouchableOpacity>
 

@@ -381,7 +381,7 @@ export default function PracticeScreen() {
                 onPress={() => setShowFeedbackModal(true)}
                 activeOpacity={0.85}
               >
-                <Text style={{ fontSize: 15, fontWeight: '700', color: '#1A56DB' }}>End practice</Text>
+                <Text style={{ fontSize: 15, fontWeight: '700', color: '#1A56DB' }}>Practice feedback</Text>
               </TouchableOpacity>
             )}
           </View>
