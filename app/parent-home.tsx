@@ -10,23 +10,15 @@ import { getScheduleEvents } from '../lib/season'
 const tc = '#1A56DB'
 
 const FALLBACK_PLAN = {
-  title: 'Dribbling Focus',
+  title: 'Passing & Movement',
   plan: [
-    { phase: 'Opening Play',   duration: '15 min', drill: 'Dribble Tag',     desc: 'Players dribble freely. Coach calls out a color cone to dribble to.' },
-    { phase: 'Practice Phase', duration: '30 min', drill: 'Cone Weaving',    desc: 'Dribble through a line of cones using both feet. Focus on soft touches.' },
-    { phase: 'Final Play',     duration: '15 min', drill: '3v3 Small Sided', desc: 'Free play. Let them express themselves.' },
+    { phase: 'Opening Play',   duration: '15 min', drill: 'Rondo 4v2',                    desc: '4 players keep ball away from 2 defenders in a small square. First touch only. High energy, competitive.' },
+    { phase: 'Practice Phase', duration: '30 min', drill: 'Triangle Passing + Overlap',   desc: 'Three players form a triangle. After each pass, the passer runs to a new position. Add a wall pass variation after 10 minutes.' },
+    { phase: 'Final Play',     duration: '15 min', drill: 'Possession Game 5v5',          desc: 'Keep the ball. Every 5 consecutive passes = 1 point. No long balls — short and sharp only.' },
   ],
 }
 const PHASE_COLORS = ['#4CAF50', '#1A56DB', '#FF6B35']
 
-const STANDINGS = [
-  { team: 'Marin Cheetahs', w: 4, l: 1, d: 1, pts: 13, isUs: true },
-  { team: 'Tiburon FC',     w: 3, l: 2, d: 1, pts: 10 },
-  { team: 'Mill Valley SC', w: 3, l: 2, d: 0, pts: 9  },
-  { team: 'Novato United',  w: 2, l: 2, d: 2, pts: 8  },
-  { team: 'San Anselmo FC', w: 1, l: 4, d: 1, pts: 4  },
-  { team: 'Fairfax FC',     w: 0, l: 5, d: 1, pts: 1  },
-]
 
 export default function ParentHomeScreen() {
   const router = useRouter()
@@ -254,6 +246,35 @@ export default function ParentHomeScreen() {
           </View>
         )}
 
+        {/* 2. Practice plan card — full plan with streak */}
+        <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: tc, padding: 0, overflow: 'hidden' }]}>
+          <View style={{ backgroundColor: '#F0F4FF', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text style={styles.cardLabel}>This week's plan</Text>
+            <Text style={{ fontSize: 11, fontWeight: '600', color: tc + 'aa' }}>Read only</Text>
+          </View>
+          <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8 }}>
+            <Text style={styles.practiceFocus}>{FALLBACK_PLAN.title}</Text>
+          </View>
+          <View style={{ paddingHorizontal: 16, paddingBottom: 4 }}>
+            {FALLBACK_PLAN.plan.map((item, i) => (
+              <View
+                key={i}
+                style={[
+                  { paddingVertical: 10 },
+                  i < FALLBACK_PLAN.plan.length - 1 && styles.planPhaseBorder,
+                ]}
+              >
+                <Text style={[styles.planPhaseLabel, { color: PHASE_COLORS[i], marginBottom: 3 }]}>
+                  {item.phase} · {item.duration}
+                </Text>
+                <Text style={styles.planPhaseDrill}>{item.drill}</Text>
+                <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 4, lineHeight: 20 }}>{item.desc}</Text>
+                <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 6 }}>Practice at home 🏠</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
         {/* Drill of the day */}
         <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#F59E0B', padding: 0, overflow: 'hidden' }]}>
           <View style={{ backgroundColor: '#FFFBEB', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 }}>
@@ -298,36 +319,6 @@ export default function ParentHomeScreen() {
           </View>
         </View>
 
-        {/* 2. Practice plan card — full plan with streak */}
-        <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: tc, padding: 0, overflow: 'hidden' }]}>
-          <View style={{ backgroundColor: '#F0F4FF', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Text style={styles.cardLabel}>This week's plan</Text>
-            <Text style={{ fontSize: 11, fontWeight: '600', color: tc + 'aa' }}>Read only</Text>
-          </View>
-          <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8 }}>
-            <Text style={styles.practiceFocus}>{FALLBACK_PLAN.title}</Text>
-          </View>
-          <View style={{ paddingHorizontal: 16, paddingBottom: 4 }}>
-            {FALLBACK_PLAN.plan.map((item, i) => (
-              <View
-                key={i}
-                style={[
-                  { paddingVertical: 10 },
-                  i < FALLBACK_PLAN.plan.length - 1 && styles.planPhaseBorder,
-                ]}
-              >
-                <Text style={[styles.planPhaseLabel, { color: PHASE_COLORS[i], marginBottom: 3 }]}>
-                  {item.phase} · {item.duration}
-                </Text>
-                <Text style={styles.planPhaseDrill}>{item.drill}</Text>
-                <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 4, lineHeight: 20 }}>{item.desc}</Text>
-                <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 6 }}>Practice at home 🏠</Text>
-              </View>
-            ))}
-          </View>
-
-        </View>
-
         {/* 3. Upcoming events */}
         {upcomingEvents.length > 0 && (
           <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: tc, padding: 0, overflow: 'hidden' }]}>
@@ -362,87 +353,7 @@ export default function ParentHomeScreen() {
           </View>
         )}
 
-        {/* 4. Standings card */}
-        <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#F59E0B', padding: 0, overflow: 'hidden' }]}>
-          <View style={{ backgroundColor: '#FFFBEB', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 }}>
-            <Text style={styles.cardLabel}>Division standings 🏆</Text>
-          </View>
-          <View style={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12 }}>
-            {/* Header */}
-            <View style={styles.standingsHeader}>
-              <Text style={[styles.standingsCell, { flex: 1 }]}>Team</Text>
-              <Text style={styles.standingsHdr}>W</Text>
-              <Text style={styles.standingsHdr}>L</Text>
-              <Text style={[styles.standingsHdr, { color: tc }]}>Pts</Text>
-            </View>
-            {STANDINGS.map((row, i) => (
-              <View
-                key={i}
-                style={[
-                  styles.standingsRow,
-                  row.isUs && { backgroundColor: tc + '12', borderRadius: 8, paddingHorizontal: 6, marginHorizontal: -6 },
-                  i < STANDINGS.length - 1 && !row.isUs && styles.standingsBorder,
-                ]}
-              >
-                <Text style={[styles.standingsTeam, row.isUs && { fontWeight: '700', color: tc }]} numberOfLines={1}>
-                  {row.isUs ? '⭐ ' : ''}{row.team}
-                </Text>
-                <Text style={styles.standingsVal}>{row.w}</Text>
-                <Text style={styles.standingsVal}>{row.l}</Text>
-                <Text style={[styles.standingsVal, row.isUs && { fontWeight: '700', color: tc }]}>{row.pts}</Text>
-              </View>
-            ))}
-            <TouchableOpacity onPress={() => router.push({ pathname: '/parent-team', params: { tab: 'standings' } })}>
-              <Text style={[styles.viewLink, { color: tc }]}>View standings →</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* 5. Snack duty card */}
-        <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#F59E0B', padding: 0, overflow: 'hidden' }]}>
-          <View style={{ backgroundColor: '#FFFBEB', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 }}>
-            <Text style={styles.cardLabel}>Snack duty 🍊</Text>
-          </View>
-          <View style={{ paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center' }}>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }}>Apr 26 · Practice</Text>
-              <Text style={{ fontSize: 12, color: snackSignedUp ? '#059669' : '#888', marginTop: 3, fontWeight: snackSignedUp ? '600' : '400' }}>
-                {snackSignedUp ? '✓ You signed up!' : 'Nobody signed up yet'}
-              </Text>
-            </View>
-            {!snackSignedUp && (
-              <TouchableOpacity
-                style={{ backgroundColor: '#F59E0B', borderRadius: 10, paddingHorizontal: 16, paddingVertical: 8 }}
-                onPress={() => router.push({ pathname: '/parent-team', params: { tab: 'snacks' } })}
-                activeOpacity={0.8}
-              >
-                <Text style={{ fontSize: 13, fontWeight: '700', color: '#fff' }}>Sign up →</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-
-        {/* 6. Team poll preview */}
-        <TouchableOpacity
-          style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#8B5CF6', padding: 0, overflow: 'hidden' }]}
-          onPress={() => router.push({ pathname: '/parent-team', params: { tab: 'polls' } })}
-          activeOpacity={0.85}
-        >
-          <View style={{ backgroundColor: '#F5F3FF', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 }}>
-            <Text style={styles.cardLabel}>🗳️ Team poll</Text>
-          </View>
-          <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
-            <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 6 }}>
-              What should our team cheer be?
-            </Text>
-            <Text style={{ fontSize: 13, color: '#6B7280', marginBottom: 8 }}>
-              Leading: "Let's go, team!" · 12 votes
-            </Text>
-            <Text style={[styles.viewLink, { color: tc }]}>Vote →</Text>
-          </View>
-        </TouchableOpacity>
-
-        {/* 7. The Squad */}
+        {/* The squad */}
         <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#1A56DB', padding: 0, overflow: 'hidden' }]}>
           <View style={{ backgroundColor: '#F0F4FF', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 }}>
             <Text style={styles.cardLabel}>The squad 👟</Text>
@@ -476,7 +387,7 @@ export default function ParentHomeScreen() {
           </View>
         </View>
 
-        {/* 8. Chat preview */}
+        {/* Chat preview */}
         {lastMessage && (
           <TouchableOpacity
             style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#10B981', padding: 0, overflow: 'hidden' }]}
@@ -489,7 +400,7 @@ export default function ParentHomeScreen() {
               <View style={styles.chatPreviewRow}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.chatSender}>{getSenderName(lastMessage)}</Text>
-                  <Text style={styles.chatPreviewBody} numberOfLines={2}>{lastMessage.body}</Text>
+                  <Text style={styles.chatPreviewBody} numberOfLines={2}>{lastMessage.body?.startsWith('https://') ? 'Sent a GIF 🎬' : lastMessage.body}</Text>
                 </View>
                 <Text style={styles.chatPreviewTime}>{formatMsgTime(lastMessage.created_at)}</Text>
               </View>
@@ -497,6 +408,30 @@ export default function ParentHomeScreen() {
             </View>
           </TouchableOpacity>
         )}
+
+        {/* Snack duty card */}
+        <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#F59E0B', padding: 0, overflow: 'hidden' }]}>
+          <View style={{ backgroundColor: '#FFFBEB', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 }}>
+            <Text style={styles.cardLabel}>Snack duty 🍊</Text>
+          </View>
+          <View style={{ paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center' }}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }}>Apr 26 · Practice</Text>
+              <Text style={{ fontSize: 12, color: snackSignedUp ? '#059669' : '#888', marginTop: 3, fontWeight: snackSignedUp ? '600' : '400' }}>
+                {snackSignedUp ? '✓ You signed up!' : 'Nobody signed up yet'}
+              </Text>
+            </View>
+            {!snackSignedUp && (
+              <TouchableOpacity
+                style={{ backgroundColor: '#F59E0B', borderRadius: 10, paddingHorizontal: 16, paddingVertical: 8 }}
+                onPress={() => router.push({ pathname: '/parent-team', params: { tab: 'snacks' } })}
+                activeOpacity={0.8}
+              >
+                <Text style={{ fontSize: 13, fontWeight: '700', color: '#fff' }}>Sign up →</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
 
       </ScrollView>
     </SafeAreaView>
@@ -564,12 +499,4 @@ const styles = StyleSheet.create({
   rosterName: { flex: 1, fontSize: 14, fontWeight: '600', color: '#111827' },
   rosterPos: { fontSize: 12, color: '#888', fontWeight: '500' },
 
-  // Standings card
-  standingsHeader: { flexDirection: 'row', alignItems: 'center', paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: '#f0f0f0', marginBottom: 4 },
-  standingsHdr: { width: 32, textAlign: 'center', fontSize: 11, fontWeight: '700', color: '#aaa' },
-  standingsCell: { fontSize: 11, fontWeight: '700', color: '#aaa' },
-  standingsRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
-  standingsBorder: { borderBottomWidth: 0.5, borderBottomColor: '#f5f5f5' },
-  standingsTeam: { flex: 1, fontSize: 14, fontWeight: '600', color: '#111827' },
-  standingsVal: { width: 32, textAlign: 'center', fontSize: 13, fontWeight: '600', color: '#444' },
 })
