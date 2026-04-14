@@ -22,6 +22,15 @@ export function AppHeader({ teamColor = '#1A56DB', teamName, onTeamPress, showTe
   const fadeAnim = useRef(new Animated.Value(1)).current
   const router = useRouter()
 
+  const handleTeamSelect = (team: any) => {
+    if (!team) return
+    const membership = allTeams?.find(m => m.team?.id === team.id)
+    const teamRole = membership?.role ?? 'coach'
+    setRole(teamRole)
+    router.replace(teamRole === 'parent' ? '/parent-home' : '/home')
+    onTeamSelect?.(team)
+  }
+
   const handleTeamPress = () => {
     if (onTeamPress) { onTeamPress(); return }
     if (hasMultiple && !showPills && onTeamSelect && allTeams) {
@@ -31,7 +40,7 @@ export function AppHeader({ teamColor = '#1A56DB', teamName, onTeamPress, showTe
         [
           ...allTeams.map(m => ({
             text: `${m.team.name} · ${m.team.age_group}`,
-            onPress: () => onTeamSelect(m.team),
+            onPress: () => handleTeamSelect(m.team),
           })),
           { text: 'Cancel', style: 'cancel' as const },
         ]
@@ -123,7 +132,7 @@ export function AppHeader({ teamColor = '#1A56DB', teamName, onTeamPress, showTe
               <TouchableOpacity
                 key={m.team.id}
                 style={[styles.teamPill, isActive && styles.teamPillActive]}
-                onPress={() => onTeamSelect(m.team)}
+                onPress={() => handleTeamSelect(m.team)}
                 activeOpacity={0.75}
               >
                 <View style={[styles.pillDot, { backgroundColor: isActive ? '#fff' : dotColor }]} />
