@@ -53,7 +53,6 @@ export default function HomeScreen() {
   const [allTeams, setAllTeams] = useState<any[]>([])
   const [heroSwitching, setHeroSwitching] = useState(false)
   const [snacks] = useState(SNACK_DATA)
-  const [pollOptions] = useState(POLL_OPTS)
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [myRsvp, setMyRsvp] = useState<'yes' | 'no' | null>(null)
   const [toastVisible, setToastVisible] = useState(false)
