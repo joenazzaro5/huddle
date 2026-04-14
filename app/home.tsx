@@ -64,13 +64,24 @@ export default function HomeScreen() {
   const [myRsvp, setMyRsvp] = useState<'yes' | 'no' | null>(null)
   const [toastVisible, setToastVisible] = useState(false)
   const toastAnim = useRef(new Animated.Value(-60)).current
+  const mountedRef = useRef(false)
   const [practicedToday, setPracticedToday] = useState(false)
   const [practiceStreak, setPracticeStreak] = useState(0)
   const [practicedDays, setPracticedDays] = useState<number[]>([])
 
   useEffect(() => { loadData() }, [])
 
-  const loadData = async (preferredTeamId?: string) => {
+  useEffect(() => {
+    if (!mountedRef.current) {
+      mountedRef.current = true
+      return
+    }
+    if (team?.id && !loading) {
+      loadData(team)
+    }
+  }, [team?.id])
+
+  const loadData = async (preferredTeamData?: any) => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
     setCurrentUser(user)
@@ -81,12 +92,12 @@ export default function HomeScreen() {
       .eq('user_id', user.id)
     setAllTeams(memberships ?? [])
 
-    const coachMembership = preferredTeamId
-      ? memberships?.find(m => m.role === 'coach' && m.team?.id === preferredTeamId)
-      : memberships?.find(m => m.role === 'coach')
-    if (!coachMembership?.team) { setLoading(false); return }
-
-    const teamData = coachMembership.team
+    let teamData = preferredTeamData
+    if (!teamData) {
+      const coachMembership = memberships?.find(m => m.role === 'coach')
+      if (!coachMembership?.team) { setLoading(false); return }
+      teamData = coachMembership.team
+    }
     setTeam(teamData)
 
     const { data: eventData } = await supabase
