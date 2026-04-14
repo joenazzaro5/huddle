@@ -154,7 +154,7 @@ export default function PracticeScreen() {
         .limit(1)
         .maybeSingle()
       setNextEvent(eventData)
-      const rawCache = await AsyncStorage.getItem('huddle_cached_plan')
+      const rawCache = await AsyncStorage.getItem('huddle_active_plan')
       let needsGenerate = true
       if (rawCache) {
         const { plan: p, timestamp } = JSON.parse(rawCache)
@@ -181,14 +181,14 @@ export default function PracticeScreen() {
         ),
         timeoutPromise
       ])
-      await AsyncStorage.setItem('huddle_cached_plan', JSON.stringify({ plan: result, timestamp: Date.now() }))
+      await AsyncStorage.setItem('huddle_active_plan', JSON.stringify({ plan: result, timestamp: Date.now() }))
       setPlan(result)
       setIsAiPlan(true)
     } catch {
       setIsOfflinePlan(true)
-      const existing = await AsyncStorage.getItem('huddle_cached_plan')
+      const existing = await AsyncStorage.getItem('huddle_active_plan')
       if (!existing) {
-        await AsyncStorage.setItem('huddle_cached_plan', JSON.stringify({ plan: FALLBACK_PLAN, timestamp: 0 }))
+        await AsyncStorage.setItem('huddle_active_plan', JSON.stringify({ plan: FALLBACK_PLAN, timestamp: 0 }))
       }
     } finally {
       setPlanLoading(false)
@@ -340,7 +340,7 @@ export default function PracticeScreen() {
               </View>
               {!planLoading && (
                 <TouchableOpacity
-                  onPress={async () => { await AsyncStorage.removeItem('huddle_cached_plan'); autoGenerate(nextEvent, team) }}
+                  onPress={async () => { await AsyncStorage.removeItem('huddle_active_plan'); autoGenerate(nextEvent, team) }}
                   style={{ flexDirection: 'row', alignItems: 'center', gap: 4, padding: 6 }}
                 >
                   <Text style={{ fontSize: 18 }}>🔀</Text>

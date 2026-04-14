@@ -115,7 +115,7 @@ export default function HomeScreen() {
     setPlayers(playerData ?? [])
     setPlayerCount(playerData?.length ?? 0)
 
-    const cacheKey = `huddle_cached_plan_${teamData.id}`
+    const cacheKey = `huddle_active_plan`
     const rawCache = await AsyncStorage.getItem(cacheKey)
     let needsGenerate = true
     if (rawCache) {
