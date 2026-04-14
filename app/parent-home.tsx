@@ -256,7 +256,7 @@ export default function ParentHomeScreen() {
             <Text style={styles.cardLabel}>Drill of the day 🎯</Text>
           </View>
           <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 14 }}>
-            <Text style={{ fontSize: 16, fontWeight: '800', color: '#1a1a1a', marginBottom: 6 }}>Cone Weaving</Text>
+            <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 6 }}>Cone Weaving</Text>
             <View style={{ flexDirection: 'row', gap: 6, marginBottom: 8 }}>
               <View style={{ backgroundColor: '#F0F4FF', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
                 <Text style={{ fontSize: 10, fontWeight: '700', color: tc }}>Dribbling</Text>
@@ -268,11 +268,11 @@ export default function ParentHomeScreen() {
                 <Text style={{ fontSize: 10, fontWeight: '700', color: '#7C3AED' }}>10 min</Text>
               </View>
             </View>
-            <Text style={{ fontSize: 13, color: '#555', lineHeight: 18, marginBottom: 12 }}>
+            <Text style={{ fontSize: 13, color: '#6B7280', lineHeight: 20, marginBottom: 12 }}>
               Set up 6 cones in a line. Dribble through using both feet. Focus on soft touches.
             </Text>
             {practiceStreak > 0 && (
-              <Text style={{ fontSize: 14, fontWeight: '800', color: '#F59E0B', marginBottom: 10 }}>
+              <Text style={{ fontSize: 14, fontWeight: '700', color: '#F59E0B', marginBottom: 10 }}>
                 🔥 {practiceStreak} day{practiceStreak !== 1 ? 's' : ''} streak
               </Text>
             )}
@@ -316,8 +316,8 @@ export default function ParentHomeScreen() {
                   {item.phase} · {item.duration}
                 </Text>
                 <Text style={styles.planPhaseDrill}>{item.drill}</Text>
-                <Text style={{ fontSize: 12, color: '#555', marginTop: 4, lineHeight: 17 }}>{item.desc}</Text>
-                <Text style={{ fontSize: 11, color: '#aaa', marginTop: 6 }}>Practice at home 🏠</Text>
+                <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 4, lineHeight: 20 }}>{item.desc}</Text>
+                <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 6 }}>Practice at home 🏠</Text>
               </View>
             ))}
           </View>
@@ -380,12 +380,12 @@ export default function ParentHomeScreen() {
                   i < STANDINGS.length - 1 && !row.isUs && styles.standingsBorder,
                 ]}
               >
-                <Text style={[styles.standingsTeam, row.isUs && { fontWeight: '800', color: tc }]} numberOfLines={1}>
+                <Text style={[styles.standingsTeam, row.isUs && { fontWeight: '700', color: tc }]} numberOfLines={1}>
                   {row.isUs ? '⭐ ' : ''}{row.team}
                 </Text>
                 <Text style={styles.standingsVal}>{row.w}</Text>
                 <Text style={styles.standingsVal}>{row.l}</Text>
-                <Text style={[styles.standingsVal, row.isUs && { fontWeight: '800', color: tc }]}>{row.pts}</Text>
+                <Text style={[styles.standingsVal, row.isUs && { fontWeight: '700', color: tc }]}>{row.pts}</Text>
               </View>
             ))}
             <TouchableOpacity onPress={() => router.push('/parent-standings')}>
@@ -401,7 +401,7 @@ export default function ParentHomeScreen() {
           </View>
           <View style={{ paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center' }}>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 13, fontWeight: '600', color: '#1a1a1a' }}>Apr 26 · Practice</Text>
+              <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827' }}>Apr 26 · Practice</Text>
               <Text style={{ fontSize: 12, color: snackSignedUp ? '#059669' : '#888', marginTop: 3, fontWeight: snackSignedUp ? '600' : '400' }}>
                 {snackSignedUp ? '✓ You signed up!' : 'Nobody signed up yet'}
               </Text>
@@ -428,10 +428,10 @@ export default function ParentHomeScreen() {
             <Text style={styles.cardLabel}>🗳️ Team poll</Text>
           </View>
           <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
-            <Text style={{ fontSize: 14, fontWeight: '700', color: '#1a1a1a', marginBottom: 6 }}>
+            <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 6 }}>
               What should our team cheer be?
             </Text>
-            <Text style={{ fontSize: 13, color: '#555', marginBottom: 8 }}>
+            <Text style={{ fontSize: 13, color: '#6B7280', marginBottom: 8 }}>
               Leading: "Let's go, team!" · 12 votes
             </Text>
             <Text style={[styles.viewLink, { color: tc }]}>Vote →</Text>
@@ -519,7 +519,7 @@ const styles = StyleSheet.create({
   rsvpCountText: { fontSize: 12, color: 'rgba(255,255,255,0.85)', fontWeight: '600' },
   emptyHero: { backgroundColor: '#fff', borderRadius: 18, padding: 24, marginBottom: 12, alignItems: 'center', borderWidth: 0.5, borderColor: '#eee' },
   emptyTitle: { fontSize: 16, fontWeight: '700', color: '#1a1a1a', marginBottom: 6 },
-  emptySub: { fontSize: 13, color: '#888', textAlign: 'center' },
+  emptySub: { fontSize: 13, color: '#6B7280', textAlign: 'center' },
   card: { backgroundColor: '#fff', borderRadius: 18, padding: 16, marginBottom: 12, borderWidth: 0.5, borderColor: '#eee' },
   cardLabel: { fontSize: 10, fontWeight: '700', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 8 },
   practicePreviewHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
@@ -530,8 +530,8 @@ const styles = StyleSheet.create({
   eventRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingVertical: 10 },
   eventBorder: { borderBottomWidth: 0.5, borderBottomColor: '#f5f5f5' },
   upcomingTypeDot: { width: 10, height: 10, borderRadius: 5, marginTop: 4 },
-  eventTitle: { fontSize: 14, fontWeight: '700', color: '#1a1a1a' },
-  eventSub: { fontSize: 12, color: '#888', marginTop: 1 },
+  eventTitle: { fontSize: 14, fontWeight: '600', color: '#111827' },
+  eventSub: { fontSize: 13, color: '#6B7280', marginTop: 1 },
   eventTime: { fontSize: 11, color: '#bbb', marginTop: 1 },
   eventRight: { alignItems: 'flex-end', gap: 6 },
   eventDays: { fontSize: 11, fontWeight: '700' },
@@ -539,7 +539,7 @@ const styles = StyleSheet.create({
   viewLink: { fontSize: 13, fontWeight: '700', marginTop: 8 },
   chatPreviewRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginTop: 6, marginBottom: 6 },
   chatSender: { fontSize: 12, fontWeight: '700', color: '#1a1a1a', marginBottom: 2 },
-  chatPreviewBody: { fontSize: 13, color: '#555', lineHeight: 18 },
+  chatPreviewBody: { fontSize: 13, color: '#6B7280', lineHeight: 20 },
   chatPreviewTime: { fontSize: 11, color: '#bbb', marginTop: 2 },
 
   // Practice plan card
@@ -557,7 +557,7 @@ const styles = StyleSheet.create({
   rosterBorder: { borderBottomWidth: 0.5, borderBottomColor: '#f5f5f5' },
   rosterNumBadge: { width: 30, height: 30, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   rosterNum: { fontSize: 13, fontWeight: '700' },
-  rosterName: { flex: 1, fontSize: 14, fontWeight: '600', color: '#1a1a1a' },
+  rosterName: { flex: 1, fontSize: 14, fontWeight: '600', color: '#111827' },
   rosterPos: { fontSize: 12, color: '#888', fontWeight: '500' },
 
   // Standings card
@@ -566,6 +566,6 @@ const styles = StyleSheet.create({
   standingsCell: { fontSize: 11, fontWeight: '700', color: '#aaa' },
   standingsRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
   standingsBorder: { borderBottomWidth: 0.5, borderBottomColor: '#f5f5f5' },
-  standingsTeam: { flex: 1, fontSize: 14, fontWeight: '600', color: '#1a1a1a' },
+  standingsTeam: { flex: 1, fontSize: 14, fontWeight: '600', color: '#111827' },
   standingsVal: { width: 32, textAlign: 'center', fontSize: 13, fontWeight: '600', color: '#444' },
 })
