@@ -22,9 +22,9 @@ export default function ChatScreen() {
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [pendingImage, setPendingImage] = useState<string | null>(null)
   const [gifModalVisible, setGifModalVisible] = useState(false)
-  const [gifQuery, setGifQuery] = useState('soccer')
+  const [gifQuery, setGifQuery] = useState('soccer celebration')
   const [gifs, setGifs] = useState<any[]>([])
-  const [gifLoading, setGifLoading] = useState(false)
+  const [gifsLoading, setGifsLoading] = useState(false)
   const [pollModalVisible, setPollModalVisible] = useState(false)
   const [pollQuestion, setPollQuestion] = useState('')
   const [pollOpts, setPollOpts] = useState(['', '', ''])
@@ -118,18 +118,18 @@ export default function ChatScreen() {
     setSending(false)
   }
 
-  const fetchGifs = async (query: string) => {
-    setGifLoading(true)
+  const loadGifs = async (query: string) => {
+    setGifsLoading(true)
     try {
-      const res = await fetch(
-        'https://api.giphy.com/v1/gifs/search?api_key=dc6zaTOxFJmzC&q=' + encodeURIComponent(query) + '&limit=9&rating=g'
-      )
-      const data = await res.json()
-      setGifs(data.data ?? [])
-    } catch {
+      const url = 'https://api.giphy.com/v1/gifs/search?api_key=dc6zaTOxFJmzC&q=' + encodeURIComponent(query) + '&limit=9&rating=g&lang=en'
+      const res = await fetch(url)
+      const json = await res.json()
+      setGifs(json.data || [])
+    } catch (e) {
       setGifs([])
+    } finally {
+      setGifsLoading(false)
     }
-    setGifLoading(false)
   }
 
   const sendPoll = async () => {
@@ -150,8 +150,10 @@ export default function ChatScreen() {
     setPollVotes(prev => ({ ...prev, [msgId]: optIndex }))
   }
 
-  const sendGif = async (url: string) => {
+  const sendGif = async (item: any) => {
     if (!team || !currentUser) return
+    setGifModalVisible(false)
+    const url = item.images.fixed_height_small.url
     setSending(true)
     const { error } = await supabase.from('messages').insert({
       team_id: team.id,
@@ -300,7 +302,7 @@ export default function ChatScreen() {
                           </View>
                         )
                       } catch { return null }
-                    })() : msg.body?.startsWith('https://') ? (
+                    })() : msg.body?.startsWith('https://media') ? (
                       <Image source={{ uri: msg.body }} style={styles.gifBubble} resizeMode="cover" />
                     ) : (
                       <View style={[styles.bubble, isMe ? [styles.bubbleMe, { backgroundColor: tc }] : styles.bubbleOther]}>
@@ -336,7 +338,7 @@ export default function ChatScreen() {
           {/* GIF button */}
           <TouchableOpacity
             style={styles.composerAction}
-            onPress={() => { setGifModalVisible(true); fetchGifs(gifQuery) }}
+            onPress={() => { setGifModalVisible(true); loadGifs(gifQuery) }}
           >
             <Text style={[styles.composerActionText, { fontSize: 11, fontWeight: '800' }]}>GIF</Text>
           </TouchableOpacity>
@@ -405,59 +407,50 @@ export default function ChatScreen() {
         </View>
       </Modal>
 
-      <Modal visible={gifModalVisible} transparent animationType="slide" onRequestClose={() => setGifModalVisible(false)}>
-        <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-          <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.3)' }} activeOpacity={1} onPress={() => setGifModalVisible(false)} />
-          <View style={{ backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, height: 400, padding: 16 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-              <Text style={{ fontSize: 15, fontWeight: '700', color: '#1a1a1a' }}>GIFs</Text>
-              <TouchableOpacity onPress={() => setGifModalVisible(false)}>
-                <Text style={{ fontSize: 18, color: '#888' }}>✕</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-              <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#F3F4F6', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 }}>
-                <TextInput
-                  placeholder="Search GIFs..."
-                  placeholderTextColor="#aaa"
-                  style={{ flex: 1, fontSize: 14, color: '#1a1a1a' }}
-                  value={gifQuery}
-                  onChangeText={setGifQuery}
-                  returnKeyType="search"
-                  onSubmitEditing={() => fetchGifs(gifQuery)}
-                />
-              </View>
-              <TouchableOpacity
-                style={{ backgroundColor: '#1A56DB', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10 }}
-                onPress={() => fetchGifs(gifQuery)}
-              >
-                <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>Search</Text>
-              </TouchableOpacity>
-            </View>
-            {gifLoading ? (
-              <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-                <ActivityIndicator color="#1A56DB" size="large" />
-              </View>
-            ) : (
-              <FlatList
-                data={gifs}
-                keyExtractor={(item) => item.id}
-                numColumns={3}
-                renderItem={({ item }) => {
-                  const url = item.images?.fixed_height_small?.url
-                  return (
-                    <TouchableOpacity
-                      style={{ width: (width - 4) / 3, height: 100, margin: 1 }}
-                      onPress={() => { setGifModalVisible(false); sendGif(url) }}
-                      activeOpacity={0.8}
-                    >
-                      <Image source={{ uri: url }} style={{ width: (width - 4) / 3, height: 100, borderRadius: 8 }} resizeMode="cover" />
-                    </TouchableOpacity>
-                  )
-                }}
-              />
-            )}
+      <Modal visible={gifModalVisible} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setGifModalVisible(false)}>
+        <View style={{ flex: 1, backgroundColor: '#fff', padding: 16 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginBottom: 12 }}>
+            <TouchableOpacity onPress={() => setGifModalVisible(false)}>
+              <Text style={{ fontSize: 18, color: '#888' }}>✕</Text>
+            </TouchableOpacity>
           </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+            <TextInput
+              placeholder="Search GIFs..."
+              placeholderTextColor="#aaa"
+              style={{ flex: 1, backgroundColor: '#F3F4F6', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: '#1a1a1a' }}
+              value={gifQuery}
+              onChangeText={setGifQuery}
+              returnKeyType="search"
+              onSubmitEditing={() => loadGifs(gifQuery)}
+            />
+            <TouchableOpacity
+              style={{ backgroundColor: '#1A56DB', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10 }}
+              onPress={() => loadGifs(gifQuery)}
+            >
+              <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>Search</Text>
+            </TouchableOpacity>
+          </View>
+          {gifsLoading ? (
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+              <ActivityIndicator color="#1A56DB" size="large" />
+            </View>
+          ) : (
+            <FlatList
+              data={gifs}
+              keyExtractor={(item) => item.id}
+              numColumns={3}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={{ width: (width - 40) / 3, height: 100, margin: 2, borderRadius: 8, overflow: 'hidden' }}
+                  onPress={() => sendGif(item)}
+                  activeOpacity={0.8}
+                >
+                  <Image source={{ uri: item.images.fixed_height_small.url }} style={{ width: (width - 40) / 3, height: 100, borderRadius: 8 }} resizeMode="cover" />
+                </TouchableOpacity>
+              )}
+            />
+          )}
         </View>
       </Modal>
     </SafeAreaView>
