@@ -399,7 +399,7 @@ export default function HomeScreen() {
           </View>
           {/* Body */}
           <View style={styles.practicePlanBody}>
-            <Text style={styles.cardTitle}>{plan.title}</Text>
+            <Text style={styles.cardTitle}>{plan?.title ?? "Building your plan..."}</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
               <View style={{
                 paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10,

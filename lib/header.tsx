@@ -118,7 +118,7 @@ export function AppHeader({ teamColor = '#1A56DB', teamName, onTeamPress, showTe
         <View style={styles.pillsRow}>
           {allTeams.map(m => {
             const isActive = activeTeamId ? m.team.id === activeTeamId : m.team.name === teamName
-            const abbreviated = m.team.name.split(' ')[0]
+            const abbreviated = m.team.name.split(' ').slice(0, 2).join(' ')
             const dotColor = m.team.color ?? '#1A56DB'
             return (
               <TouchableOpacity
@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 20,
     backgroundColor: '#F3F4F6',
@@ -172,6 +172,6 @@ const styles = StyleSheet.create({
   },
   teamPillActive: { backgroundColor: '#1A56DB', borderColor: '#1A56DB' },
   pillDot: { width: 7, height: 7, borderRadius: 3.5 },
-  pillText: { fontSize: 12, fontWeight: '700', color: '#374151' },
+  pillText: { fontSize: 13, fontWeight: '700', color: '#374151' },
   pillTextActive: { color: '#fff' },
 })
