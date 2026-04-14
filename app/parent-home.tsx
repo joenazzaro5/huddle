@@ -6,6 +6,7 @@ import { AppHeader } from '../lib/header'
 import { useRole } from '../lib/roleStore'
 import { supabase } from '../lib/supabase'
 import { getScheduleEvents } from '../lib/season'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
 const tc = '#1A56DB'
 
@@ -60,6 +61,8 @@ export default function ParentHomeScreen() {
     setTeam(teamData)
     setActiveTeamId(teamData.id)
     await loadTeamData(teamData.id, user.id)
+    const storedStreak = await AsyncStorage.getItem('huddle_practice_streak')
+    if (storedStreak) setPracticeStreak(parseInt(storedStreak, 10))
     setLoading(false)
   }
 
@@ -293,27 +296,49 @@ export default function ParentHomeScreen() {
                 <Text style={{ fontSize: 10, fontWeight: '700', color: '#7C3AED' }}>10 min</Text>
               </View>
             </View>
-            <Text style={{ fontSize: 13, color: '#6B7280', lineHeight: 20, marginBottom: 12 }}>
+            <Text style={{ fontSize: 13, color: '#6B7280', lineHeight: 20, marginBottom: 14 }}>
               Set up 6 cones in a line. Dribble through using both feet. Focus on soft touches.
             </Text>
-            {practiceStreak > 0 && (
-              <Text style={{ fontSize: 14, fontWeight: '700', color: '#F59E0B', marginBottom: 10 }}>
-                🔥 {practiceStreak} day{practiceStreak !== 1 ? 's' : ''} streak
+            {/* Practice streak */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+              <Text style={{ fontSize: 14, fontWeight: '700', color: '#F59E0B', flex: 1 }}>
+                Practice streak 🔥
               </Text>
-            )}
+              <Text style={{ fontSize: 22, fontWeight: '800', color: '#F59E0B' }}>
+                {practiceStreak}
+              </Text>
+              <Text style={{ fontSize: 13, color: '#9CA3AF', marginLeft: 4 }}>
+                day{practiceStreak !== 1 ? 's' : ''}
+              </Text>
+            </View>
+            {/* 7-day dot tracker */}
+            <View style={{ flexDirection: 'row', gap: 6, marginBottom: 14 }}>
+              {['M','T','W','T','F','S','S'].map((d, i) => (
+                <View key={i} style={{ alignItems: 'center', flex: 1 }}>
+                  <View style={[{ width: 28, height: 28, borderRadius: 14, marginBottom: 3, alignItems: 'center', justifyContent: 'center' }, practicedDays.includes(i) ? { backgroundColor: '#F59E0B' } : { backgroundColor: '#F3F4F6' }]}>
+                    {practicedDays.includes(i) && <Text style={{ fontSize: 11, color: '#fff', fontWeight: '700' }}>✓</Text>}
+                  </View>
+                  <Text style={{ fontSize: 9, color: '#9CA3AF', fontWeight: '600' }}>{d}</Text>
+                </View>
+              ))}
+            </View>
             <TouchableOpacity
-              style={{ backgroundColor: practicedToday ? '#F0FDF4' : '#059669', borderRadius: 10, paddingVertical: 10, alignItems: 'center', borderWidth: practicedToday ? 1 : 0, borderColor: '#059669' }}
-              onPress={() => {
+              style={{ backgroundColor: practicedToday ? '#F0FDF4' : '#F59E0B', borderRadius: 10, paddingVertical: 11, alignItems: 'center', borderWidth: practicedToday ? 1 : 0, borderColor: '#D97706' }}
+              onPress={async () => {
                 if (!practicedToday) {
                   setPracticedToday(true)
-                  setPracticeStreak(s => s + 1)
+                  const newStreak = practiceStreak + 1
+                  setPracticeStreak(newStreak)
+                  const todayIdx = (new Date().getDay() + 6) % 7
+                  setPracticedDays(prev => prev.includes(todayIdx) ? prev : [...prev, todayIdx])
+                  await AsyncStorage.setItem('huddle_practice_streak', String(newStreak))
                 }
               }}
               disabled={practicedToday}
               activeOpacity={practicedToday ? 1 : 0.8}
             >
               <Text style={{ fontSize: 13, fontWeight: '700', color: practicedToday ? '#059669' : '#fff' }}>
-                {practicedToday ? '✓ Done for today!' : '✓ I practiced this drill today'}
+                {practicedToday ? '✓ Practiced today!' : '✓ I practiced today'}
               </Text>
             </TouchableOpacity>
           </View>
