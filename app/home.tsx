@@ -93,6 +93,9 @@ export default function HomeScreen() {
     }
     setTeam(teamData)
     setActiveTeamId(teamData.id)
+    setPlan(FALLBACK_PLAN)
+    setIsAiPlan(false)
+    setIsOfflinePlan(false)
 
     const { data: eventData } = await supabase
       .from('events')
@@ -109,7 +112,8 @@ export default function HomeScreen() {
       .eq('is_active', true)
     setPlayerCount(pc ?? 0)
 
-    const rawCache = await AsyncStorage.getItem('huddle_cached_plan')
+    const cacheKey = `huddle_cached_plan_${teamData.id}`
+    const rawCache = await AsyncStorage.getItem(cacheKey)
     let needsGenerate = true
     if (rawCache) {
       const { plan: p, timestamp } = JSON.parse(rawCache)
@@ -158,14 +162,15 @@ export default function HomeScreen() {
         ),
         timeoutPromise
       ])
-      await AsyncStorage.setItem('huddle_cached_plan', JSON.stringify({ plan: result, timestamp: Date.now() }))
+      await AsyncStorage.setItem(cacheKey, JSON.stringify({ plan: result, timestamp: Date.now() }))
       setPlan(result)
       setIsAiPlan(true)
     } catch {
       setIsOfflinePlan(true)
-      const existing = await AsyncStorage.getItem('huddle_cached_plan')
+      const cacheKey = `huddle_cached_plan_${teamData?.id}`
+      const existing = await AsyncStorage.getItem(cacheKey)
       if (!existing) {
-        await AsyncStorage.setItem('huddle_cached_plan', JSON.stringify({ plan: FALLBACK_PLAN, timestamp: 0 }))
+        await AsyncStorage.setItem(cacheKey, JSON.stringify({ plan: FALLBACK_PLAN, timestamp: 0 }))
       }
     } finally {
       setPlanLoading(false)
@@ -449,27 +454,6 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* 5. Your team module */}
-        <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#1A56DB', padding: 0, overflow: 'hidden' }]}>
-          <View style={styles.teamCardHeader}>
-            <Text style={styles.cardLabel}>Your team</Text>
-          </View>
-          <View style={styles.teamCardBody}>
-            <View style={styles.teamRow}>
-              <View style={[styles.teamAvatar, { backgroundColor: tc, shadowColor: tc }]}>
-                <Text style={styles.teamAvatarLetter}>{team?.name?.[0] ?? 'T'}</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.teamName}>{team?.name}</Text>
-                <Text style={styles.teamMeta}>{team?.age_group} · {team?.gender} · {playerCount} players</Text>
-              </View>
-            </View>
-            <TouchableOpacity style={[styles.viewRosterBtn, { borderColor: tc }]} onPress={() => router.push({ pathname: '/games', params: { tab: 'roster' } })}>
-              <Text style={[styles.viewRosterText, { color: tc }]}>View roster →</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
         {/* 5. Team chat */}
         {lastMessage && (
           <TouchableOpacity
@@ -492,7 +476,7 @@ export default function HomeScreen() {
           </TouchableOpacity>
         )}
 
-        {/* 6. Drill of the day + Practice streak */}
+        {/* 3. Drill of the day + Practice streak */}
         <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#F59E0B', padding: 0, overflow: 'hidden' }]}>
           <View style={{ backgroundColor: '#FFFBEB', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 }}>
             <Text style={styles.cardLabel}>Drill of the day 🎯</Text>
@@ -555,7 +539,50 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* 7. Snack schedule */}
+        {/* 4. Your team module */}
+        <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#1A56DB', padding: 0, overflow: 'hidden' }]}>
+          <View style={styles.teamCardHeader}>
+            <Text style={styles.cardLabel}>Your team</Text>
+          </View>
+          <View style={styles.teamCardBody}>
+            <View style={styles.teamRow}>
+              <View style={[styles.teamAvatar, { backgroundColor: tc, shadowColor: tc }]}>
+                <Text style={styles.teamAvatarLetter}>{team?.name?.[0] ?? 'T'}</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.teamName}>{team?.name}</Text>
+                <Text style={styles.teamMeta}>{team?.age_group} · {team?.gender} · {playerCount} players</Text>
+              </View>
+            </View>
+            <TouchableOpacity style={[styles.viewRosterBtn, { borderColor: tc }]} onPress={() => router.push({ pathname: '/games', params: { tab: 'roster' } })}>
+              <Text style={[styles.viewRosterText, { color: tc }]}>View roster →</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* 5. Team chat */}
+        {lastMessage && (
+          <TouchableOpacity
+            style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#10B981', padding: 0, overflow: 'hidden' }]}
+            onPress={() => router.push('/chat')}
+          >
+            <View style={styles.chatCardHeader}>
+              <Text style={styles.cardLabel}>💬 Team chat</Text>
+            </View>
+            <View style={styles.cardBody}>
+              <View style={styles.chatPreviewRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.chatSender}>{getSenderName(lastMessage)}</Text>
+                  <Text style={styles.chatPreviewBody} numberOfLines={2}>{lastMessage.body}</Text>
+                </View>
+                <Text style={styles.chatPreviewTime}>{formatMsgTime(lastMessage.created_at)}</Text>
+              </View>
+              <Text style={[styles.viewLink, { color: tc }]}>Open chat →</Text>
+            </View>
+          </TouchableOpacity>
+        )}
+
+        {/* 6. Snack schedule */}
         <TouchableOpacity
           style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#F59E0B', padding: 0, overflow: 'hidden' }]}
           onPress={() => router.push({ pathname: '/games', params: { tab: 'snacks' } })}
