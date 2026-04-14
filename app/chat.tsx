@@ -25,6 +25,7 @@ export default function ChatScreen() {
   const [gifQuery, setGifQuery] = useState('soccer celebration')
   const [gifs, setGifs] = useState<any[]>([])
   const [gifsLoading, setGifsLoading] = useState(false)
+  const [gifError, setGifError] = useState<string | null>(null)
   const [pollModalVisible, setPollModalVisible] = useState(false)
   const [pollQuestion, setPollQuestion] = useState('')
   const [pollOpts, setPollOpts] = useState(['', '', ''])
@@ -128,12 +129,18 @@ export default function ChatScreen() {
 
   const loadGifs = async (query: string) => {
     setGifsLoading(true)
+    setGifError(null)
     try {
-      const url = 'https://api.giphy.com/v1/gifs/search?api_key=dc6zaTOxFJmzC&q=' + encodeURIComponent(query) + '&limit=9&rating=g&lang=en'
+      const url = 'https://api.giphy.com/v1/gifs/search?api_key=dc6zaTOxFJmzC&q=' + encodeURIComponent(query) + '&limit=6&rating=g'
+      console.log('[GIF] Fetching URL:', url)
       const res = await fetch(url)
       const json = await res.json()
+      console.log('[GIF] Full response:', JSON.stringify(json))
       setGifs(json.data || [])
-    } catch (e) {
+    } catch (e: any) {
+      const msg = e?.message ?? String(e)
+      console.log('[GIF] Fetch error:', msg)
+      setGifError(msg)
       setGifs([])
     } finally {
       setGifsLoading(false)
@@ -536,6 +543,11 @@ export default function ChatScreen() {
           {gifsLoading ? (
             <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
               <ActivityIndicator color="#1A56DB" size="large" />
+            </View>
+          ) : gifError ? (
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+              <Text style={{ color: '#DC2626', fontSize: 14, fontWeight: '600', textAlign: 'center' }}>Error loading GIFs:</Text>
+              <Text style={{ color: '#DC2626', fontSize: 13, textAlign: 'center', marginTop: 6 }}>{gifError}</Text>
             </View>
           ) : (
             <FlatList

@@ -4,7 +4,7 @@ Last updated: April 13 2026
 
 ## P0 — Broken (fix first, test locally before building)
 
-- [ ] GIFs broken — GIPHY integration not returning results
+- [x] GIFs broken — GIPHY integration not returning results
 - [ ] Multi-team not showing — seed data function not running correctly
 - [ ] Poll entry point on home screen not displaying correctly
 - [ ] Parent home entry point links going to wrong destinations
