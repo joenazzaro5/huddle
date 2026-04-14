@@ -9,7 +9,7 @@ type Props = {
   onTeamPress?: () => void
   showTeamSwitch?: boolean
   allTeams?: any[]
-  onTeamSelect?: (team: any) => void
+  onTeamSelect?: (team: any) => Promise<void> | void
 }
 
 export function AppHeader({ teamColor = '#1A56DB', teamName, onTeamPress, showTeamSwitch, allTeams, onTeamSelect }: Props) {
@@ -20,15 +20,28 @@ export function AppHeader({ teamColor = '#1A56DB', teamName, onTeamPress, showTe
   const isParent = currentRole === 'parent'
   const fadeAnim = useRef(new Animated.Value(1)).current
   const router = useRouter()
+  const switchingRef = useRef(false)
+  const lastTapRef = useRef<number>(0)
 
-  const handleTeamSelect = (team: any) => {
+  const handleTeamSelect = async (team: any) => {
+    if (switchingRef.current) return
+    const now = Date.now()
+    if (now - lastTapRef.current < 300) return
+    lastTapRef.current = now
     if (!team) return
+
     const membership = allTeams?.find(m => m.team?.id === team.id)
     const teamRole = membership?.role ?? 'coach'
     setActiveTeamId(team.id)
     setRole(teamRole)
-    router.replace(teamRole === 'parent' ? '/parent-home' : '/home')
-    onTeamSelect?.(team)
+    switchingRef.current = true
+
+    try {
+      await Promise.resolve(onTeamSelect?.(team))
+      router.replace(teamRole === 'parent' ? '/parent-home' : '/home')
+    } finally {
+      switchingRef.current = false
+    }
   }
 
   const handleTeamPress = () => {
@@ -40,7 +53,9 @@ export function AppHeader({ teamColor = '#1A56DB', teamName, onTeamPress, showTe
         [
           ...allTeams.map(m => ({
             text: `${m.team.name} · ${m.team.age_group}`,
-            onPress: () => handleTeamSelect(m.team),
+            onPress: () => {
+              void handleTeamSelect(m.team)
+            },
           })),
           { text: 'Cancel', style: 'cancel' as const },
         ]

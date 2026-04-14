@@ -184,10 +184,19 @@ export default function HomeScreen() {
 
     setLoading(true)
     setHeroSwitching(true)
+    setTeam(null)
+    setEvents([])
+    setPlayerCount(0)
+    setRsvpYes(0)
+    setRsvpNo(0)
+    setLastMessage(null)
     setPlan(null)
 
-    await loadData(teamData.id)
-    setHeroSwitching(false)
+    try {
+      await loadData(teamData)
+    } finally {
+      setHeroSwitching(false)
+    }
   }
 
   const formatDay = (dateStr: string) =>
