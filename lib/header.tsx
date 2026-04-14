@@ -105,12 +105,11 @@ export function AppHeader({ teamColor = '#1A56DB', teamName, onTeamPress, showTe
         </View>
 
         <View style={styles.right}>
-          <TouchableOpacity
+          <View
             style={[styles.roleChip, { backgroundColor: chipBg }, isParent && { borderWidth: 1, borderColor: '#059669' }]}
-            onPress={handleRolePress}
           >
             <Text style={[styles.roleText, { color: chipText }]}>{chipLabel}</Text>
-          </TouchableOpacity>
+          </View>
         </View>
       </Animated.View>
 

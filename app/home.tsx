@@ -3,6 +3,7 @@ import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { AppHeader } from '../lib/header'
+import { useRole } from '../lib/roleStore'
 import { supabase } from '../lib/supabase'
 import { generatePracticePlan } from '../lib/ai'
 import { getScheduleEvents } from '../lib/season'
@@ -43,6 +44,7 @@ const DRILLS_OF_DAY = [
 
 export default function HomeScreen() {
   const router = useRouter()
+  const { setRole } = useRole()
   const [team, setTeam] = useState<any>(null)
   const [events, setEvents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -166,6 +168,8 @@ export default function HomeScreen() {
   const switchTeam = async (teamData: any) => {
     if (teamData.id === team?.id) return
     setTeam(teamData)
+    const membership = allTeams.find(m => m.team?.id === teamData.id)
+    if (membership?.role === 'parent') { setRole('parent'); router.replace('/parent-home'); return } else { setRole('coach') }
     setHeroSwitching(true)
     setPlan(null)
 
