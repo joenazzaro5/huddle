@@ -75,6 +75,8 @@ export default function HomeScreen() {
   const { setRole, setActiveTeamId, activeTeamId } = useRole()
   const [team, setTeam] = useState<any>(null)
   const [events, setEvents] = useState<any[]>([])
+  const [nextEvent, setNextEvent] = useState<any>(null)
+  const [upcomingEvents, setUpcomingEvents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [plan, setPlan] = useState<any>(FALLBACK_PLAN)
   const [planLoading, setPlanLoading] = useState(false)
@@ -149,6 +151,9 @@ export default function HomeScreen() {
       .gte('starts_at', new Date().toISOString())
       .order('starts_at', { ascending: true })
     setEvents(eventData ?? [])
+    const schedEvents = (eventData && eventData.length > 0) ? eventData : getScheduleEvents()
+    setNextEvent(schedEvents[0] ?? null)
+    setUpcomingEvents(schedEvents.slice(1, 4))
 
     const { data: playerData } = await supabase
       .from('players')
@@ -242,6 +247,8 @@ export default function HomeScreen() {
     setHeroSwitching(true)
     setTeam(null)
     setEvents([])
+    setNextEvent(null)
+    setUpcomingEvents([])
     setPlayerCount(0)
     setPlayers([])
     setRsvpYes(0)
@@ -330,9 +337,6 @@ export default function HomeScreen() {
   }
 
   const drillOfDay = DRILLS_OF_DAY[new Date().getDay() % DRILLS_OF_DAY.length]
-  const scheduleEvents = events.length > 0 ? events : getScheduleEvents()
-  const nextEvent = scheduleEvents[0] ?? null
-  const upcomingEvents = events.length > 0 ? events.slice(1, 4) : getScheduleEvents().slice(1, 4)
   const tc = '#1A56DB'
   const pending = Math.max(0, playerCount - rsvpYes - rsvpNo)
 
