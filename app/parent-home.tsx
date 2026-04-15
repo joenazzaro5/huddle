@@ -25,17 +25,17 @@ const CHEETAHS_PLAYERS = [
 ]
 
 const TIGERS_PLAYERS = [
-  { id: 't1', number: 1,  name: 'Luna',      position: 'GK'  },
-  { id: 't2', number: 3,  name: 'Maya',      position: 'DEF' },
-  { id: 't3', number: 4,  name: 'Chloe',     position: 'DEF' },
-  { id: 't4', number: 5,  name: 'Aisha',     position: 'DEF' },
-  { id: 't5', number: 7,  name: 'Priya',     position: 'MID' },
-  { id: 't6', number: 8,  name: 'Sofia',     position: 'MID' },
-  { id: 't7', number: 10, name: 'Emma',      position: 'MID' },
-  { id: 't8', number: 6,  name: 'Olivia',    position: 'MID' },
-  { id: 't9', number: 9,  name: 'Mia',       position: 'FWD' },
-  { id: 't10',number: 11, name: 'Ava',       position: 'FWD' },
-  { id: 't11',number: 2,  name: 'Bella',     position: 'DEF' },
+  { id: 't1', number: 1,  name: 'Luna Santos',     position: 'GK'  },
+  { id: 't2', number: 3,  name: 'Maya Johnson',    position: 'DEF' },
+  { id: 't3', number: 4,  name: 'Chloe Williams',  position: 'DEF' },
+  { id: 't4', number: 5,  name: 'Lily Brown',      position: 'DEF' },
+  { id: 't5', number: 7,  name: 'Zoe Davis',       position: 'MID' },
+  { id: 't6', number: 8,  name: 'Aria Miller',     position: 'MID' },
+  { id: 't7', number: 10, name: 'Emma',            position: 'MID' },
+  { id: 't8', number: 6,  name: 'Olivia',          position: 'MID' },
+  { id: 't9', number: 9,  name: 'Mia',             position: 'FWD' },
+  { id: 't10',number: 11, name: 'Ava',             position: 'FWD' },
+  { id: 't11',number: 2,  name: 'Bella',           position: 'DEF' },
 ]
 
 function todayDateStr() {
