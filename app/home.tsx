@@ -164,7 +164,8 @@ export default function HomeScreen() {
       }
     }
     setNextEvent(resolvedEvents[0] ?? null)
-    setUpcomingEvents(resolvedEvents.slice(1, 4))
+    const upcomingSlice = resolvedEvents.slice(1, 4)
+    setUpcomingEvents(upcomingSlice.length > 0 ? upcomingSlice : getScheduleEvents().slice(0, 3))
 
     const { data: playerData } = await supabase
       .from('players')
