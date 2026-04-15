@@ -196,12 +196,11 @@ export default function HomeScreen() {
       .maybeSingle()
     setLastMessage(msgData)
 
-    const storedStreak = await AsyncStorage.getItem('huddle_practice_streak')
-    if (storedStreak) setPracticeStreak(parseInt(storedStreak, 10))
-    const storedDates = await AsyncStorage.getItem('huddle_practiced_dates')
-    const allDates: string[] = storedDates ? JSON.parse(storedDates) : []
-    setPracticedDays(thisWeekDayIndices(allDates))
-    setPracticedToday(allDates.includes(todayDateStr()))
+    const storedStreak = await AsyncStorage.getItem('huddle_streak_data')
+    const streakData = storedStreak ? JSON.parse(storedStreak) : { count: 0, dates: [] }
+    setPracticeStreak(streakData.count)
+    setPracticedDays(thisWeekDayIndices(streakData.dates))
+    setPracticedToday(streakData.dates.includes(todayDateStr()))
 
     setLoading(false)
   }
@@ -519,14 +518,13 @@ export default function HomeScreen() {
               style={{ backgroundColor: practicedToday ? '#F0FDF4' : '#F59E0B', borderRadius: 10, paddingVertical: 11, alignItems: 'center', borderWidth: practicedToday ? 1 : 0, borderColor: '#D97706' }}
               onPress={async () => {
                 const today = todayDateStr()
-                const raw = await AsyncStorage.getItem('huddle_practiced_dates')
-                const allDates: string[] = raw ? JSON.parse(raw) : []
-                if (!allDates.includes(today)) {
-                  const newDates = [...allDates, today]
-                  await AsyncStorage.setItem('huddle_practiced_dates', JSON.stringify(newDates))
-                  const newStreak = practiceStreak + 1
-                  setPracticeStreak(newStreak)
-                  await AsyncStorage.setItem('huddle_practice_streak', String(newStreak))
+                const raw = await AsyncStorage.getItem('huddle_streak_data')
+                const streakData = raw ? JSON.parse(raw) : { count: 0, dates: [] }
+                if (!streakData.dates.includes(today)) {
+                  const newDates = [...streakData.dates, today]
+                  const newData = { count: newDates.length, dates: newDates }
+                  await AsyncStorage.setItem('huddle_streak_data', JSON.stringify(newData))
+                  setPracticeStreak(newData.count)
                   setPracticedDays(thisWeekDayIndices(newDates))
                 }
                 setPracticedToday(true)

@@ -174,12 +174,11 @@ export default function PracticeScreen() {
         .limit(1)
         .maybeSingle()
       setNextEvent(eventData)
-      const storedStreak = await AsyncStorage.getItem('huddle_practice_streak')
-      if (storedStreak) setDrillStreak(parseInt(storedStreak, 10))
-      const storedDates = await AsyncStorage.getItem('huddle_practiced_dates')
-      const allDates: string[] = storedDates ? JSON.parse(storedDates) : []
-      setPracticedDays(thisWeekDayIndices(allDates))
-      setPracticedToday(allDates.includes(todayDateStr()))
+      const storedStreak = await AsyncStorage.getItem('huddle_streak_data')
+      const streakData = storedStreak ? JSON.parse(storedStreak) : { count: 0, dates: [] }
+      setDrillStreak(streakData.count)
+      setPracticedDays(thisWeekDayIndices(streakData.dates))
+      setPracticedToday(streakData.dates.includes(todayDateStr()))
       const rawCache = await AsyncStorage.getItem('huddle_active_plan')
       let needsGenerate = true
       if (rawCache) {
@@ -288,14 +287,13 @@ export default function PracticeScreen() {
 
   const recordPracticeDay = async () => {
     const today = todayDateStr()
-    const raw = await AsyncStorage.getItem('huddle_practiced_dates')
-    const allDates: string[] = raw ? JSON.parse(raw) : []
-    if (!allDates.includes(today)) {
-      const newDates = [...allDates, today]
-      await AsyncStorage.setItem('huddle_practiced_dates', JSON.stringify(newDates))
-      const newStreak = drillStreak + 1
-      setDrillStreak(newStreak)
-      await AsyncStorage.setItem('huddle_practice_streak', String(newStreak))
+    const raw = await AsyncStorage.getItem('huddle_streak_data')
+    const streakData = raw ? JSON.parse(raw) : { count: 0, dates: [] }
+    if (!streakData.dates.includes(today)) {
+      const newDates = [...streakData.dates, today]
+      const newData = { count: newDates.length, dates: newDates }
+      await AsyncStorage.setItem('huddle_streak_data', JSON.stringify(newData))
+      setDrillStreak(newData.count)
       setPracticedDays(thisWeekDayIndices(newDates))
     }
     setPracticedToday(true)
