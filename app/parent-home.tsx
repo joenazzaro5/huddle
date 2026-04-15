@@ -10,6 +10,34 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 
 const tc = '#1A56DB'
 
+const CHEETAHS_PLAYERS = [
+  { id: 'm1', number: 1,  name: 'Sofia',     position: 'GK'  },
+  { id: 'm2', number: 2,  name: 'Emma',      position: 'DEF' },
+  { id: 'm3', number: 5,  name: 'Olivia',    position: 'MID' },
+  { id: 'm4', number: 9,  name: 'Isabella',  position: 'FWD' },
+  { id: 'm5', number: 8,  name: 'Charlotte', position: 'MID' },
+  { id: 'm6', number: 4,  name: 'Mia',       position: 'DEF' },
+  { id: 'm7', number: 11, name: 'Ava',       position: 'FWD' },
+  { id: 'm8', number: 3,  name: 'Zoe',       position: 'DEF' },
+  { id: 'm9', number: 6,  name: 'Lily',      position: 'MID' },
+  { id: 'm10',number: 7,  name: 'Grace',     position: 'MID' },
+  { id: 'm11',number: 10, name: 'Ella',      position: 'FWD' },
+]
+
+const TIGERS_PLAYERS = [
+  { id: 't1', number: 1,  name: 'Luna',      position: 'GK'  },
+  { id: 't2', number: 3,  name: 'Maya',      position: 'DEF' },
+  { id: 't3', number: 4,  name: 'Chloe',     position: 'DEF' },
+  { id: 't4', number: 5,  name: 'Aisha',     position: 'DEF' },
+  { id: 't5', number: 7,  name: 'Priya',     position: 'MID' },
+  { id: 't6', number: 8,  name: 'Sofia',     position: 'MID' },
+  { id: 't7', number: 10, name: 'Emma',      position: 'MID' },
+  { id: 't8', number: 6,  name: 'Olivia',    position: 'MID' },
+  { id: 't9', number: 9,  name: 'Mia',       position: 'FWD' },
+  { id: 't10',number: 11, name: 'Ava',       position: 'FWD' },
+  { id: 't11',number: 2,  name: 'Bella',     position: 'DEF' },
+]
+
 function todayDateStr() {
   const d = new Date()
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -489,28 +517,33 @@ export default function ParentHomeScreen() {
             <Text style={styles.cardLabel}>The squad 👟</Text>
           </View>
           <View style={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: 12 }}>
-            {players.length === 0 ? (
-              <Text style={{ fontSize: 13, color: '#aaa', marginTop: 8 }}>Roster not available yet</Text>
-            ) : (
-              players.slice(0, 3).map((player, i) => (
-                <View
-                  key={player.id ?? i}
-                  style={[styles.rosterRow, i < Math.min(players.length, 3) - 1 && styles.rosterBorder]}
-                >
-                  <View style={[styles.rosterNumBadge, { backgroundColor: tc + '18' }]}>
-                    <Text style={[styles.rosterNum, { color: tc }]}>{player.number ?? player.jersey_number ?? '—'}</Text>
-                  </View>
-                  <Text style={styles.rosterName}>
-                    {player.name ?? `${player.first_name ?? ''} ${player.last_name ?? ''}`.trim()}
-                  </Text>
-                  {(player.positions?.[0] ?? player.position) ? (
-                    <Text style={styles.rosterPos}>
-                      {player.positions?.[0] ?? player.position}
+            {(() => {
+              const teamName = team?.name ?? ''
+              const mockPlayers = (teamName.includes('Tiger') || teamName.includes('San Rafael')) ? TIGERS_PLAYERS : CHEETAHS_PLAYERS
+              const displayPlayers = players.length > 0 ? players : mockPlayers
+              return displayPlayers.slice(0, 3).map((player, i) => {
+                const pos = (player.positions?.[0] ?? player.position ?? '').toUpperCase()
+                const posColor = pos === 'GK' ? '#F59E0B' : ['CB','LB','RB','DEF'].includes(pos) ? tc : pos === 'FWD' ? '#FF6B35' : '#10B981'
+                return (
+                  <View
+                    key={player.id ?? i}
+                    style={[styles.rosterRow, i < 2 && styles.rosterBorder]}
+                  >
+                    <View style={[styles.rosterNumBadge, { backgroundColor: tc + '18' }]}>
+                      <Text style={[styles.rosterNum, { color: tc }]}>{player.number ?? player.jersey_number ?? '—'}</Text>
+                    </View>
+                    <Text style={[styles.rosterName, { flex: 1 }]}>
+                      {player.name ?? `${player.first_name ?? ''} ${player.last_name ?? ''}`.trim()}
                     </Text>
-                  ) : null}
-                </View>
-              ))
-            )}
+                    {pos ? (
+                      <View style={{ backgroundColor: posColor + '22', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
+                        <Text style={{ fontSize: 10, fontWeight: '700', color: posColor }}>{pos}</Text>
+                      </View>
+                    ) : null}
+                  </View>
+                )
+              })
+            })()}
             <TouchableOpacity onPress={() => router.push({ pathname: '/parent-team', params: { tab: 'roster' } })}>
               <Text style={[styles.viewLink, { color: tc }]}>View full roster →</Text>
             </TouchableOpacity>
