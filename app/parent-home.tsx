@@ -341,6 +341,12 @@ export default function ParentHomeScreen() {
         }}
       />
 
+      {toastVisible && (
+        <Animated.View style={[styles.toast, { transform: [{ translateY: toastAnim }] }]}>
+          <Text style={styles.toastText}>RSVP confirmed! Team notified 💬</Text>
+        </Animated.View>
+      )}
+
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
         {/* 1. Hero event card with RSVP */}
@@ -651,15 +657,6 @@ export default function ParentHomeScreen() {
 
       </ScrollView>
 
-      {toastVisible && (
-        <Animated.View style={{
-          position: 'absolute', top: 0, left: 0, right: 0, zIndex: 100,
-          transform: [{ translateY: toastAnim }],
-          backgroundColor: '#22C55E', paddingVertical: 14, alignItems: 'center',
-        }}>
-          <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>RSVP saved! Coach has been notified 🎉</Text>
-        </Animated.View>
-      )}
     </SafeAreaView>
   )
 }
@@ -730,5 +727,7 @@ const styles = StyleSheet.create({
   rosterNum: { fontSize: 13, fontWeight: '700' },
   rosterName: { flex: 1, fontSize: 14, fontWeight: '600', color: '#111827' },
   rosterPos: { fontSize: 12, color: '#888', fontWeight: '500' },
+  toast: { position: 'absolute', top: 50, left: 0, right: 0, zIndex: 100, backgroundColor: '#059669', paddingVertical: 12, paddingHorizontal: 16, alignItems: 'center' },
+  toastText: { fontSize: 14, fontWeight: '700', color: '#fff' },
 
 })
