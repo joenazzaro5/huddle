@@ -634,7 +634,28 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* 4. Your team module */}
+        {/* 5. Next game card */}
+        {nextGame && (
+          <TouchableOpacity
+            style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#F59E0B', padding: 0, overflow: 'hidden' }]}
+            onPress={() => router.push({ pathname: '/games', params: { tab: 'games' } })}
+            activeOpacity={0.85}
+          >
+            <View style={{ backgroundColor: '#FFFBEB', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 }}>
+              <Text style={styles.cardLabel}>Next game 🏟️</Text>
+            </View>
+            <View style={styles.cardBody}>
+              <Text style={{ fontSize: 16, fontWeight: '800', color: '#111827', marginBottom: 4 }}>
+                {`vs ${nextGame.opponent ?? 'TBD'}${nextGame.home != null ? (nextGame.home ? ' · Home' : ' · Away') : ''}`}
+              </Text>
+              <Text style={{ fontSize: 13, color: '#6B7280', marginBottom: 2 }}>{formatDay(nextGame.starts_at)}</Text>
+              <Text style={{ fontSize: 13, color: '#6B7280', marginBottom: 10 }}>{formatTimeRange(nextGame.starts_at, nextGame.duration_min ?? 60)}</Text>
+              <Text style={[styles.viewLink, { color: '#F59E0B' }]}>View game day →</Text>
+            </View>
+          </TouchableOpacity>
+        )}
+
+        {/* 6. Your team module */}
         <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#1A56DB', padding: 0, overflow: 'hidden' }]}>
           <View style={styles.teamCardHeader}>
             <Text style={styles.cardLabel}>Your team</Text>
@@ -669,7 +690,7 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* 5. Standings */}
+        {/* 7. Standings */}
         <TouchableOpacity
           style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#F59E0B', padding: 0, overflow: 'hidden' }]}
           onPress={() => router.push({ pathname: '/games', params: { tab: 'standings' } })}
@@ -691,27 +712,6 @@ export default function HomeScreen() {
             <Text style={[styles.viewLink, { color: tc }]}>View standings →</Text>
           </View>
         </TouchableOpacity>
-
-        {/* 6. Next game card */}
-        {nextGame && (
-          <TouchableOpacity
-            style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#F59E0B', padding: 0, overflow: 'hidden' }]}
-            onPress={() => router.push({ pathname: '/games', params: { tab: 'games' } })}
-            activeOpacity={0.85}
-          >
-            <View style={{ backgroundColor: '#FFFBEB', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 }}>
-              <Text style={styles.cardLabel}>Next game 🏟️</Text>
-            </View>
-            <View style={styles.cardBody}>
-              <Text style={{ fontSize: 16, fontWeight: '800', color: '#111827', marginBottom: 4 }}>
-                {`vs ${nextGame.opponent ?? 'TBD'}${nextGame.home != null ? (nextGame.home ? ' · Home' : ' · Away') : ''}`}
-              </Text>
-              <Text style={{ fontSize: 13, color: '#6B7280', marginBottom: 2 }}>{formatDay(nextGame.starts_at)}</Text>
-              <Text style={{ fontSize: 13, color: '#6B7280', marginBottom: 10 }}>{formatTimeRange(nextGame.starts_at, nextGame.duration_min ?? 60)}</Text>
-              <Text style={[styles.viewLink, { color: '#F59E0B' }]}>View game day →</Text>
-            </View>
-          </TouchableOpacity>
-        )}
 
         {/* 6. Team chat */}
         <TouchableOpacity
