@@ -122,9 +122,24 @@ export default function ChatScreen() {
       .channel(`messages:team_id=eq.${teamId}`)
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'messages', filter: `team_id=eq.${teamId}` },
-        () => {
-          if (teamIdRef.current === teamId) loadMessages(teamId)
+        { event: 'INSERT', schema: 'public', table: 'messages', filter: `team_id=eq.${teamId}` },
+        (payload) => {
+          if (teamIdRef.current !== teamId) return
+          // If this id was just deleted locally, do not re-add it
+          if (payload.new?.id && deletedIdsRef.current.has(payload.new.id)) return
+          loadMessages(teamId)
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'messages', filter: `team_id=eq.${teamId}` },
+        (payload) => {
+          if (teamIdRef.current !== teamId) return
+          const deletedId = payload.old?.id
+          if (deletedId) {
+            deletedIdsRef.current.add(deletedId)
+            setMessages(prev => prev.filter(m => m.id !== deletedId))
+          }
         }
       )
       .subscribe()
@@ -218,16 +233,13 @@ export default function ChatScreen() {
 
   const deleteMessage = useCallback(async (msgId: string) => {
     if (!teamIdRef.current) return
-    const teamId = teamIdRef.current
-    // Add to deleted set BEFORE the Supabase delete so the subscription
-    // callback cannot re-add this message if it fires during the delete
+    // Mark deleted immediately so INSERT/loadMessages callbacks can't re-add it
     deletedIdsRef.current.add(msgId)
     setDeletedIds(prev => new Set([...prev, msgId]))
-    // Delete from Supabase first
-    await supabase.from('messages').delete().eq('id', msgId).eq('team_id', teamId)
-    // Then flush local state and reload fresh data from DB
+    // Remove from local state immediately so the UI is instant
     setMessages(prev => prev.filter(m => m.id !== msgId))
-    if (teamIdRef.current === teamId) await loadMessages(teamId)
+    // Delete from Supabase — DELETE subscription handler will also fire and is idempotent
+    await supabase.from('messages').delete().eq('id', msgId)
   }, [])
 
   const handleLongPress = (msg: any) => {
