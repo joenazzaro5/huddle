@@ -403,7 +403,7 @@ export default function PracticeScreen() {
                 </TouchableOpacity>
               )}
             </View>
-            {!planLoading && plan.plan?.map((item: any, i: number) => (
+            {!planLoading && plan?.plan?.map((item: any, i: number) => (
               <View key={i}>
                 <TouchableOpacity
                   style={styles.phaseCard}
@@ -424,10 +424,10 @@ export default function PracticeScreen() {
                 </TouchableOpacity>
               </View>
             ))}
-            {!planLoading && plan.coachTip && (
+            {!planLoading && plan?.coachTip && (
               <View style={styles.tipBox}>
                 <Text style={styles.tipLabel}>💡 Coach tip</Text>
-                <Text style={styles.tipText}>{plan.coachTip}</Text>
+                <Text style={styles.tipText}>{plan?.coachTip}</Text>
               </View>
             )}
             {!planLoading && (
