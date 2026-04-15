@@ -475,7 +475,7 @@ export default function ParentHomeScreen() {
         {/* Snack schedule card */}
         <TouchableOpacity
           style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#F59E0B', padding: 0, overflow: 'hidden' }]}
-          onPress={() => router.push({ pathname: '/parent-team', params: { tab: 'snacks' } })}
+          onPress={() => router.push('/parent-snacks')}
           activeOpacity={0.85}
         >
           <View style={styles.snackCardHeader}>
