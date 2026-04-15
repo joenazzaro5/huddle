@@ -507,7 +507,7 @@ export default function HomeScreen() {
               const phaseColors = ['#10B981', '#1A56DB', '#F59E0B']
               const phaseColor = phaseColors[i % phaseColors.length]
               return (
-                <View key={i} style={[styles.planPhaseRow, i < (plan.plan?.length ?? 0) - 1 && styles.planPhaseBorder]}>
+                <View key={i} style={[styles.planPhaseRow, i < (plan?.plan?.length ?? 0) - 1 && styles.planPhaseBorder]}>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.planPhaseHeader, { color: phaseColor }]}>{phase.phase}</Text>
                     <Text style={styles.planPhaseName}>{phase.drill}</Text>
