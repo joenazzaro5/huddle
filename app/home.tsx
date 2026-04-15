@@ -375,7 +375,7 @@ export default function HomeScreen() {
             <Text style={styles.heroDay}>{formatDay(nextEvent.starts_at)}</Text>
             <Text style={styles.heroTitle}>
               {nextEvent.type === 'practice'
-                ? `Focus: ${nextEvent.focus ?? 'General skills'}`
+                ? (nextEvent.focus ? `Focus: ${nextEvent.focus}` : 'Practice')
                 : nextEvent.type === 'game'
                 ? `vs ${nextEvent.opponent}${nextEvent.home != null ? (nextEvent.home ? ' · Home' : ' · Away') : ''}`
                 : nextEvent.title ?? nextEvent.type}
