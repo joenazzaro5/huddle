@@ -74,9 +74,9 @@ export default function ParentHomeScreen() {
   const [allTeams, setAllTeams] = useState<any[]>([])
   const [nextEvent, setNextEvent] = useState<any>(null)
   const [upcomingEvents, setUpcomingEvents] = useState<any[]>([])
-  const [myRsvp, setMyRsvp] = useState<'yes' | 'no' | 'maybe' | null>(null)
+  const [myRsvp, setMyRsvp] = useState<'yes' | 'no' | null>(null)
   const [rsvpCounts, setRsvpCounts] = useState({ yes: 0, no: 0, maybe: 0 })
-  const [eventRsvps, setEventRsvps] = useState<Record<string, 'yes' | 'no' | 'maybe'>>({})
+  const [eventRsvps, setEventRsvps] = useState<Record<string, 'yes' | 'no'>>({})
   const [players, setPlayers] = useState<any[]>([])
   const [lastMessage, setLastMessage] = useState<any>(null)
   const [currentUser, setCurrentUser] = useState<any>(null)
@@ -217,14 +217,21 @@ export default function ParentHomeScreen() {
     })
   }
 
-  const submitRsvp = async (status: 'yes' | 'no' | 'maybe') => {
+  const submitRsvp = async (status: 'yes' | 'no') => {
     if (!currentUser || !nextEvent) return
+    const prevRsvp = myRsvp
     setMyRsvp(status)
+    setRsvpCounts(prev => {
+      const updated = { ...prev }
+      if (prevRsvp === 'yes' || prevRsvp === 'no') updated[prevRsvp] = Math.max(0, updated[prevRsvp] - 1)
+      updated[status] = updated[status] + 1
+      return updated
+    })
+    showRsvpToast()
     await supabase.from('rsvps').upsert(
       { user_id: currentUser.id, event_id: nextEvent.id, status },
       { onConflict: 'event_id,user_id' }
     )
-    showRsvpToast()
     if (status === 'yes') {
       const displayName = currentUser.user_metadata?.display_name ?? currentUser.email?.split('@')[0] ?? 'Parent'
       const eventName = nextEvent.type === 'game'
@@ -351,8 +358,8 @@ export default function ParentHomeScreen() {
 
             {/* RSVP buttons */}
             <View style={styles.rsvpBtnRow}>
-              {(['yes', 'no', 'maybe'] as const).map((s) => {
-                const labels = { yes: 'Going ✓', no: "Can't make it", maybe: 'Maybe' }
+              {(['yes', 'no'] as const).map((s) => {
+                const labels = { yes: 'Going ✓', no: "Can't make it" }
                 const selected = myRsvp === s
                 return (
                   <TouchableOpacity
@@ -370,7 +377,7 @@ export default function ParentHomeScreen() {
 
             <View style={styles.rsvpCountRow}>
               <Text style={styles.rsvpCountText}>
-                {rsvpCounts.yes} going · {rsvpCounts.no} out · {rsvpCounts.maybe} pending
+                {rsvpCounts.yes} going · {rsvpCounts.no} out
               </Text>
             </View>
           </View>
@@ -615,7 +622,7 @@ export default function ParentHomeScreen() {
           transform: [{ translateY: toastAnim }],
           backgroundColor: '#22C55E', paddingVertical: 14, alignItems: 'center',
         }}>
-          <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>RSVP saved!</Text>
+          <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>RSVP saved! Coach has been notified 🎉</Text>
         </Animated.View>
       )}
     </SafeAreaView>
