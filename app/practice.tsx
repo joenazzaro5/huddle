@@ -191,9 +191,14 @@ export default function PracticeScreen() {
       const rawCache = await AsyncStorage.getItem('huddle_active_plan')
       let needsGenerate = true
       if (rawCache) {
-        const { plan: p, timestamp } = JSON.parse(rawCache)
-        setPlan(p); setIsAiPlan(true)
-        needsGenerate = Date.now() - timestamp > 86400000
+        const { plan: p, timestamp, focus: cachedFocus } = JSON.parse(rawCache)
+        const currentFocus = resolvedEvent?.focus ?? null
+        if (cachedFocus !== currentFocus) {
+          await AsyncStorage.removeItem('huddle_active_plan')
+        } else {
+          setPlan(p); setIsAiPlan(true)
+          needsGenerate = Date.now() - timestamp > 86400000
+        }
       }
       if (needsGenerate) autoGenerate(resolvedEvent, membership.team)
     }
@@ -215,14 +220,14 @@ export default function PracticeScreen() {
         ),
         timeoutPromise
       ])
-      await AsyncStorage.setItem('huddle_active_plan', JSON.stringify({ plan: result, timestamp: Date.now() }))
+      await AsyncStorage.setItem('huddle_active_plan', JSON.stringify({ plan: result, timestamp: Date.now(), focus: event?.focus ?? null }))
       setPlan(result)
       setIsAiPlan(true)
     } catch {
       setIsOfflinePlan(true)
       const existing = await AsyncStorage.getItem('huddle_active_plan')
       if (!existing) {
-        await AsyncStorage.setItem('huddle_active_plan', JSON.stringify({ plan: FALLBACK_PLAN, timestamp: 0 }))
+        await AsyncStorage.setItem('huddle_active_plan', JSON.stringify({ plan: FALLBACK_PLAN, timestamp: 0, focus: event?.focus ?? null }))
       }
     } finally {
       setPlanLoading(false)

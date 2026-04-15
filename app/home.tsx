@@ -180,13 +180,18 @@ export default function HomeScreen() {
     ])
     setPlayerCount(playerData?.length ?? 0)
 
-    const cacheKey = `huddle_active_plan`
+    const cacheKey = 'huddle_active_plan'
     const rawCache = await AsyncStorage.getItem(cacheKey)
     let needsGenerate = true
     if (rawCache) {
-      const { plan: p, timestamp } = JSON.parse(rawCache)
-      setPlan(p); setIsAiPlan(true)
-      needsGenerate = Date.now() - timestamp > 86400000
+      const { plan: p, timestamp, focus: cachedFocus } = JSON.parse(rawCache)
+      const currentFocus = resolvedEvents[0]?.focus ?? null
+      if (cachedFocus !== currentFocus) {
+        await AsyncStorage.removeItem(cacheKey)
+      } else {
+        setPlan(p); setIsAiPlan(true)
+        needsGenerate = Date.now() - timestamp > 86400000
+      }
     }
 
     if (eventData && eventData.length > 0) {
@@ -235,14 +240,14 @@ export default function HomeScreen() {
         ),
         timeoutPromise
       ])
-      await AsyncStorage.setItem('huddle_active_plan', JSON.stringify({ plan: result, timestamp: Date.now() }))
+      await AsyncStorage.setItem('huddle_active_plan', JSON.stringify({ plan: result, timestamp: Date.now(), focus: event?.focus ?? null }))
       setPlan(result)
       setIsAiPlan(true)
     } catch {
       setIsOfflinePlan(true)
       const existing = await AsyncStorage.getItem('huddle_active_plan')
       if (!existing) {
-        await AsyncStorage.setItem('huddle_active_plan', JSON.stringify({ plan: FALLBACK_PLAN, timestamp: 0 }))
+        await AsyncStorage.setItem('huddle_active_plan', JSON.stringify({ plan: FALLBACK_PLAN, timestamp: 0, focus: event?.focus ?? null }))
       }
     } finally {
       setPlanLoading(false)
@@ -252,6 +257,7 @@ export default function HomeScreen() {
   const switchTeam = async (teamData: any) => {
     if (teamData.id === team?.id) return
 
+    await AsyncStorage.removeItem('huddle_active_plan')
     setLoading(true)
     setHeroSwitching(true)
     setTeam(null)
