@@ -248,7 +248,9 @@ export default function ParentHomeScreen() {
   }
 
   const claimSnack = (index: number) => {
-    const claimerName = currentUser?.user_metadata?.display_name ?? currentUser?.email?.split('@')[0] ?? 'Parent'
+    const slot = snacks[index]
+    if (!slot || slot.claimed) return
+    const claimerName = currentUser?.email?.split('@')[0] ?? 'Parent'
     Alert.alert(
       'Claim snack duty',
       `Sign up as ${claimerName}?`,
