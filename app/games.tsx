@@ -5,6 +5,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router'
 import { supabase } from '../lib/supabase'
 import { AppHeader } from '../lib/header'
 import { SEASON_SCHEDULE } from '../lib/season'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
 const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl2c3B5d21od3FkYXB4ZW14bHVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMDIwMjksImV4cCI6MjA5MDY3ODAyOX0.HXsFNltsIhtL0S2tLtzFK55lbQX6GMFQKxw-U3OY6KQ'
 const SUPABASE_URL = 'https://yvspywmhwqdapxemxlug.supabase.co'
@@ -203,6 +204,9 @@ export default function GamesScreen() {
         .eq('team_id', membership.team.id)
         .order('starts_at', { ascending: true })
       setEvents(allEvents ?? [])
+
+      const storedSnacks = await AsyncStorage.getItem(`huddle_snack_${membership.team.id}`)
+      if (storedSnacks) setSnackData(JSON.parse(storedSnacks))
     }
     setLoading(false)
   }
@@ -503,19 +507,23 @@ Slots: ${formationSlots}`
                   {!item.claimed && (
                     <TouchableOpacity
                       style={styles.snackClaimBtn}
-                      onPress={() => Alert.alert(
-                        'Sign up for snacks',
-                        `Claim snack duty for ${item.date}?`,
-                        [
-                          { text: 'Cancel', style: 'cancel' },
-                          { text: 'I got it! 🙌', onPress: () => {
-                              const updated = [...snackData]
-                              updated[i] = { ...item, claimed: true, name: 'You ✓' }
-                              setSnackData(updated)
-                            }
-                          },
-                        ]
-                      )}
+                      onPress={async () => {
+                        const { data: { user } } = await supabase.auth.getUser()
+                        const claimerName = user?.user_metadata?.display_name ?? user?.email?.split('@')[0] ?? 'Coach'
+                        Alert.alert(
+                          'Sign up for snacks',
+                          `Claim snack duty for ${item.date} as ${claimerName}?`,
+                          [
+                            { text: 'Cancel', style: 'cancel' },
+                            { text: 'I got it! 🙌', onPress: async () => {
+                                const updated = snackData.map((s, j) => j === i ? { ...s, claimed: true, name: claimerName } : s)
+                                setSnackData(updated)
+                                if (team?.id) await AsyncStorage.setItem(`huddle_snack_${team.id}`, JSON.stringify(updated))
+                              }
+                            },
+                          ]
+                        )
+                      }}
                       activeOpacity={0.75}
                     >
                       <Text style={styles.snackClaimBtnText}>Claim it! →</Text>
