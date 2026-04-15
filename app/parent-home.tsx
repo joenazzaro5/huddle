@@ -97,8 +97,17 @@ export default function ParentHomeScreen() {
     setPracticedDays(thisWeekDayIndices(streakData.dates))
     setPracticedToday(streakData.dates.includes(todayDateStr()))
 
-    const storedSnacks = await AsyncStorage.getItem('huddle_snack_data')
+    const snackKey = `huddle_snack_data_${teamData.id}`
+    const storedSnacks = await AsyncStorage.getItem(snackKey)
     if (storedSnacks) setSnacks(JSON.parse(storedSnacks))
+    else setSnacks(SEASON_SCHEDULE
+      .filter(e => e.type === 'game' && new Date(e.starts_at) >= new Date())
+      .map(e => ({
+        date: new Date(e.starts_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        type: 'Game' as string,
+        name: null as string | null,
+        claimed: false,
+      })))
 
     setLoading(false)
   }
@@ -211,17 +220,21 @@ export default function ParentHomeScreen() {
   }
 
   const claimSnack = (index: number) => {
-    Alert.prompt(
+    const claimerName = currentUser?.user_metadata?.display_name ?? currentUser?.email?.split('@')[0] ?? 'Parent'
+    Alert.alert(
       'Claim snack duty',
-      'Enter your name',
-      async (name) => {
-        if (!name?.trim()) return
-        const updated = snacks.map((s, i) => i === index ? { ...s, name: name.trim(), claimed: true } : s)
-        setSnacks(updated)
-        await AsyncStorage.setItem('huddle_snack_data', JSON.stringify(updated))
-      },
-      'plain-text',
-      currentUser?.email?.split('@')[0] ?? ''
+      `Sign up as ${claimerName}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Claim it! 🙌',
+          onPress: async () => {
+            const updated = snacks.map((s, i) => i === index ? { ...s, name: claimerName, claimed: true } : s)
+            setSnacks(updated)
+            await AsyncStorage.setItem(`huddle_snack_data_${team?.id}`, JSON.stringify(updated))
+          },
+        },
+      ]
     )
   }
 
@@ -267,10 +280,21 @@ export default function ParentHomeScreen() {
         teamName={team?.name}
         showTeamSwitch={allTeams.length > 1}
         allTeams={allTeams}
-        onTeamSelect={(t) => {
+        onTeamSelect={async (t) => {
           setActiveTeamId(t.id)
           setTeam(t)
           setLastMessage(null)
+          const snackKey = `huddle_snack_data_${t.id}`
+          const stored = await AsyncStorage.getItem(snackKey)
+          if (stored) setSnacks(JSON.parse(stored))
+          else setSnacks(SEASON_SCHEDULE
+            .filter(e => e.type === 'game' && new Date(e.starts_at) >= new Date())
+            .map(e => ({
+              date: new Date(e.starts_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+              type: 'Game' as string,
+              name: null as string | null,
+              claimed: false,
+            })))
           if (currentUser) loadTeamData(t.id, currentUser.id)
         }}
       />

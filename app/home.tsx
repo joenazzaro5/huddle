@@ -225,8 +225,9 @@ export default function HomeScreen() {
     setPracticedDays(thisWeekDayIndices(streakData.dates))
     setPracticedToday(streakData.dates.includes(todayDateStr()))
 
-    const storedSnacks = await AsyncStorage.getItem('huddle_snack_data')
+    const storedSnacks = await AsyncStorage.getItem(`huddle_snack_data_${teamData.id}`)
     if (storedSnacks) setSnacks(JSON.parse(storedSnacks))
+    else setSnacks(getUpcomingSnackSlots())
 
     setLoading(false)
   }
@@ -360,17 +361,21 @@ export default function HomeScreen() {
   }
 
   const claimSnack = (index: number) => {
-    Alert.prompt(
+    const claimerName = currentUser?.user_metadata?.display_name ?? currentUser?.email?.split('@')[0] ?? 'Coach'
+    Alert.alert(
       'Claim snack duty',
-      'Enter your name',
-      async (name) => {
-        if (!name?.trim()) return
-        const updated = snacks.map((s, i) => i === index ? { ...s, name: name.trim(), claimed: true } : s)
-        setSnacks(updated)
-        await AsyncStorage.setItem('huddle_snack_data', JSON.stringify(updated))
-      },
-      'plain-text',
-      currentUser?.email?.split('@')[0] ?? ''
+      `Sign up as ${claimerName}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Claim it! 🙌',
+          onPress: async () => {
+            const updated = snacks.map((s, i) => i === index ? { ...s, name: claimerName, claimed: true } : s)
+            setSnacks(updated)
+            await AsyncStorage.setItem(`huddle_snack_data_${team?.id}`, JSON.stringify(updated))
+          },
+        },
+      ]
     )
   }
 
