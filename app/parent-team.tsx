@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { useLocalSearchParams } from 'expo-router'
+import { useEffect, useState, useCallback } from 'react'
+import { useLocalSearchParams, useFocusEffect } from 'expo-router'
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { AppHeader } from '../lib/header'
@@ -62,6 +62,15 @@ export default function ParentTeamScreen() {
       }))
   )
 
+
+  useFocusEffect(
+    useCallback(() => {
+      const tab = params.tab as string
+      if (tab === 'roster' || tab === 'schedule' || tab === 'standings' || tab === 'snacks') {
+        setActiveTab(tab as 'schedule' | 'roster' | 'standings' | 'snacks')
+      }
+    }, [params.tab])
+  )
 
   useEffect(() => { loadData() }, [])
 
