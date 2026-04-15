@@ -41,6 +41,8 @@ export default function ChatScreen() {
   const teamIdRef = useRef<string | null>(null)
   const latestMessageRef = useRef<string | null>(null)
   const pollInterval = useRef<any>(null)
+  const deletedIdsRef = useRef<Set<string>>(new Set())
+  const messageCountRef = useRef<number>(0)
 
   useEffect(() => {
     loadData()
@@ -74,6 +76,8 @@ export default function ChatScreen() {
       teamIdRef.current = membership.team.id
       setMessages([])
       latestMessageRef.current = null
+      messageCountRef.current = 0
+      deletedIdsRef.current = new Set()
       if (pollInterval.current) clearInterval(pollInterval.current)
       await loadMessages(membership.team.id)
       startPolling(membership.team.id)
@@ -103,12 +107,12 @@ export default function ChatScreen() {
       .limit(50)
 
     if (teamIdRef.current !== teamId) return
-    if (data && data.length > 0) {
-      setMessages(data)
-      latestMessageRef.current = data[data.length - 1].id
+    const filtered = (data ?? []).filter(m => !deletedIdsRef.current.has(m.id))
+    setMessages(filtered)
+    messageCountRef.current = filtered.length
+    if (filtered.length > 0) {
+      latestMessageRef.current = filtered[filtered.length - 1].id
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: false }), 100)
-    } else {
-      setMessages([])
     }
   }
 
@@ -123,13 +127,14 @@ export default function ChatScreen() {
         .limit(50)
 
       if (teamIdRef.current !== teamId) return
-      if (data && data.length > 0) {
-        const latest = data[data.length - 1].id
-        if (latest !== latestMessageRef.current) {
-          latestMessageRef.current = latest
-          setMessages(data)
-          setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100)
-        }
+      const filtered = (data ?? []).filter(m => !deletedIdsRef.current.has(m.id))
+      const latest = filtered.length > 0 ? filtered[filtered.length - 1].id : null
+      // Update if there's a new message OR count changed (handles deletions)
+      if (latest !== latestMessageRef.current || filtered.length !== messageCountRef.current) {
+        latestMessageRef.current = latest
+        messageCountRef.current = filtered.length
+        setMessages(filtered)
+        if (latest) setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100)
       }
     }, 3000)
   }
@@ -216,8 +221,9 @@ export default function ChatScreen() {
   }
 
   const deleteMessage = async (msgId: string) => {
-    await supabase.from('messages').delete().eq('id', msgId)
+    deletedIdsRef.current.add(msgId)
     setMessages(prev => prev.filter(m => m.id !== msgId))
+    await supabase.from('messages').delete().eq('id', msgId)
   }
 
   const handleLongPress = (msg: any) => {
@@ -398,9 +404,15 @@ export default function ChatScreen() {
                           <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)' }}>Tap to vote</Text>
                         </View>
                       )
-                    })() : msg.body?.startsWith('https://') ? (
+                    })() : (msg.body?.startsWith('https://media') || msg.body?.startsWith('https://i.giphy')) ? (
+                      <Image
+                        source={{ uri: msg.body }}
+                        style={{ width: width * 0.55, height: 120, borderRadius: 12 }}
+                        resizeMode="cover"
+                      />
+                    ) : msg.body?.startsWith('https://') ? (
                       <View style={[styles.bubble, isMe ? [styles.bubbleMe, { backgroundColor: tc }] : styles.bubbleOther]}>
-                        <Text style={[styles.bubbleText, isMe && styles.bubbleTextMe]}>Sent a GIF 🎬</Text>
+                        <Text style={[styles.bubbleText, isMe && styles.bubbleTextMe]}>Sent a link 🔗</Text>
                       </View>
                     ) : (
                       <View style={[styles.bubble, isMe ? [styles.bubbleMe, { backgroundColor: tc }] : styles.bubbleOther]}>
