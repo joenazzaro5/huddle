@@ -18,14 +18,32 @@ const STANDINGS = [
   { team: 'Fairfax FC',     w: 0, l: 5, d: 1, pts: 1  },
 ]
 
-const MOCK_PLAYERS = [
-  { id: 'm1', name: 'Sofia',     number: 1,  positions: ['GK']  },
-  { id: 'm2', name: 'Emma',      number: 10, positions: ['MID'] },
-  { id: 'm3', name: 'Olivia',    number: 7,  positions: ['MID'] },
-  { id: 'm4', name: 'Isabella',  number: 9,  positions: ['FWD'] },
-  { id: 'm5', name: 'Charlotte', number: 8,  positions: ['MID'] },
-  { id: 'm6', name: 'Mia',       number: 4,  positions: ['DEF'] },
-  { id: 'm7', name: 'Ava',       number: 5,  positions: ['DEF'] },
+const CHEETAHS_MOCK = [
+  { id: 'm1',  name: 'Sofia',     number: 1,  positions: ['GK']  },
+  { id: 'm2',  name: 'Emma',      number: 2,  positions: ['DEF'] },
+  { id: 'm3',  name: 'Zoe',       number: 3,  positions: ['DEF'] },
+  { id: 'm4',  name: 'Mia',       number: 4,  positions: ['DEF'] },
+  { id: 'm5',  name: 'Olivia',    number: 5,  positions: ['MID'] },
+  { id: 'm6',  name: 'Lily',      number: 6,  positions: ['MID'] },
+  { id: 'm7',  name: 'Grace',     number: 7,  positions: ['MID'] },
+  { id: 'm8',  name: 'Charlotte', number: 8,  positions: ['MID'] },
+  { id: 'm9',  name: 'Isabella',  number: 9,  positions: ['FWD'] },
+  { id: 'm10', name: 'Ella',      number: 10, positions: ['FWD'] },
+  { id: 'm11', name: 'Ava',       number: 11, positions: ['FWD'] },
+]
+
+const TIGERS_MOCK = [
+  { id: 't1',  name: 'Luna',      number: 1,  positions: ['GK']  },
+  { id: 't2',  name: 'Bella',     number: 2,  positions: ['DEF'] },
+  { id: 't3',  name: 'Maya',      number: 3,  positions: ['DEF'] },
+  { id: 't4',  name: 'Chloe',     number: 4,  positions: ['DEF'] },
+  { id: 't5',  name: 'Aisha',     number: 5,  positions: ['DEF'] },
+  { id: 't6',  name: 'Olivia',    number: 6,  positions: ['MID'] },
+  { id: 't7',  name: 'Priya',     number: 7,  positions: ['MID'] },
+  { id: 't8',  name: 'Sofia',     number: 8,  positions: ['MID'] },
+  { id: 't9',  name: 'Mia',       number: 9,  positions: ['FWD'] },
+  { id: 't10', name: 'Emma',      number: 10, positions: ['MID'] },
+  { id: 't11', name: 'Ava',       number: 11, positions: ['FWD'] },
 ]
 
 const PLAYER_STATS = [
@@ -217,7 +235,9 @@ export default function ParentTeamScreen() {
 
           <View style={styles.card}>
             {(() => {
-              const displayPlayers = players.length > 0 ? players : MOCK_PLAYERS
+              const teamName = team?.name ?? ''
+              const mockPlayers = (teamName.includes('Tiger') || teamName.includes('San Rafael')) ? TIGERS_MOCK : CHEETAHS_MOCK
+              const displayPlayers = players.length > 0 ? players : mockPlayers
               return (
                 <>
                   <Text style={styles.cardLabel}>Players · {displayPlayers.length}</Text>
