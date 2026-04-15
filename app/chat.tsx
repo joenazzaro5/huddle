@@ -110,9 +110,8 @@ export default function ChatScreen() {
       .limit(50)
 
     if (teamIdRef.current !== teamId) return
-    const filtered = (data ?? []).filter(m => !deletedIdsRef.current.has(m.id))
-    setMessages(filtered)
-    if (filtered.length > 0) {
+    setMessages(data ?? [])
+    if ((data ?? []).length > 0) {
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: false }), 100)
     }
   }
@@ -125,21 +124,27 @@ export default function ChatScreen() {
         { event: 'INSERT', schema: 'public', table: 'messages', filter: `team_id=eq.${teamId}` },
         (payload) => {
           if (teamIdRef.current !== teamId) return
-          // If this id was just deleted locally, do not re-add it
-          if (payload.new?.id && deletedIdsRef.current.has(payload.new.id)) return
-          loadMessages(teamId)
+          const newMsg = payload.new
+          if (!newMsg?.id) return
+          // Ignore if recently soft-deleted locally
+          if (deletedIdsRef.current.has(newMsg.id)) return
+          setMessages(prev => {
+            // Deduplicate — ignore if already present
+            if (prev.some(m => m.id === newMsg.id)) return prev
+            setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100)
+            return [...prev, newMsg]
+          })
         }
       )
       .on(
         'postgres_changes',
-        { event: 'DELETE', schema: 'public', table: 'messages', filter: `team_id=eq.${teamId}` },
+        { event: 'UPDATE', schema: 'public', table: 'messages', filter: `team_id=eq.${teamId}` },
         (payload) => {
           if (teamIdRef.current !== teamId) return
-          const deletedId = payload.old?.id
-          if (deletedId) {
-            deletedIdsRef.current.add(deletedId)
-            setMessages(prev => prev.filter(m => m.id !== deletedId))
-          }
+          const updated = payload.new
+          if (!updated?.id) return
+          // Reflects soft-deletes (is_deleted=true) and any other edits
+          setMessages(prev => prev.map(m => m.id === updated.id ? { ...m, ...updated } : m))
         }
       )
       .subscribe()
@@ -232,17 +237,16 @@ export default function ChatScreen() {
   }
 
   const deleteMessage = useCallback(async (msgId: string) => {
-    if (!teamIdRef.current) return
-    // Mark deleted immediately so INSERT/loadMessages callbacks can't re-add it
+    // Mark in ref so INSERT subscription cannot re-add this id
     deletedIdsRef.current.add(msgId)
-    setDeletedIds(prev => new Set([...prev, msgId]))
-    // Remove from local state immediately so the UI is instant
-    setMessages(prev => prev.filter(m => m.id !== msgId))
-    // Delete from Supabase — DELETE subscription handler will also fire and is idempotent
-    await supabase.from('messages').delete().eq('id', msgId)
+    // Optimistic update: show as deleted immediately without waiting for Supabase
+    setMessages(prev => prev.map(m => m.id === msgId ? { ...m, body: '[deleted]', is_deleted: true } : m))
+    // Soft-delete in DB — subscription sees UPDATE (not DELETE) so it can't re-add the row
+    await supabase.from('messages').update({ body: '[deleted]', is_deleted: true }).eq('id', msgId)
   }, [])
 
   const handleLongPress = (msg: any) => {
+    if (msg.is_deleted) return
     Alert.alert(
       'Message options',
       undefined,
@@ -415,7 +419,11 @@ export default function ChatScreen() {
                   )}
                   <View style={[styles.bubbleWrap, isMe && styles.bubbleWrapMe]}>
                     {!isMe && <View style={styles.avatarSpacer} />}
-                    {msg.body?.startsWith('POLL:') ? (() => {
+                    {msg.is_deleted ? (
+                      <View style={[styles.bubble, styles.bubbleOther]}>
+                        <Text style={{ fontSize: 13, color: '#aaa', fontStyle: 'italic' }}>Message deleted</Text>
+                      </View>
+                    ) : msg.body?.startsWith('POLL:') ? (() => {
                       let question = 'Poll'
                       try { question = JSON.parse(msg.body.slice(5)).question ?? 'Poll' } catch {}
                       return (
