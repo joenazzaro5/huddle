@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { View, Text, ScrollView, FlatList, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator, Alert, Image, Modal, Dimensions } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import * as ImagePicker from 'expo-image-picker'
@@ -41,6 +41,7 @@ export default function ChatScreen() {
   const teamIdRef = useRef<string | null>(null)
   const latestMessageRef = useRef<string | null>(null)
   const pollInterval = useRef<any>(null)
+  const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set())
   const deletedIdsRef = useRef<Set<string>>(new Set())
   const messageCountRef = useRef<number>(0)
 
@@ -78,6 +79,7 @@ export default function ChatScreen() {
       latestMessageRef.current = null
       messageCountRef.current = 0
       deletedIdsRef.current = new Set()
+      setDeletedIds(new Set())
       if (pollInterval.current) clearInterval(pollInterval.current)
       await loadMessages(membership.team.id)
       startPolling(membership.team.id)
@@ -149,8 +151,10 @@ export default function ChatScreen() {
     setNewMessage('')
     setReplyingTo(null)
 
+    const activeTeamId = teamIdRef.current
+    if (!activeTeamId) { setSending(false); return }
     const { error } = await supabase.from('messages').insert({
-      team_id: team.id,
+      team_id: activeTeamId,
       user_id: currentUser.id,
       body,
       type: 'user',
@@ -160,7 +164,7 @@ export default function ChatScreen() {
       Alert.alert('Error', error.message)
       setNewMessage(rawText)
     } else {
-      if (teamIdRef.current) await loadMessages(teamIdRef.current)
+      await loadMessages(activeTeamId)
     }
     setSending(false)
   }
@@ -193,10 +197,12 @@ export default function ChatScreen() {
     setPollModalVisible(false)
     setPollQuestion('')
     setPollOpts(['', '', ''])
+    const activeTeamId = teamIdRef.current
+    if (!activeTeamId) return
     const { error } = await supabase.from('messages').insert({
-      team_id: team.id, user_id: currentUser.id, body, type: 'user',
+      team_id: activeTeamId, user_id: currentUser.id, body, type: 'user',
     })
-    if (!error && teamIdRef.current) await loadMessages(teamIdRef.current)
+    if (!error) await loadMessages(activeTeamId)
   }
 
   const votePoll = (msgId: string, optIndex: number) => {
@@ -220,11 +226,14 @@ export default function ChatScreen() {
     setActionMsg(null)
   }
 
-  const deleteMessage = async (msgId: string) => {
+  const deleteMessage = useCallback(async (msgId: string) => {
     deletedIdsRef.current.add(msgId)
+    setDeletedIds(prev => new Set([...prev, msgId]))
     setMessages(prev => prev.filter(m => m.id !== msgId))
-    await supabase.from('messages').delete().eq('id', msgId)
-  }
+    if (teamIdRef.current) {
+      await supabase.from('messages').delete().eq('id', msgId).eq('team_id', teamIdRef.current)
+    }
+  }, [])
 
   const handleLongPress = (msg: any) => {
     Alert.alert(
@@ -253,13 +262,15 @@ export default function ChatScreen() {
     setGifModalVisible(false)
     const url = item.images.fixed_height_small.url
     setSending(true)
+    const activeTeamId = teamIdRef.current
+    if (!activeTeamId) { setSending(false); return }
     const { error } = await supabase.from('messages').insert({
-      team_id: team.id,
+      team_id: activeTeamId,
       user_id: currentUser.id,
       body: url,
       type: 'user',
     })
-    if (!error && teamIdRef.current) await loadMessages(teamIdRef.current)
+    if (!error) await loadMessages(activeTeamId)
     setSending(false)
   }
 
