@@ -81,6 +81,7 @@ export default function ParentHomeScreen() {
   const [lastMessage, setLastMessage] = useState<any>(null)
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const chatSubRef = useRef<any>(null)
   const [practiceStreak, setPracticeStreak] = useState(0)
   const [practicedDays, setPracticedDays] = useState<number[]>([])
   const [watchedToday, setWatchedToday] = useState(false)
@@ -99,7 +100,10 @@ export default function ParentHomeScreen() {
       }))
   })
 
-  useEffect(() => { loadData() }, [])
+  useEffect(() => {
+    loadData()
+    return () => { if (chatSubRef.current) supabase.removeChannel(chatSubRef.current) }
+  }, [])
 
   const loadData = async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -195,15 +199,37 @@ export default function ParentHomeScreen() {
       }
     }
 
-    // Last chat message — only show if it belongs to this team
+    // Last chat message — initial fetch then real-time subscription
     const { data: msgData } = await supabase
       .from('messages')
       .select('*, sender:users(display_name, email)')
       .eq('team_id', teamId)
+      .neq('is_deleted', true)
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle()
     setLastMessage(msgData?.team_id === teamId ? msgData : null)
+
+    if (chatSubRef.current) supabase.removeChannel(chatSubRef.current)
+    const channel = supabase
+      .channel(`parent_home_messages:team_id=eq.${teamId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'messages', filter: `team_id=eq.${teamId}` },
+        async (payload) => {
+          const msg = payload.new
+          if (!msg?.id || msg.is_deleted) return
+          // Fetch with sender join so name resolves
+          const { data: full } = await supabase
+            .from('messages')
+            .select('*, sender:users(display_name, email)')
+            .eq('id', msg.id)
+            .maybeSingle()
+          if (full) setLastMessage(full)
+        }
+      )
+      .subscribe()
+    chatSubRef.current = channel
   }
 
   const showRsvpToast = () => {
@@ -321,6 +347,7 @@ export default function ParentHomeScreen() {
           setActiveTeamId(t.id)
           setTeam(t)
           setLastMessage(null)
+          if (chatSubRef.current) { supabase.removeChannel(chatSubRef.current); chatSubRef.current = null }
           const snackKey = `huddle_snacks_${t.id}`
           const stored = await AsyncStorage.getItem(snackKey)
           if (stored) setSnacks(JSON.parse(stored))
