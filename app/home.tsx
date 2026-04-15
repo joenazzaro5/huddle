@@ -151,9 +151,20 @@ export default function HomeScreen() {
       .gte('starts_at', new Date().toISOString())
       .order('starts_at', { ascending: true })
     setEvents(eventData ?? [])
-    const schedEvents = (eventData && eventData.length > 0) ? eventData : getScheduleEvents()
-    setNextEvent(schedEvents[0] ?? null)
-    setUpcomingEvents(schedEvents.slice(1, 4))
+    // Resolve events: Supabase first, then team-specific mock, then static schedule
+    let resolvedEvents: any[] = (eventData && eventData.length > 0) ? eventData : []
+    if (resolvedEvents.length === 0) {
+      const n = teamData.name ?? ''
+      if (n.includes('Cheetah') || n.includes('Marin')) {
+        resolvedEvents = [{ id: 'mock-1', type: 'practice', focus: 'Dribbling', starts_at: '2026-04-22T16:00:00', location: 'Marin Community Fields', duration_min: 60 }]
+      } else if (n.includes('Tiger') || n.includes('San Rafael')) {
+        resolvedEvents = [{ id: 'mock-2', type: 'practice', focus: 'Passing', starts_at: '2026-04-22T16:00:00', location: 'Marin Community Fields', duration_min: 60 }]
+      } else {
+        resolvedEvents = getScheduleEvents()
+      }
+    }
+    setNextEvent(resolvedEvents[0] ?? null)
+    setUpcomingEvents(resolvedEvents.slice(1, 4))
 
     const { data: playerData } = await supabase
       .from('players')
@@ -187,10 +198,8 @@ export default function HomeScreen() {
         .eq('event_id', eventData[0].id).eq('status', 'no')
       setRsvpYes(yes ?? 0)
       setRsvpNo(no ?? 0)
-      if (needsGenerate) autoGeneratePlan(eventData[0], teamData)
-    } else {
-      if (needsGenerate) autoGeneratePlan(getScheduleEvents()[0] ?? null, teamData)
     }
+    if (needsGenerate) autoGeneratePlan(resolvedEvents[0] ?? null, teamData)
 
     const { data: msgData } = await supabase
       .from('messages')
