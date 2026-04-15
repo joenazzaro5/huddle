@@ -76,6 +76,7 @@ export default function HomeScreen() {
   const [team, setTeam] = useState<any>(null)
   const [events, setEvents] = useState<any[]>([])
   const [nextEvent, setNextEvent] = useState<any>(null)
+  const [nextGame, setNextGame] = useState<any>(null)
   const [upcomingEvents, setUpcomingEvents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [plan, setPlan] = useState<any>(FALLBACK_PLAN)
@@ -166,6 +167,8 @@ export default function HomeScreen() {
     setNextEvent(resolvedEvents[0] ?? null)
     const upcomingSlice = resolvedEvents.slice(1, 4)
     setUpcomingEvents(upcomingSlice.length > 0 ? upcomingSlice : getScheduleEvents().slice(0, 3))
+    const nextGameEvent = resolvedEvents.find((e: any) => e.type === 'game') ?? getScheduleEvents().find((e: any) => e.type === 'game') ?? null
+    setNextGame(nextGameEvent)
 
     const { data: playerData } = await supabase
       .from('players')
@@ -264,6 +267,7 @@ export default function HomeScreen() {
     setTeam(null)
     setEvents([])
     setNextEvent(null)
+    setNextGame(null)
     setUpcomingEvents([])
     setPlayerCount(0)
     setPlayers([])
@@ -636,7 +640,28 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* 5. Team chat */}
+        {/* 5. Next game card */}
+        {nextGame && (
+          <TouchableOpacity
+            style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#F59E0B', padding: 0, overflow: 'hidden' }]}
+            onPress={() => router.push('/games')}
+            activeOpacity={0.85}
+          >
+            <View style={{ backgroundColor: '#FFFBEB', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 }}>
+              <Text style={styles.cardLabel}>Next game 🏟️</Text>
+            </View>
+            <View style={styles.cardBody}>
+              <Text style={{ fontSize: 16, fontWeight: '800', color: '#111827', marginBottom: 4 }}>
+                {`vs ${nextGame.opponent ?? 'TBD'}${nextGame.home != null ? (nextGame.home ? ' · Home' : ' · Away') : ''}`}
+              </Text>
+              <Text style={{ fontSize: 13, color: '#6B7280', marginBottom: 2 }}>{formatDay(nextGame.starts_at)}</Text>
+              <Text style={{ fontSize: 13, color: '#6B7280', marginBottom: 10 }}>{formatTimeRange(nextGame.starts_at, nextGame.duration_min ?? 60)}</Text>
+              <Text style={[styles.viewLink, { color: '#F59E0B' }]}>View game day →</Text>
+            </View>
+          </TouchableOpacity>
+        )}
+
+        {/* 6. Team chat */}
         <TouchableOpacity
           style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#10B981', padding: 0, overflow: 'hidden' }]}
           onPress={() => router.push('/chat')}
