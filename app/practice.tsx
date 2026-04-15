@@ -250,6 +250,7 @@ export default function PracticeScreen() {
         generatePracticePlan(finalPrompt, team.name, team.age_group),
         timeoutPromise
       ])
+      await AsyncStorage.setItem('huddle_active_plan', JSON.stringify({ plan: result, timestamp: Date.now() }))
       setPlan(result)
       setIsAiPlan(true)
     } catch {
@@ -276,6 +277,7 @@ export default function PracticeScreen() {
         generatePracticePlan(finalPrompt, team?.name, team?.age_group),
         timeoutPromise
       ])
+      await AsyncStorage.setItem('huddle_active_plan', JSON.stringify({ plan: result, timestamp: Date.now() }))
       setPlan(result)
       setIsAiPlan(true)
     } catch {
