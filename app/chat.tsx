@@ -102,15 +102,19 @@ export default function ChatScreen() {
       .order('created_at', { ascending: true })
       .limit(50)
 
+    if (teamIdRef.current !== teamId) return
     if (data && data.length > 0) {
       setMessages(data)
       latestMessageRef.current = data[data.length - 1].id
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: false }), 100)
+    } else {
+      setMessages([])
     }
   }
 
   const startPolling = (teamId: string) => {
     pollInterval.current = setInterval(async () => {
+      if (teamIdRef.current !== teamId) return
       const { data } = await supabase
         .from('messages')
         .select('*')
@@ -118,6 +122,7 @@ export default function ChatScreen() {
         .order('created_at', { ascending: true })
         .limit(50)
 
+      if (teamIdRef.current !== teamId) return
       if (data && data.length > 0) {
         const latest = data[data.length - 1].id
         if (latest !== latestMessageRef.current) {

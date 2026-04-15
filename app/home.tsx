@@ -217,7 +217,7 @@ export default function HomeScreen() {
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle()
-    setLastMessage(msgData)
+    setLastMessage(msgData?.team_id === teamData.id ? msgData : null)
 
     const storedStreak = await AsyncStorage.getItem('huddle_streak_data')
     const streakData = storedStreak ? JSON.parse(storedStreak) : { count: 0, dates: [] }
