@@ -443,7 +443,7 @@ export default function HomeScreen() {
           <View style={styles.practicePlanHeader}>
             <Text style={[styles.cardLabel, { marginBottom: 0, flex: 1 }]}>Practice plan</Text>
             <TouchableOpacity
-              onPress={() => autoGeneratePlan(nextEvent ?? getScheduleEvents()[0] ?? null, team)}
+              onPress={() => autoGeneratePlan(nextEvent, team)}
               activeOpacity={0.6}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}
             >

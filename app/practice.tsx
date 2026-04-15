@@ -173,7 +173,16 @@ export default function PracticeScreen() {
         .order('starts_at', { ascending: true })
         .limit(1)
         .maybeSingle()
-      setNextEvent(eventData)
+      // Resolve event: Supabase first, then team-specific mock
+      const n = membership.team.name ?? ''
+      const resolvedEvent = eventData ?? (
+        n.includes('Cheetah') || n.includes('Marin')
+          ? { id: 'mock-1', type: 'practice', focus: 'Dribbling', starts_at: '2026-04-22T16:00:00', duration_min: 60 }
+          : n.includes('Tiger') || n.includes('San Rafael')
+          ? { id: 'mock-2', type: 'practice', focus: 'Passing', starts_at: '2026-04-22T16:00:00', duration_min: 60 }
+          : null
+      )
+      setNextEvent(resolvedEvent)
       const storedStreak = await AsyncStorage.getItem('huddle_streak_data')
       const streakData = storedStreak ? JSON.parse(storedStreak) : { count: 0, dates: [] }
       setDrillStreak(streakData.count)
@@ -186,7 +195,7 @@ export default function PracticeScreen() {
         setPlan(p); setIsAiPlan(true)
         needsGenerate = Date.now() - timestamp > 86400000
       }
-      if (needsGenerate) autoGenerate(eventData ?? null, membership.team)
+      if (needsGenerate) autoGenerate(resolvedEvent, membership.team)
     }
   }
 
@@ -262,9 +271,9 @@ export default function PracticeScreen() {
   const handleGenerateWithDrills = async () => {
     setShowDrillPicker(false)
     const drillNames = DRILLS.filter(d => selectedPickDrills.has(d.id)).map(d => d.title)
-    const basePrompt = buildPrompt() || 'general skills'
+    const basePrompt = buildPrompt()
     const finalPrompt = appendFeedback(drillNames.length > 0
-      ? `${basePrompt} — include these drills: ${drillNames.join(', ')}`
+      ? (basePrompt ? `${basePrompt} — include these drills: ${drillNames.join(', ')}` : drillNames.join(', '))
       : basePrompt)
     setAiLoading(true)
     setIsOfflinePlan(false)
