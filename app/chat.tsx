@@ -143,8 +143,11 @@ export default function ChatScreen() {
           if (teamIdRef.current !== teamId) return
           const updated = payload.new
           if (!updated?.id) return
-          // Reflects soft-deletes (is_deleted=true) and any other edits
-          setMessages(prev => prev.map(m => m.id === updated.id ? { ...m, ...updated } : m))
+          setMessages(prev => prev.map(m => {
+            if (m.id !== updated.id) return m
+            // Preserve local is_deleted if the DB payload omits the column
+            return { ...m, ...updated, is_deleted: updated.is_deleted ?? m.is_deleted }
+          }))
         }
       )
       .subscribe()

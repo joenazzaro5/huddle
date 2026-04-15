@@ -222,11 +222,12 @@ export default function HomeScreen() {
       .from('messages')
       .select('*, sender:users(display_name, email)')
       .eq('team_id', teamData.id)
+      .neq('is_deleted', true)
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle()
     if (lastMsgTeamRef.current === teamData.id) {
-      setLastMessage(msgData?.team_id === teamData.id ? msgData : null)
+      setLastMessage(msgData?.team_id === teamData.id && !msgData?.is_deleted ? msgData : null)
     }
 
     const storedStreak = await AsyncStorage.getItem('huddle_streak_data')
