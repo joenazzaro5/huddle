@@ -367,29 +367,27 @@ export default function ParentHomeScreen() {
               <Text style={styles.heroLocation}>{nextEvent.location}</Text>
             )}
 
-            {/* RSVP buttons */}
-            <View style={styles.rsvpBtnRow}>
-              {(['yes', 'no'] as const).map((s) => {
-                const labels = { yes: 'Going ✓', no: "Can't make it" }
-                const selected = myRsvp === s
-                return (
-                  <TouchableOpacity
-                    key={s}
-                    style={[styles.rsvpBtn, selected && styles.rsvpBtnSelected]}
-                    onPress={() => submitRsvp(s)}
-                  >
-                    <Text style={[styles.rsvpBtnText, selected && styles.rsvpBtnTextSelected]}>
-                      {labels[s]}
-                    </Text>
-                  </TouchableOpacity>
-                )
-              })}
-            </View>
-
-            <View style={styles.rsvpCountRow}>
-              <Text style={styles.rsvpCountText}>
-                {rsvpCounts.yes} going · {rsvpCounts.no} out
+            <View style={styles.rsvpRow}>
+              <Text style={styles.rsvpText}>
+                {rsvpCounts.yes > 0 ? `${rsvpCounts.yes} confirmed` : 'No RSVPs yet'}
+                {rsvpCounts.no > 0 ? ` · ${rsvpCounts.no} out` : ''}
               </Text>
+            </View>
+            <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
+              <TouchableOpacity
+                style={[styles.rsvpBtn, myRsvp === 'yes' && styles.rsvpBtnGoing]}
+                onPress={() => submitRsvp('yes')}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.rsvpBtnText}>{myRsvp === 'yes' ? '✅ Going' : 'Going'}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.rsvpBtn, myRsvp === 'no' && styles.rsvpBtnOut]}
+                onPress={() => submitRsvp('no')}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.rsvpBtnText}>{myRsvp === 'no' ? "❌ Can't make it" : "Can't make it"}</Text>
+              </TouchableOpacity>
             </View>
           </View>
         ) : (
@@ -671,14 +669,13 @@ const styles = StyleSheet.create({
   heroDay: { fontSize: 15, fontWeight: '700', color: '#fff', marginBottom: 2 },
   heroTitle: { fontSize: 24, fontWeight: '900', color: '#fff', letterSpacing: -0.5, marginBottom: 4 },
   heroTime: { fontSize: 14, color: 'rgba(255,255,255,0.9)', fontWeight: '600', marginBottom: 4 },
-  heroLocation: { fontSize: 12, color: 'rgba(255,255,255,0.7)', marginBottom: 10 },
-  rsvpBtnRow: { flexDirection: 'row', gap: 8, marginBottom: 10 },
-  rsvpBtn: { flex: 1, borderRadius: 10, paddingVertical: 9, alignItems: 'center', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.5)' },
-  rsvpBtnSelected: { backgroundColor: '#fff', borderColor: '#fff' },
-  rsvpBtnText: { fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.9)' },
-  rsvpBtnTextSelected: { color: tc },
-  rsvpCountRow: { backgroundColor: 'rgba(0,0,0,0.15)', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 },
-  rsvpCountText: { fontSize: 12, color: 'rgba(255,255,255,0.85)', fontWeight: '600' },
+  heroLocation: { fontSize: 12, color: 'rgba(255,255,255,0.7)', marginBottom: 6 },
+  rsvpRow: { backgroundColor: 'rgba(0,0,0,0.15)', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 },
+  rsvpText: { fontSize: 12, color: 'rgba(255,255,255,0.85)', fontWeight: '600' },
+  rsvpBtn: { flex: 1, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 10, paddingVertical: 10, alignItems: 'center' },
+  rsvpBtnGoing: { backgroundColor: '#059669' },
+  rsvpBtnOut: { backgroundColor: '#DC2626' },
+  rsvpBtnText: { fontSize: 13, fontWeight: '700', color: '#fff' },
   emptyHero: { backgroundColor: '#fff', borderRadius: 18, padding: 24, marginBottom: 12, alignItems: 'center', borderWidth: 0.5, borderColor: '#eee' },
   emptyTitle: { fontSize: 16, fontWeight: '700', color: '#1a1a1a', marginBottom: 6 },
   emptySub: { fontSize: 13, color: '#6B7280', textAlign: 'center' },
