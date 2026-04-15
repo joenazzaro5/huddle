@@ -205,18 +205,13 @@ export default function PracticeScreen() {
       setPracticedDays(thisWeekDayIndices(streakData.dates))
       setPracticedToday(streakData.dates.includes(todayDateStr()))
       const rawCache = await AsyncStorage.getItem('huddle_active_plan')
-      let needsGenerate = true
       if (rawCache) {
-        const { plan: p, timestamp, focus: cachedFocus } = JSON.parse(rawCache)
-        const currentFocus = resolvedEvent?.focus ?? null
-        if (cachedFocus !== currentFocus) {
-          await AsyncStorage.removeItem('huddle_active_plan')
-        } else {
-          setPlan(p); setIsAiPlan(true)
-          needsGenerate = Date.now() - timestamp > 86400000
-        }
+        const { plan: p } = JSON.parse(rawCache)
+        setPlan(p)
+        setIsAiPlan(true)
+      } else {
+        autoGenerate(resolvedEvent, membership.team)
       }
-      if (needsGenerate) autoGenerate(resolvedEvent, membership.team)
     }
   }
 

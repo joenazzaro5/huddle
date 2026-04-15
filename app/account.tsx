@@ -139,11 +139,21 @@ export default function AccountScreen() {
             <TouchableOpacity
               style={styles.devResetBtn}
               onPress={async () => {
-                await AsyncStorage.removeItem('huddle_cached_plan')
-                Alert.alert('Plan cache cleared', 'The cached practice plan has been removed.')
+                await AsyncStorage.removeItem('huddle_active_plan')
+                await AsyncStorage.removeItem('huddle_streak_data')
+                Alert.alert('Plan cache cleared', 'Practice plan and streak data have been reset.')
               }}
             >
               <Text style={styles.devResetText}>Clear plan cache (dev)</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.devResetBtn}
+              onPress={async () => {
+                await AsyncStorage.removeItem('huddle_streak_data')
+                Alert.alert('Streak reset!', 'Practice streak has been cleared.')
+              }}
+            >
+              <Text style={styles.devResetText}>Reset streak (dev)</Text>
             </TouchableOpacity>
           </View>
         )}
