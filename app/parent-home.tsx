@@ -520,6 +520,34 @@ export default function ParentHomeScreen() {
           </View>
         )}
 
+        {/* Next Game card */}
+        {(() => {
+          const nextGame = [nextEvent, ...upcomingEvents].find(e => e?.type === 'game')
+          if (!nextGame) return null
+          return (
+            <TouchableOpacity
+              style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#F59E0B', padding: 0, overflow: 'hidden' }]}
+              onPress={() => router.push({ pathname: '/parent-team', params: { tab: 'games' } })}
+              activeOpacity={0.85}
+            >
+              <View style={{ backgroundColor: '#FFFBEB', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 }}>
+                <Text style={styles.cardLabel}>Next game ⚽</Text>
+              </View>
+              <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 14 }}>
+                <Text style={{ fontSize: 18, fontWeight: '800', color: '#111827', marginBottom: 4 }}>
+                  vs {nextGame.opponent ?? 'TBD'}
+                </Text>
+                <Text style={{ fontSize: 13, color: '#6B7280', marginBottom: 2 }}>{formatDay(nextGame.starts_at)}</Text>
+                <Text style={{ fontSize: 12, color: '#9CA3AF' }}>{formatTimeRange(nextGame.starts_at, nextGame.duration_min ?? 90)}</Text>
+                {nextGame.location && (
+                  <Text style={{ fontSize: 12, color: '#9CA3AF', marginTop: 2 }}>{nextGame.location}</Text>
+                )}
+                <Text style={[styles.viewLink, { color: '#F59E0B', marginTop: 8 }]}>View game details →</Text>
+              </View>
+            </TouchableOpacity>
+          )
+        })()}
+
         {/* The squad */}
         <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#1A56DB', padding: 0, overflow: 'hidden' }]}>
           <View style={{ backgroundColor: '#F0F4FF', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 }}>
