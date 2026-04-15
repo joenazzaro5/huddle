@@ -374,16 +374,6 @@ export default function PracticeScreen() {
       {activeTab === 'planner' ? (
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
-          {nextEvent && (
-            <View style={styles.contextCard}>
-              <Text style={styles.contextLabel}>Next practice</Text>
-              <Text style={styles.contextTitle}>{nextEvent.focus ? `Focus: ${nextEvent.focus}` : 'Next practice'}</Text>
-              <Text style={styles.contextSub}>
-                {new Date(nextEvent.starts_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} · {nextEvent.duration_min ?? 60} min · {nextEvent.location}
-              </Text>
-            </View>
-          )}
-
           {/* Current plan — always visible */}
           <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#4CAF50' }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
