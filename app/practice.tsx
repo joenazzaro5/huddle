@@ -122,6 +122,7 @@ const SOCCER_RULES = [
 export default function PracticeScreen() {
   const params = useLocalSearchParams()
   const [team, setTeam] = useState<any>(null)
+  const [allTeams, setAllTeams] = useState<any[]>([])
   const [nextEvent, setNextEvent] = useState<any>(null)
   const [prompt, setPrompt] = useState('')
   const [selectedFocuses, setSelectedFocuses] = useState<string[]>([])
@@ -163,6 +164,11 @@ export default function PracticeScreen() {
   const loadTeam = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
+    const { data: memberships } = await supabase
+      .from('team_members')
+      .select('team:teams(*), role')
+      .eq('user_id', user.id)
+    setAllTeams(memberships ?? [])
     const { data: membership } = await supabase
       .from('team_members')
       .select('team:teams(*)')
@@ -343,7 +349,7 @@ export default function PracticeScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <AppHeader teamColor={teamColor} teamName={team?.name} />
+      <AppHeader teamColor={teamColor} teamName={team?.name} allTeams={allTeams} onTeamSelect={() => {}} />
 
       <View style={styles.subTabs}>
         {(['planner', 'drills', 'rules'] as const).map(tab => {

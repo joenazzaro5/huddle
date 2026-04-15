@@ -102,6 +102,7 @@ export default function GamesScreen() {
   const router = useRouter()
   const params = useLocalSearchParams()
   const [team, setTeam] = useState<any>(null)
+  const [allTeams, setAllTeams] = useState<any[]>([])
   const [players, setPlayers] = useState<Player[]>([])
   const [events, setEvents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -147,6 +148,12 @@ export default function GamesScreen() {
   const loadData = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
+
+    const { data: memberships } = await supabase
+      .from('team_members')
+      .select('team:teams(*), role')
+      .eq('user_id', user.id)
+    setAllTeams(memberships ?? [])
 
     const { data: membership } = await supabase
       .from('team_members')
@@ -342,7 +349,12 @@ Slots: ${formationSlots}`
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <AppHeader teamColor={tc} teamName={team?.name} />
+      <AppHeader
+        teamColor={tc}
+        teamName={team?.name}
+        allTeams={allTeams}
+        onTeamSelect={() => {}}
+      />
 
       <View style={{ height: 44, backgroundColor: '#fff', borderBottomWidth: 0.5, borderBottomColor: '#eee' }}>
         <ScrollView horizontal={true} showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingLeft: 0 }}>

@@ -14,6 +14,7 @@ export default function AccountScreen() {
   const [user, setUser] = useState<any>(null)
   const [profile, setProfile] = useState<any>(null)
   const [team, setTeam] = useState<any>(null)
+  const [allTeams, setAllTeams] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => { loadData() }, [])
@@ -26,14 +27,14 @@ export default function AccountScreen() {
     const { data: profileData } = await supabase.from('users').select('*').eq('id', user.id).single()
     setProfile(profileData)
 
-    const { data: membership } = await supabase
+    const { data: memberships } = await supabase
       .from('team_members')
-      .select('team:teams(*)')
+      .select('team:teams(*), role')
       .eq('user_id', user.id)
-      .eq('role', 'coach')
-      .limit(1)
-      .single()
-    if (membership?.team) setTeam(membership.team)
+    setAllTeams(memberships ?? [])
+
+    const coachMembership = memberships?.find(m => m.role === 'coach') ?? memberships?.[0]
+    if (coachMembership?.team) setTeam(coachMembership.team)
     setLoading(false)
   }
 
@@ -58,7 +59,7 @@ export default function AccountScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <AppHeader teamColor={tc} teamName={team?.name} />
+      <AppHeader teamColor={tc} teamName={team?.name} allTeams={allTeams} onTeamSelect={() => {}} />
 
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.profileCard}>

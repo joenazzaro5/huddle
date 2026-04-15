@@ -58,6 +58,7 @@ export default function ParentTeamScreen() {
   const isCoach = currentRole === 'coach'
 
   const [team, setTeam] = useState<any>(null)
+  const [allTeams, setAllTeams] = useState<any[]>([])
   const [players, setPlayers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const params = useLocalSearchParams()
@@ -88,6 +89,7 @@ export default function ParentTeamScreen() {
       .select('team:teams(*), role')
       .eq('user_id', user.id)
 
+    setAllTeams(memberships ?? [])
     const membership = memberships?.find(m => m.role === 'parent') ?? memberships?.[0]
     if (!membership?.team) { setLoading(false); return }
 
@@ -129,7 +131,7 @@ export default function ParentTeamScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <AppHeader teamColor={tc} teamName={team?.name} />
+      <AppHeader teamColor={tc} teamName={team?.name} allTeams={allTeams} onTeamSelect={() => {}} />
 
       {/* Sub-tab bar */}
       <View style={{ height: 44, backgroundColor: '#fff', borderBottomWidth: 0.5, borderBottomColor: '#eee' }}>
