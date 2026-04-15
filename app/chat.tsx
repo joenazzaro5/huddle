@@ -345,7 +345,10 @@ export default function ChatScreen() {
         allTeams={allTeams}
         onTeamSelect={async (t) => {
           setMessages([])
-          if (pollInterval.current) clearInterval(pollInterval.current)
+          if (subscriptionRef.current) {
+            supabase.removeChannel(subscriptionRef.current)
+            subscriptionRef.current = null
+          }
           setActiveTeamId(t.id)
         }}
       />

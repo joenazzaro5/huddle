@@ -102,6 +102,7 @@ export default function HomeScreen() {
   const [toastVisible, setToastVisible] = useState(false)
   const toastAnim = useRef(new Animated.Value(-60)).current
   const mountedRef = useRef(false)
+  const lastMsgTeamRef = useRef<string | null>(null)
   const [practicedToday, setPracticedToday] = useState(false)
   const [practiceStreak, setPracticeStreak] = useState(0)
   const [practicedDays, setPracticedDays] = useState<number[]>([])
@@ -147,6 +148,7 @@ export default function HomeScreen() {
     }
     setTeam(teamData)
     setActiveTeamId(teamData.id)
+    lastMsgTeamRef.current = teamData.id
     setPlan(FALLBACK_PLAN)
     setIsAiPlan(false)
     setIsOfflinePlan(false)
@@ -223,7 +225,9 @@ export default function HomeScreen() {
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle()
-    setLastMessage(msgData?.team_id === teamData.id ? msgData : null)
+    if (lastMsgTeamRef.current === teamData.id) {
+      setLastMessage(msgData?.team_id === teamData.id ? msgData : null)
+    }
 
     const storedStreak = await AsyncStorage.getItem('huddle_streak_data')
     const streakData = storedStreak ? JSON.parse(storedStreak) : { count: 0, dates: [] }
