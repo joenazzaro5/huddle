@@ -106,6 +106,7 @@ export default function ChatScreen() {
       .from('messages')
       .select('*')
       .eq('team_id', teamId)
+      .neq('is_deleted', true)
       .order('created_at', { ascending: true })
       .limit(50)
 
@@ -240,16 +241,13 @@ export default function ChatScreen() {
   }
 
   const deleteMessage = useCallback(async (msgId: string) => {
-    // Mark in ref so INSERT subscription cannot re-add this id
     deletedIdsRef.current.add(msgId)
-    // Optimistic update: show as deleted immediately without waiting for Supabase
-    setMessages(prev => prev.map(m => m.id === msgId ? { ...m, body: '[deleted]', is_deleted: true } : m))
-    // Soft-delete in DB — subscription sees UPDATE (not DELETE) so it can't re-add the row
+    // Remove immediately from local state — no loadMessages after, optimistic update is final
+    setMessages(prev => prev.filter(m => m.id !== msgId))
     await supabase.from('messages').update({ body: '[deleted]', is_deleted: true }).eq('id', msgId)
   }, [])
 
   const handleLongPress = (msg: any) => {
-    if (msg.is_deleted) return
     Alert.alert(
       'Message options',
       undefined,
@@ -422,11 +420,7 @@ export default function ChatScreen() {
                   )}
                   <View style={[styles.bubbleWrap, isMe && styles.bubbleWrapMe]}>
                     {!isMe && <View style={styles.avatarSpacer} />}
-                    {msg.is_deleted ? (
-                      <View style={[styles.bubble, styles.bubbleOther]}>
-                        <Text style={{ fontSize: 13, color: '#aaa', fontStyle: 'italic' }}>Message deleted</Text>
-                      </View>
-                    ) : msg.body?.startsWith('POLL:') ? (() => {
+                    {msg.body?.startsWith('POLL:') ? (() => {
                       let question = 'Poll'
                       try { question = JSON.parse(msg.body.slice(5)).question ?? 'Poll' } catch {}
                       return (
