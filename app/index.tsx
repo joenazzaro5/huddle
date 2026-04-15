@@ -14,20 +14,20 @@ const ONBOARDING = {
   coach: [
     {
       emoji: '⚡',
-      title: 'Your season starts now',
-      desc: 'AI builds your practice plan. You just coach.',
+      title: 'Practice plans in seconds',
+      desc: 'AI builds a custom session for your team. You just coach.',
       nextLabel: 'Next: Game day',
     },
     {
       emoji: '📋',
       title: 'Game day, handled',
-      desc: 'Lineup, subs, and playing time. Built in one tap.',
+      desc: 'AI lineup, smart sub rotations, equal playing time. All from the sideline.',
       nextLabel: 'Next: Team communication',
     },
     {
-      emoji: '💬',
-      title: 'Keep everyone together',
-      desc: 'Chat, RSVPs, and snack duty. One place for all of it.',
+      emoji: '🏆',
+      title: 'Your whole team, connected',
+      desc: 'Real chat, RSVPs, snack duty. Everyone shows up ready.',
       nextLabel: null,
     },
   ],
@@ -35,19 +35,19 @@ const ONBOARDING = {
     {
       emoji: '📅',
       title: 'Always in the loop',
-      desc: 'Full schedule, reminders, and RSVP in one tap.',
+      desc: 'Schedule, reminders, RSVP in one tap. Never miss a thing.',
       nextLabel: 'Next: Stay connected',
     },
     {
       emoji: '💬',
       title: 'Never miss a beat',
-      desc: 'Chat with your team, stay on top of snack duty, and get updates the moment they happen.',
+      desc: 'Real team chat, snack duty, and updates the moment they happen.',
       nextLabel: 'Next: Build momentum',
     },
     {
       emoji: '🔥',
       title: 'Keep the momentum going',
-      desc: 'Drill of the day and practice streaks to improve every day.',
+      desc: 'AI drill of the day and practice streaks. Your kid improves every day.',
       nextLabel: null,
     },
   ],
@@ -167,7 +167,7 @@ export default function EntryScreen() {
             <Text style={styles.roleCardBigEmoji}>📋</Text>
             <View style={{ flex: 1 }}>
               <Text style={styles.roleCardTitle}>Coach</Text>
-              <Text style={styles.roleCardDesc}>Build AI practice plans, manage your roster, and keep your team organized.</Text>
+              <Text style={styles.roleCardDesc}>AI practice plans, smart lineups, and everything your team needs to have a great season.</Text>
             </View>
           </TouchableOpacity>
         </Animated.View>
@@ -181,7 +181,7 @@ export default function EntryScreen() {
             <Text style={styles.roleCardBigEmoji}>👨‍👧</Text>
             <View style={{ flex: 1 }}>
               <Text style={styles.roleCardTitle}>Parent / Guardian</Text>
-              <Text style={styles.roleCardDesc}>Stay in the loop with schedules, RSVPs, and team updates from your coach.</Text>
+              <Text style={styles.roleCardDesc}>Schedules, real-time updates, and a front-row seat to your child's progress.</Text>
             </View>
           </TouchableOpacity>
         </Animated.View>
