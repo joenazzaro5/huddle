@@ -39,15 +39,15 @@ export default function ChatScreen() {
   const [actionMsg, setActionMsg] = useState<any | null>(null)
   const scrollRef = useRef<ScrollView>(null)
   const teamIdRef = useRef<string | null>(null)
-  const latestMessageRef = useRef<string | null>(null)
-  const pollInterval = useRef<any>(null)
+  const subscriptionRef = useRef<any>(null)
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set())
   const deletedIdsRef = useRef<Set<string>>(new Set())
-  const messageCountRef = useRef<number>(0)
 
   useEffect(() => {
     loadData()
-    return () => { if (pollInterval.current) clearInterval(pollInterval.current) }
+    return () => {
+      if (subscriptionRef.current) supabase.removeChannel(subscriptionRef.current)
+    }
   }, [])
 
   useEffect(() => {
@@ -76,13 +76,14 @@ export default function ChatScreen() {
       setTeam(membership.team)
       teamIdRef.current = membership.team.id
       setMessages([])
-      latestMessageRef.current = null
-      messageCountRef.current = 0
       deletedIdsRef.current = new Set()
       setDeletedIds(new Set())
-      if (pollInterval.current) clearInterval(pollInterval.current)
+      if (subscriptionRef.current) {
+        supabase.removeChannel(subscriptionRef.current)
+        subscriptionRef.current = null
+      }
       await loadMessages(membership.team.id)
-      startPolling(membership.team.id)
+      subscribeToTeam(membership.team.id)
     }
   }
 
@@ -111,34 +112,23 @@ export default function ChatScreen() {
     if (teamIdRef.current !== teamId) return
     const filtered = (data ?? []).filter(m => !deletedIdsRef.current.has(m.id))
     setMessages(filtered)
-    messageCountRef.current = filtered.length
     if (filtered.length > 0) {
-      latestMessageRef.current = filtered[filtered.length - 1].id
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: false }), 100)
     }
   }
 
-  const startPolling = (teamId: string) => {
-    pollInterval.current = setInterval(async () => {
-      if (teamIdRef.current !== teamId) return
-      const { data } = await supabase
-        .from('messages')
-        .select('*')
-        .eq('team_id', teamId)
-        .order('created_at', { ascending: true })
-        .limit(50)
-
-      if (teamIdRef.current !== teamId) return
-      const filtered = (data ?? []).filter(m => !deletedIdsRef.current.has(m.id))
-      const latest = filtered.length > 0 ? filtered[filtered.length - 1].id : null
-      // Update if there's a new message OR count changed (handles deletions)
-      if (latest !== latestMessageRef.current || filtered.length !== messageCountRef.current) {
-        latestMessageRef.current = latest
-        messageCountRef.current = filtered.length
-        setMessages(filtered)
-        if (latest) setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100)
-      }
-    }, 3000)
+  const subscribeToTeam = (teamId: string) => {
+    const channel = supabase
+      .channel(`messages:team_id=eq.${teamId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'messages', filter: `team_id=eq.${teamId}` },
+        () => {
+          if (teamIdRef.current === teamId) loadMessages(teamId)
+        }
+      )
+      .subscribe()
+    subscriptionRef.current = channel
   }
 
   const sendMessage = async () => {
@@ -227,12 +217,17 @@ export default function ChatScreen() {
   }
 
   const deleteMessage = useCallback(async (msgId: string) => {
+    if (!teamIdRef.current) return
+    const teamId = teamIdRef.current
+    // Add to deleted set BEFORE the Supabase delete so the subscription
+    // callback cannot re-add this message if it fires during the delete
     deletedIdsRef.current.add(msgId)
     setDeletedIds(prev => new Set([...prev, msgId]))
+    // Delete from Supabase first
+    await supabase.from('messages').delete().eq('id', msgId).eq('team_id', teamId)
+    // Then flush local state and reload fresh data from DB
     setMessages(prev => prev.filter(m => m.id !== msgId))
-    if (teamIdRef.current) {
-      await supabase.from('messages').delete().eq('id', msgId).eq('team_id', teamIdRef.current)
-    }
+    if (teamIdRef.current === teamId) await loadMessages(teamId)
   }, [])
 
   const handleLongPress = (msg: any) => {
