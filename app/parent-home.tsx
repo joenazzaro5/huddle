@@ -280,9 +280,17 @@ export default function ParentHomeScreen() {
     setRsvpCounts({ yes: yes ?? 0, no: no ?? 0, maybe: maybe ?? 0 })
   }
 
-  const claimSnack = (index: number) => {
-    const slot = snacks[index]
-    if (!slot || slot.claimed) return
+  const claimSnack = async (index: number) => {
+    const snackKey = `huddle_snacks_${team?.id}`
+    // Pre-check AsyncStorage to get the freshest state
+    const stored = await AsyncStorage.getItem(snackKey)
+    const freshSnacks = stored ? JSON.parse(stored) : snacks
+    const slot = freshSnacks[index]
+    if (!slot || slot.claimed) {
+      // Sync local state if it was stale
+      if (stored) setSnacks(freshSnacks)
+      return
+    }
     const claimerName = currentUser?.email?.split('@')[0] ?? 'Parent'
     Alert.alert(
       'Claim snack duty',
@@ -292,9 +300,9 @@ export default function ParentHomeScreen() {
         {
           text: 'Claim it! 🙌',
           onPress: async () => {
-            const updated = snacks.map((s, i) => i === index ? { ...s, name: claimerName, claimed: true } : s)
+            const updated = freshSnacks.map((s: any, i: number) => i === index ? { ...s, name: claimerName, claimed: true } : s)
             setSnacks(updated)
-            await AsyncStorage.setItem(`huddle_snacks_${team?.id}`, JSON.stringify(updated))
+            await AsyncStorage.setItem(snackKey, JSON.stringify(updated))
           },
         },
       ]
@@ -654,14 +662,16 @@ export default function ParentHomeScreen() {
                   style={[styles.snackRow, i < 1 && styles.snackBorder]}
                   onPress={() => !item.claimed && claimSnack(originalIndex)}
                   activeOpacity={item.claimed ? 1 : 0.7}
+                  disabled={item.claimed}
                 >
                   <View style={{ flex: 1 }}>
                     <Text style={styles.snackDate}>{item.date} · {item.type}</Text>
                     <Text style={[styles.snackName, { color: item.claimed ? '#1a1a1a' : '#888' }]}>
-                      {item.claimed ? item.name : 'Tap to claim'}
+                      {item.claimed ? `${item.name} ✓` : 'Tap to claim'}
                     </Text>
                   </View>
                   {!item.claimed && <Text style={{ fontSize: 12, color: '#F59E0B', fontWeight: '700' }}>Claim →</Text>}
+                  {item.claimed && <Text style={{ fontSize: 11, color: '#22C55E', fontWeight: '700' }}>Claimed ✓</Text>}
                 </TouchableOpacity>
               )
             })}
