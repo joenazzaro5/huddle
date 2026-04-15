@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, Linking } from 'react-native'
+import { useEffect, useState, useRef } from 'react'
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, Linking, Animated } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { AppHeader } from '../lib/header'
@@ -39,6 +39,8 @@ export default function ParentHomeScreen() {
   const [practicedDays, setPracticedDays] = useState<number[]>([])
   const [watchedToday, setWatchedToday] = useState(false)
   const [practicedToday, setPracticedToday] = useState(false)
+  const [toastVisible, setToastVisible] = useState(false)
+  const toastAnim = useRef(new Animated.Value(-60)).current
   const [snacks] = useState(() => {
     const now = new Date()
     return SEASON_SCHEDULE
@@ -142,13 +144,38 @@ export default function ParentHomeScreen() {
     setLastMessage(msgData)
   }
 
+  const showRsvpToast = () => {
+    setToastVisible(true)
+    Animated.timing(toastAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start(() => {
+      setTimeout(() => {
+        Animated.timing(toastAnim, { toValue: -60, duration: 300, useNativeDriver: true }).start(() => {
+          setToastVisible(false)
+        })
+      }, 2000)
+    })
+  }
+
   const submitRsvp = async (status: 'yes' | 'no' | 'maybe') => {
     if (!currentUser || !nextEvent) return
     setMyRsvp(status)
     await supabase.from('rsvps').upsert(
       { user_id: currentUser.id, event_id: nextEvent.id, status },
-      { onConflict: 'user_id,event_id' }
+      { onConflict: 'event_id,user_id' }
     )
+    showRsvpToast()
+    if (status === 'yes') {
+      const displayName = currentUser.user_metadata?.display_name ?? currentUser.email?.split('@')[0] ?? 'Parent'
+      const eventName = nextEvent.type === 'game'
+        ? `game vs ${nextEvent.opponent ?? 'opponent'}`
+        : 'practice'
+      const dateLabel = new Date(nextEvent.starts_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      await supabase.from('messages').insert({
+        team_id: team.id,
+        user_id: currentUser.id,
+        body: `✅ ${displayName} is going to ${eventName} on ${dateLabel}!`,
+        type: 'user',
+      })
+    }
     // Refresh counts
     const [{ count: yes }, { count: no }, { count: maybe }] = await Promise.all([
       supabase.from('rsvps').select('*', { count: 'exact', head: true }).eq('event_id', nextEvent.id).eq('status', 'yes'),
@@ -469,6 +496,16 @@ export default function ParentHomeScreen() {
         </TouchableOpacity>
 
       </ScrollView>
+
+      {toastVisible && (
+        <Animated.View style={{
+          position: 'absolute', top: 0, left: 0, right: 0, zIndex: 100,
+          transform: [{ translateY: toastAnim }],
+          backgroundColor: '#22C55E', paddingVertical: 14, alignItems: 'center',
+        }}>
+          <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>RSVP saved!</Text>
+        </Animated.View>
+      )}
     </SafeAreaView>
   )
 }
