@@ -118,6 +118,7 @@ export default function GamesScreen() {
   const [gameTime, setGameTime] = useState(0)
   const [period, setPeriod] = useState(1)
   const [nextGame, setNextGame] = useState<any>(null)
+  const [currentUser, setCurrentUser] = useState<any>(null)
   const [selectedPlayer, setSelectedPlayer] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<'field' | 'list'>('field')
   const timerRef = useRef<any>(null)
@@ -149,6 +150,7 @@ export default function GamesScreen() {
   const loadData = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
+    setCurrentUser(user)
 
     const { data: memberships } = await supabase
       .from('team_members')
@@ -508,17 +510,23 @@ Slots: ${formationSlots}`
                     <TouchableOpacity
                       style={styles.snackClaimBtn}
                       onPress={async () => {
-                        const { data: { user } } = await supabase.auth.getUser()
-                        const claimerName = user?.email?.split('@')[0] ?? 'Coach'
+                        const snackKey = `huddle_snacks_${team?.id}`
+                        const stored = await AsyncStorage.getItem(snackKey)
+                        const freshSnacks = stored ? JSON.parse(stored) : snackData
+                        if (freshSnacks[i]?.claimed) {
+                          if (stored) setSnackData(freshSnacks)
+                          return
+                        }
+                        const claimerName = currentUser?.email?.split('@')[0] ?? 'Coach'
                         Alert.alert(
                           'Sign up for snacks',
                           `Claim snack duty for ${item.date} as ${claimerName}?`,
                           [
                             { text: 'Cancel', style: 'cancel' },
                             { text: 'I got it! 🙌', onPress: async () => {
-                                const updated = snackData.map((s, j) => j === i ? { ...s, claimed: true, name: claimerName } : s)
+                                const updated = freshSnacks.map((s: any, j: number) => j === i ? { ...s, claimed: true, name: claimerName } : s)
                                 setSnackData(updated)
-                                if (team?.id) await AsyncStorage.setItem(`huddle_snacks_${team.id}`, JSON.stringify(updated))
+                                if (snackKey) await AsyncStorage.setItem(snackKey, JSON.stringify(updated))
                               }
                             },
                           ]
