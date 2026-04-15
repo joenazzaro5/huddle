@@ -246,27 +246,22 @@ export default function ParentHomeScreen() {
   const submitRsvp = async (status: 'yes' | 'no') => {
     if (!currentUser || !nextEvent) return
     const prevRsvp = myRsvp
-    // Optimistic update first
+    // Immediate optimistic update — always sticks
     setMyRsvp(status)
     setRsvpCounts(prev => {
-      const updated = { ...prev }
-      if (prevRsvp === 'yes' || prevRsvp === 'no') updated[prevRsvp] = Math.max(0, updated[prevRsvp] - 1)
-      updated[status] = updated[status] + 1
-      return updated
+      const next = { ...prev }
+      if (prevRsvp === 'yes' || prevRsvp === 'no') next[prevRsvp] = Math.max(0, next[prevRsvp] - 1)
+      next[status] = next[status] + 1
+      return next
     })
     showRsvpToast()
-    // Only persist + re-sync for real Supabase events (mock IDs start with 'ss-')
-    if (nextEvent.id?.startsWith('ss-')) return
+    // Only persist to Supabase for real UUID events (mock IDs start with 'ss-' or 'mock-')
+    const eventId = nextEvent.id
+    if (!eventId || /^(ss-|mock-)/.test(eventId)) return
     await supabase.from('rsvps').upsert(
-      { user_id: currentUser.id, event_id: nextEvent.id, status },
+      { user_id: currentUser.id, event_id: eventId, status },
       { onConflict: 'event_id,user_id' }
     )
-    const [{ count: yes }, { count: no }, { count: maybe }] = await Promise.all([
-      supabase.from('rsvps').select('*', { count: 'exact', head: true }).eq('event_id', nextEvent.id).eq('status', 'yes'),
-      supabase.from('rsvps').select('*', { count: 'exact', head: true }).eq('event_id', nextEvent.id).eq('status', 'no'),
-      supabase.from('rsvps').select('*', { count: 'exact', head: true }).eq('event_id', nextEvent.id).eq('status', 'maybe'),
-    ])
-    setRsvpCounts({ yes: yes ?? 0, no: no ?? 0, maybe: maybe ?? 0 })
   }
 
   const claimSnack = async (index: number) => {
