@@ -231,7 +231,7 @@ export default function HomeScreen() {
     setPracticedDays(thisWeekDayIndices(streakData.dates))
     setPracticedToday(streakData.dates.includes(todayDateStr()))
 
-    const storedSnacks = await AsyncStorage.getItem(`huddle_snack_${teamData.id}`)
+    const storedSnacks = await AsyncStorage.getItem(`huddle_snacks_${teamData.id}`)
     if (storedSnacks) setSnacks(JSON.parse(storedSnacks))
     else setSnacks(getUpcomingSnackSlots())
 
@@ -380,7 +380,7 @@ export default function HomeScreen() {
           onPress: async () => {
             const updated = snacks.map((s, i) => i === index ? { ...s, name: claimerName, claimed: true } : s)
             setSnacks(updated)
-            await AsyncStorage.setItem(`huddle_snack_${team?.id}`, JSON.stringify(updated))
+            await AsyncStorage.setItem(`huddle_snacks_${team?.id}`, JSON.stringify(updated))
           },
         },
       ]

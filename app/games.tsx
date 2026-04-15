@@ -205,7 +205,7 @@ export default function GamesScreen() {
         .order('starts_at', { ascending: true })
       setEvents(allEvents ?? [])
 
-      const storedSnacks = await AsyncStorage.getItem(`huddle_snack_${membership.team.id}`)
+      const storedSnacks = await AsyncStorage.getItem(`huddle_snacks_${membership.team.id}`)
       if (storedSnacks) setSnackData(JSON.parse(storedSnacks))
     }
     setLoading(false)
@@ -509,7 +509,7 @@ Slots: ${formationSlots}`
                       style={styles.snackClaimBtn}
                       onPress={async () => {
                         const { data: { user } } = await supabase.auth.getUser()
-                        const claimerName = user?.user_metadata?.display_name ?? user?.email?.split('@')[0] ?? 'Coach'
+                        const claimerName = user?.email?.split('@')[0] ?? 'Coach'
                         Alert.alert(
                           'Sign up for snacks',
                           `Claim snack duty for ${item.date} as ${claimerName}?`,
@@ -518,7 +518,7 @@ Slots: ${formationSlots}`
                             { text: 'I got it! 🙌', onPress: async () => {
                                 const updated = snackData.map((s, j) => j === i ? { ...s, claimed: true, name: claimerName } : s)
                                 setSnackData(updated)
-                                if (team?.id) await AsyncStorage.setItem(`huddle_snack_${team.id}`, JSON.stringify(updated))
+                                if (team?.id) await AsyncStorage.setItem(`huddle_snacks_${team.id}`, JSON.stringify(updated))
                               }
                             },
                           ]

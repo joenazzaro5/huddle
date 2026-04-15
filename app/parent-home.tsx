@@ -125,7 +125,7 @@ export default function ParentHomeScreen() {
     setPracticedDays(thisWeekDayIndices(streakData.dates))
     setPracticedToday(streakData.dates.includes(todayDateStr()))
 
-    const snackKey = `huddle_snack_${teamData.id}`
+    const snackKey = `huddle_snacks_${teamData.id}`
     const storedSnacks = await AsyncStorage.getItem(snackKey)
     if (storedSnacks) setSnacks(JSON.parse(storedSnacks))
     else setSnacks(SEASON_SCHEDULE
@@ -261,7 +261,7 @@ export default function ParentHomeScreen() {
           onPress: async () => {
             const updated = snacks.map((s, i) => i === index ? { ...s, name: claimerName, claimed: true } : s)
             setSnacks(updated)
-            await AsyncStorage.setItem(`huddle_snack_${team?.id}`, JSON.stringify(updated))
+            await AsyncStorage.setItem(`huddle_snacks_${team?.id}`, JSON.stringify(updated))
           },
         },
       ]
@@ -314,7 +314,7 @@ export default function ParentHomeScreen() {
           setActiveTeamId(t.id)
           setTeam(t)
           setLastMessage(null)
-          const snackKey = `huddle_snack_${t.id}`
+          const snackKey = `huddle_snacks_${t.id}`
           const stored = await AsyncStorage.getItem(snackKey)
           if (stored) setSnacks(JSON.parse(stored))
           else setSnacks(SEASON_SCHEDULE
