@@ -258,19 +258,6 @@ export default function ParentHomeScreen() {
       { user_id: currentUser.id, event_id: nextEvent.id, status },
       { onConflict: 'event_id,user_id' }
     )
-    if (status === 'yes') {
-      const displayName = currentUser.user_metadata?.display_name ?? currentUser.email?.split('@')[0] ?? 'Parent'
-      const eventName = nextEvent.type === 'game'
-        ? `game vs ${nextEvent.opponent ?? 'opponent'}`
-        : 'practice'
-      const dateLabel = new Date(nextEvent.starts_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-      await supabase.from('messages').insert({
-        team_id: team.id,
-        user_id: currentUser.id,
-        body: `✅ ${displayName} is going to ${eventName} on ${dateLabel}!`,
-        type: 'user',
-      })
-    }
     // Refresh counts
     const [{ count: yes }, { count: no }, { count: maybe }] = await Promise.all([
       supabase.from('rsvps').select('*', { count: 'exact', head: true }).eq('event_id', nextEvent.id).eq('status', 'yes'),

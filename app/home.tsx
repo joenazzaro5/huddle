@@ -363,16 +363,6 @@ export default function HomeScreen() {
       { event_id: nextEvent.id, user_id: currentUser.id, status },
       { onConflict: 'event_id,user_id' }
     )
-    const eventLabel = nextEvent.type === 'practice'
-      ? 'Practice'
-      : `Game vs ${nextEvent.opponent ?? 'opponent'}`
-    const dateLabel = new Date(nextEvent.starts_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-    await supabase.from('messages').insert({
-      team_id: team.id,
-      user_id: currentUser.id,
-      body: `✅ Coach is ${status === 'yes' ? 'Going' : 'Not going'} to ${eventLabel} on ${dateLabel}!`,
-      type: 'user',
-    })
     showToast()
   }
 
