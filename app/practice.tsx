@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Image, Modal, Alert } from 'react-native'
 import * as WebBrowser from 'expo-web-browser'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useLocalSearchParams } from 'expo-router'
+import { useLocalSearchParams, useFocusEffect } from 'expo-router'
 import { supabase } from '../lib/supabase'
 import { generatePracticePlan } from '../lib/ai'
 import { AppHeader } from '../lib/header'
@@ -153,11 +153,13 @@ export default function PracticeScreen() {
     return base ? `${base}. Previous feedback: ${feedbackText}` : `Previous feedback: ${feedbackText}`
   }
 
-  useEffect(() => {
-    if (params.tab === 'planner' || params.tab === 'drills' || params.tab === 'rules') {
-      setActiveTab(params.tab as 'planner' | 'drills' | 'rules')
-    }
-  }, [])
+  useFocusEffect(
+    useCallback(() => {
+      if (params.tab === 'planner' || params.tab === 'drills' || params.tab === 'rules') {
+        setActiveTab(params.tab as 'planner' | 'drills' | 'rules')
+      }
+    }, [params.tab])
+  )
 
   useEffect(() => { loadTeam() }, [])
 
