@@ -210,6 +210,26 @@ export default function ChatScreen() {
     setActionMsg(null)
   }
 
+  const deleteMessage = async (msgId: string) => {
+    await supabase.from('messages').delete().eq('id', msgId)
+    setMessages(prev => prev.filter(m => m.id !== msgId))
+  }
+
+  const handleLongPress = (msg: any) => {
+    Alert.alert(
+      'Message options',
+      undefined,
+      [
+        {
+          text: 'Delete message',
+          style: 'destructive',
+          onPress: () => deleteMessage(msg.id),
+        },
+        { text: 'Cancel', style: 'cancel' },
+      ]
+    )
+  }
+
   const parseReply = (body: string): { quote: string; text: string } | null => {
     if (!body?.startsWith('> ')) return null
     const newline = body.indexOf('\n')
@@ -352,7 +372,7 @@ export default function ChatScreen() {
               const displayBody = replyData ? replyData.text : msg.body
               const msgReactions = reactions[msg.id]
               return (
-                <TouchableOpacity key={msg.id} style={[styles.msgWrap, isMe && styles.msgWrapMe]} onLongPress={() => setActionMsg(msg)} activeOpacity={1} delayLongPress={350}>
+                <TouchableOpacity key={msg.id} style={[styles.msgWrap, isMe && styles.msgWrapMe]} onLongPress={() => handleLongPress(msg)} activeOpacity={1} delayLongPress={350}>
                   {!isMe && (
                     <View style={styles.senderRow}>
                       <View style={[styles.avatar, { backgroundColor: avatarColor(msg.user_id ?? 'x') }]}>
