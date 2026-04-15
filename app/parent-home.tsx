@@ -23,7 +23,7 @@ const PHASE_COLORS = ['#4CAF50', '#1A56DB', '#FF6B35']
 
 export default function ParentHomeScreen() {
   const router = useRouter()
-  const { setActiveTeamId } = useRole()
+  const { setActiveTeamId, activeTeamId } = useRole()
   const [team, setTeam] = useState<any>(null)
   const [allTeams, setAllTeams] = useState<any[]>([])
   const [nextEvent, setNextEvent] = useState<any>(null)
@@ -133,7 +133,7 @@ export default function ParentHomeScreen() {
       }
     }
 
-    // Last chat message
+    // Last chat message — only show if it belongs to this team
     const { data: msgData } = await supabase
       .from('messages')
       .select('*, sender:users(display_name, email)')
@@ -141,7 +141,7 @@ export default function ParentHomeScreen() {
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle()
-    setLastMessage(msgData)
+    setLastMessage(msgData?.team_id === teamId ? msgData : null)
   }
 
   const showRsvpToast = () => {
@@ -230,6 +230,7 @@ export default function ParentHomeScreen() {
         onTeamSelect={(t) => {
           setActiveTeamId(t.id)
           setTeam(t)
+          setLastMessage(null)
           if (currentUser) loadTeamData(t.id, currentUser.id)
         }}
       />
