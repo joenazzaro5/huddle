@@ -214,7 +214,9 @@ export default function HomeScreen() {
       )
       const result = await Promise.race([
         generatePracticePlan(
-          `${event?.focus ?? 'Passing and Movement'} focus, ${event?.duration_min ?? 60} minutes`,
+          event?.focus
+            ? `${event.focus} focus, ${event?.duration_min ?? 60} minutes`
+            : `${event?.duration_min ?? 60} minute practice session`,
           teamData?.name, teamData?.age_group
         ),
         timeoutPromise
@@ -441,7 +443,7 @@ export default function HomeScreen() {
           </View>
           {/* Body */}
           <View style={styles.practicePlanBody}>
-            <Text style={styles.cardTitle}>{plan?.title ?? "Building your plan..."}</Text>
+            <Text style={styles.cardTitle}>{isAiPlan ? plan?.title : (nextEvent?.focus ? `${nextEvent.focus} Focus` : plan?.title ?? 'Building your plan...')}</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
               <View style={{
                 paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10,
@@ -564,7 +566,7 @@ export default function HomeScreen() {
                         {isGame ? `Game vs ${event.opponent}${event.home != null ? (event.home ? ' · Home' : ' · Away') : ''}`
                           : isPicDay ? '📸 Picture Day'
                           : isParty ? `🎉 ${event.title ?? 'End of Season Party'}`
-                          : `Practice · ${event.focus ?? 'General skills'}`}
+                          : `Practice${event.focus ? ` · ${event.focus}` : ''}`}
                       </Text>
                       <Text style={styles.eventSub}>{formatDay(event.starts_at)}</Text>
                       <Text style={styles.eventTime}>{formatTimeRange(event.starts_at, event.duration_min ?? 60)}</Text>

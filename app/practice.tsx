@@ -193,7 +193,7 @@ export default function PracticeScreen() {
   const autoGenerate = async (event: any, teamData: any) => {
     setPlanLoading(true)
     setIsOfflinePlan(false)
-    const focus = appendFeedback(event?.focus ?? 'general skills')
+    const focus = appendFeedback(event?.focus ?? '')
     try {
       const timeoutPromise = new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error('timeout')), 8000)
@@ -347,7 +347,7 @@ export default function PracticeScreen() {
           {nextEvent && (
             <View style={styles.contextCard}>
               <Text style={styles.contextLabel}>Next practice</Text>
-              <Text style={styles.contextTitle}>Focus: {nextEvent.focus ?? 'General skills'}</Text>
+              <Text style={styles.contextTitle}>{nextEvent.focus ? `Focus: ${nextEvent.focus}` : 'Next practice'}</Text>
               <Text style={styles.contextSub}>
                 {new Date(nextEvent.starts_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} · {nextEvent.duration_min ?? 60} min · {nextEvent.location}
               </Text>
