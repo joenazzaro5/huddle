@@ -90,7 +90,7 @@ export default function HomeScreen() {
   const [lastMessage, setLastMessage] = useState<any>(null)
   const [allTeams, setAllTeams] = useState<any[]>([])
   const [heroSwitching, setHeroSwitching] = useState(false)
-  const [snacks] = useState(() => getUpcomingSnackSlots())
+  const [snacks, setSnacks] = useState(() => getUpcomingSnackSlots())
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [myRsvp, setMyRsvp] = useState<'yes' | 'no' | null>(null)
   const [toastVisible, setToastVisible] = useState(false)
@@ -225,6 +225,9 @@ export default function HomeScreen() {
     setPracticedDays(thisWeekDayIndices(streakData.dates))
     setPracticedToday(streakData.dates.includes(todayDateStr()))
 
+    const storedSnacks = await AsyncStorage.getItem('huddle_snack_data')
+    if (storedSnacks) setSnacks(JSON.parse(storedSnacks))
+
     setLoading(false)
   }
 
@@ -354,6 +357,21 @@ export default function HomeScreen() {
       type: 'user',
     })
     showToast()
+  }
+
+  const claimSnack = (index: number) => {
+    Alert.prompt(
+      'Claim snack duty',
+      'Enter your name',
+      async (name) => {
+        if (!name?.trim()) return
+        const updated = snacks.map((s, i) => i === index ? { ...s, name: name.trim(), claimed: true } : s)
+        setSnacks(updated)
+        await AsyncStorage.setItem('huddle_snack_data', JSON.stringify(updated))
+      },
+      'plain-text',
+      currentUser?.email?.split('@')[0] ?? ''
+    )
   }
 
   const drillOfDay = DRILLS_OF_DAY[new Date().getDay() % DRILLS_OF_DAY.length]
@@ -695,16 +713,25 @@ export default function HomeScreen() {
             <Text style={styles.cardLabel}>🍊 Snack schedule</Text>
           </View>
           <View style={styles.cardBody}>
-            {snacks.filter(s => !s.claimed).slice(0, 2).map((item, i) => (
-              <View key={i} style={[styles.snackRow, i < 1 && styles.snackBorder]}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.snackDate}>{item.date} · {item.type}</Text>
-                  <Text style={[styles.snackName, { color: item.claimed ? '#1a1a1a' : '#888' }]}>
-                    {item.claimed ? item.name : 'Open'}
-                  </Text>
-                </View>
-              </View>
-            ))}
+            {snacks.slice(0, 2).map((item, i) => {
+              const originalIndex = snacks.indexOf(item)
+              return (
+                <TouchableOpacity
+                  key={i}
+                  style={[styles.snackRow, i < 1 && styles.snackBorder]}
+                  onPress={() => !item.claimed && claimSnack(originalIndex)}
+                  activeOpacity={item.claimed ? 1 : 0.7}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.snackDate}>{item.date} · {item.type}</Text>
+                    <Text style={[styles.snackName, { color: item.claimed ? '#1a1a1a' : '#888' }]}>
+                      {item.claimed ? item.name : 'Tap to claim'}
+                    </Text>
+                  </View>
+                  {!item.claimed && <Text style={{ fontSize: 12, color: '#F59E0B', fontWeight: '700' }}>Claim →</Text>}
+                </TouchableOpacity>
+              )
+            })}
             <Text style={[styles.viewLink, { color: tc }]}>Snack me! 🍊 →</Text>
           </View>
         </TouchableOpacity>
