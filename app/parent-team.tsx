@@ -16,7 +16,6 @@ const STANDINGS = [
   { team: 'Mill Valley SC', w: 3, l: 2, d: 0, pts: 9  },
   { team: 'Novato United',  w: 2, l: 2, d: 2, pts: 8  },
   { team: 'San Anselmo FC', w: 1, l: 4, d: 1, pts: 4  },
-  { team: 'Fairfax FC',     w: 0, l: 5, d: 1, pts: 1  },
 ]
 
 const TIGERS_ROSTER = [
@@ -312,8 +311,8 @@ export default function ParentTeamScreen() {
           <Text style={[styles.cardLabel, { marginBottom: 8, marginLeft: 2 }]}>Season stats</Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 12 }}>
             {[
-              { label: 'Goals',        value: '12',  color: tc        },
-              { label: 'Against',      value: '6',   color: '#EF4444' },
+              { label: 'Goals',        value: '8',   color: tc        },
+              { label: 'Against',      value: '4',   color: '#EF4444' },
               { label: 'Clean sheets', value: '2',   color: '#10B981' },
               { label: 'Win rate',     value: '67%', color: '#F59E0B' },
             ].map((stat, i) => (
@@ -327,12 +326,12 @@ export default function ParentTeamScreen() {
           <View style={[styles.card, { paddingVertical: 12 }]}>
             <Text style={[styles.cardLabel, { marginBottom: 10 }]}>Recent results</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              {['W', 'W', 'L', 'W', 'W'].map((r, i) => (
+              {['W', 'W', 'L', 'W'].map((r, i) => (
                 <View key={i} style={[styles.resultDot, { backgroundColor: r === 'W' ? '#10B981' : '#EF4444' }]}>
                   <Text style={styles.resultDotText}>{r}</Text>
                 </View>
               ))}
-              <Text style={{ fontSize: 12, color: '#aaa', marginLeft: 4 }}>4W · 1L this season</Text>
+              <Text style={{ fontSize: 12, color: '#aaa', marginLeft: 4 }}>3W · 1L last 4</Text>
             </View>
           </View>
 
