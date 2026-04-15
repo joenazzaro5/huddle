@@ -374,7 +374,7 @@ export default function PracticeScreen() {
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.cardLabel}>Current plan</Text>
-                {!planLoading && <Text style={[styles.planTitle, { marginBottom: 0 }]}>{plan.title}</Text>}
+                {!planLoading && <Text style={[styles.planTitle, { marginBottom: 0 }]}>{plan?.title ?? "Generating..."}</Text>}
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
                   {planLoading ? (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
