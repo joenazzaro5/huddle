@@ -9,6 +9,12 @@ import { generatePracticePlan } from '../lib/ai'
 import { getScheduleEvents, SEASON_SCHEDULE } from '../lib/season'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
+const STANDINGS = [
+  { team: 'Marin Cheetahs', w: 4, l: 1, d: 1, pts: 13, isUs: true },
+  { team: 'Tiburon FC',     w: 3, l: 2, d: 1, pts: 10 },
+  { team: 'Mill Valley SC', w: 3, l: 2, d: 0, pts: 9  },
+]
+
 const FALLBACK_PLAN = {
   title: 'Passing & Movement',
   plan: [
@@ -663,7 +669,30 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* 5. Next game card */}
+        {/* 5. Standings */}
+        <TouchableOpacity
+          style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#F59E0B', padding: 0, overflow: 'hidden' }]}
+          onPress={() => router.push({ pathname: '/games', params: { tab: 'standings' } })}
+          activeOpacity={0.85}
+        >
+          <View style={{ backgroundColor: '#FFFBEB', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 }}>
+            <Text style={styles.cardLabel}>Standings 🏆</Text>
+          </View>
+          <View style={styles.cardBody}>
+            {STANDINGS.map((row, i) => (
+              <View key={i} style={[{ flexDirection: 'row', alignItems: 'center', paddingVertical: 7 }, i < STANDINGS.length - 1 && { borderBottomWidth: 0.5, borderBottomColor: '#f5f5f5' }]}>
+                <Text style={{ flex: 1, fontSize: 13, fontWeight: row.isUs ? '800' : '500', color: row.isUs ? tc : '#374151' }} numberOfLines={1}>
+                  {row.isUs ? '⭐ ' : ''}{row.team}
+                </Text>
+                <Text style={{ fontSize: 12, color: '#888', marginRight: 12 }}>{row.w}W · {row.l}L</Text>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: tc, minWidth: 24, textAlign: 'right' }}>{row.pts}</Text>
+              </View>
+            ))}
+            <Text style={[styles.viewLink, { color: tc }]}>View standings →</Text>
+          </View>
+        </TouchableOpacity>
+
+        {/* 6. Next game card */}
         {nextGame && (
           <TouchableOpacity
             style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#F59E0B', padding: 0, overflow: 'hidden' }]}
