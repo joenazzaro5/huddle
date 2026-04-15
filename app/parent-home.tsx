@@ -10,6 +10,24 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 
 const tc = '#1A56DB'
 
+function todayDateStr() {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+function thisWeekDayIndices(dates: string[]): number[] {
+  const now = new Date()
+  const dow = now.getDay()
+  const monday = new Date(now)
+  monday.setDate(now.getDate() - (dow === 0 ? 6 : dow - 1))
+  monday.setHours(0, 0, 0, 0)
+  const nextMonday = new Date(monday)
+  nextMonday.setDate(monday.getDate() + 7)
+  return dates
+    .filter(d => { const dt = new Date(d + 'T00:00:00'); return dt >= monday && dt < nextMonday })
+    .map(d => { const day = new Date(d + 'T00:00:00').getDay(); return (day + 6) % 7 })
+}
+
 const FALLBACK_PLAN = {
   title: 'Passing & Movement',
   plan: [
@@ -73,8 +91,11 @@ export default function ParentHomeScreen() {
     setTeam(teamData)
     setActiveTeamId(teamData.id)
     await loadTeamData(teamData.id, user.id)
-    const storedStreak = await AsyncStorage.getItem('huddle_practice_streak')
-    if (storedStreak) setPracticeStreak(parseInt(storedStreak, 10))
+    const storedStreak = await AsyncStorage.getItem('huddle_streak_data')
+    const streakData = storedStreak ? JSON.parse(storedStreak) : { count: 0, dates: [] }
+    setPracticeStreak(streakData.count)
+    setPracticedDays(thisWeekDayIndices(streakData.dates))
+    setPracticedToday(streakData.dates.includes(todayDateStr()))
     setLoading(false)
   }
 
@@ -363,14 +384,17 @@ export default function ParentHomeScreen() {
             <TouchableOpacity
               style={{ backgroundColor: practicedToday ? '#F0FDF4' : '#F59E0B', borderRadius: 10, paddingVertical: 11, alignItems: 'center', borderWidth: practicedToday ? 1 : 0, borderColor: '#D97706' }}
               onPress={async () => {
-                if (!practicedToday) {
-                  setPracticedToday(true)
-                  const newStreak = practiceStreak + 1
-                  setPracticeStreak(newStreak)
-                  const todayIdx = (new Date().getDay() + 6) % 7
-                  setPracticedDays(prev => prev.includes(todayIdx) ? prev : [...prev, todayIdx])
-                  await AsyncStorage.setItem('huddle_practice_streak', String(newStreak))
+                const today = todayDateStr()
+                const raw = await AsyncStorage.getItem('huddle_streak_data')
+                const streakData = raw ? JSON.parse(raw) : { count: 0, dates: [] }
+                if (!streakData.dates.includes(today)) {
+                  const newDates = [...streakData.dates, today]
+                  const newData = { count: newDates.length, dates: newDates }
+                  await AsyncStorage.setItem('huddle_streak_data', JSON.stringify(newData))
+                  setPracticeStreak(newData.count)
+                  setPracticedDays(thisWeekDayIndices(newDates))
                 }
+                setPracticedToday(true)
               }}
               disabled={practicedToday}
               activeOpacity={practicedToday ? 1 : 0.8}
