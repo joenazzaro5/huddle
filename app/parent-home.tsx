@@ -246,6 +246,7 @@ export default function ParentHomeScreen() {
   const submitRsvp = async (status: 'yes' | 'no') => {
     if (!currentUser || !nextEvent) return
     const prevRsvp = myRsvp
+    // Optimistic update first
     setMyRsvp(status)
     setRsvpCounts(prev => {
       const updated = { ...prev }
@@ -254,11 +255,12 @@ export default function ParentHomeScreen() {
       return updated
     })
     showRsvpToast()
+    // Only persist + re-sync for real Supabase events (mock IDs start with 'ss-')
+    if (nextEvent.id?.startsWith('ss-')) return
     await supabase.from('rsvps').upsert(
       { user_id: currentUser.id, event_id: nextEvent.id, status },
       { onConflict: 'event_id,user_id' }
     )
-    // Refresh counts
     const [{ count: yes }, { count: no }, { count: maybe }] = await Promise.all([
       supabase.from('rsvps').select('*', { count: 'exact', head: true }).eq('event_id', nextEvent.id).eq('status', 'yes'),
       supabase.from('rsvps').select('*', { count: 'exact', head: true }).eq('event_id', nextEvent.id).eq('status', 'no'),
