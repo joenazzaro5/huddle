@@ -1,7 +1,7 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Linking, Alert, Animated } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useRouter } from 'expo-router'
+import { useRouter, useFocusEffect } from 'expo-router'
 import { AppHeader } from '../lib/header'
 import { useRole } from '../lib/roleStore'
 import { supabase } from '../lib/supabase'
@@ -101,6 +101,7 @@ export default function HomeScreen() {
   const [myRsvp, setMyRsvp] = useState<'yes' | 'no' | null>(null)
   const [toastVisible, setToastVisible] = useState(false)
   const toastAnim = useRef(new Animated.Value(-60)).current
+  const scrollRef = useRef<ScrollView>(null)
   const mountedRef = useRef(false)
   const lastMsgTeamRef = useRef<string | null>(null)
   const [practicedToday, setPracticedToday] = useState(false)
@@ -108,6 +109,10 @@ export default function HomeScreen() {
   const [practicedDays, setPracticedDays] = useState<number[]>([])
 
   useEffect(() => { loadData() }, [])
+
+  useFocusEffect(useCallback(() => {
+    scrollRef.current?.scrollTo({ y: 0, animated: false })
+  }, []))
 
   useEffect(() => {
     if (!mountedRef.current) {
@@ -416,7 +421,7 @@ export default function HomeScreen() {
         </Animated.View>
       )}
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView ref={scrollRef} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
         {/* 1. Hero event card */}
         {heroSwitching ? (
