@@ -475,7 +475,7 @@ export default function ParentHomeScreen() {
         </View>
 
         {/* Chat preview */}
-        {lastMessage && (
+        {lastMessage && lastMessage.team_id === team?.id && (
           <TouchableOpacity
             style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#10B981', padding: 0, overflow: 'hidden' }]}
             onPress={() => router.push('/chat')}
