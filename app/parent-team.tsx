@@ -18,32 +18,18 @@ const STANDINGS = [
   { team: 'Fairfax FC',     w: 0, l: 5, d: 1, pts: 1  },
 ]
 
-const CHEETAHS_MOCK = [
-  { id: 'm1',  name: 'Sofia',     number: 1,  positions: ['GK']  },
-  { id: 'm2',  name: 'Emma',      number: 2,  positions: ['DEF'] },
-  { id: 'm3',  name: 'Zoe',       number: 3,  positions: ['DEF'] },
-  { id: 'm4',  name: 'Mia',       number: 4,  positions: ['DEF'] },
-  { id: 'm5',  name: 'Olivia',    number: 5,  positions: ['MID'] },
-  { id: 'm6',  name: 'Lily',      number: 6,  positions: ['MID'] },
-  { id: 'm7',  name: 'Grace',     number: 7,  positions: ['MID'] },
-  { id: 'm8',  name: 'Charlotte', number: 8,  positions: ['MID'] },
-  { id: 'm9',  name: 'Isabella',  number: 9,  positions: ['FWD'] },
-  { id: 'm10', name: 'Ella',      number: 10, positions: ['FWD'] },
-  { id: 'm11', name: 'Ava',       number: 11, positions: ['FWD'] },
-]
-
-const TIGERS_MOCK = [
-  { id: 't1',  name: 'Luna',      number: 1,  positions: ['GK']  },
-  { id: 't2',  name: 'Bella',     number: 2,  positions: ['DEF'] },
-  { id: 't3',  name: 'Maya',      number: 3,  positions: ['DEF'] },
-  { id: 't4',  name: 'Chloe',     number: 4,  positions: ['DEF'] },
-  { id: 't5',  name: 'Aisha',     number: 5,  positions: ['DEF'] },
-  { id: 't6',  name: 'Olivia',    number: 6,  positions: ['MID'] },
-  { id: 't7',  name: 'Priya',     number: 7,  positions: ['MID'] },
-  { id: 't8',  name: 'Sofia',     number: 8,  positions: ['MID'] },
-  { id: 't9',  name: 'Mia',       number: 9,  positions: ['FWD'] },
-  { id: 't10', name: 'Emma',      number: 10, positions: ['MID'] },
-  { id: 't11', name: 'Ava',       number: 11, positions: ['FWD'] },
+const TIGERS_ROSTER = [
+  { number: 1,  name: 'Luna Santos',      position: 'GK'         },
+  { number: 2,  name: 'Maya Johnson',     position: 'Defender'   },
+  { number: 3,  name: 'Chloe Williams',   position: 'Midfielder' },
+  { number: 4,  name: 'Lily Brown',       position: 'Forward'    },
+  { number: 5,  name: 'Zoe Davis',        position: 'Midfielder' },
+  { number: 6,  name: 'Aria Miller',      position: 'Defender'   },
+  { number: 7,  name: 'Nora Wilson',      position: 'Forward'    },
+  { number: 8,  name: 'Elena Moore',      position: 'Defender'   },
+  { number: 9,  name: 'Stella Taylor',    position: 'Midfielder' },
+  { number: 10, name: 'Violet Anderson',  position: 'Forward'    },
+  { number: 11, name: 'Aurora Thomas',    position: 'GK'         },
 ]
 
 const PLAYER_STATS = [
@@ -226,7 +212,7 @@ export default function ParentTeamScreen() {
         <ScrollView contentContainerStyle={styles.content}>
           <View style={[styles.teamCard, { backgroundColor: tc }]}>
             <Text style={styles.teamCardName}>{team?.name}</Text>
-            <Text style={styles.teamCardSub}>{team?.age_group} · {team?.gender} · {players.length > 0 ? players.length : MOCK_PLAYERS.length} players</Text>
+            <Text style={styles.teamCardSub}>{team?.age_group} · {team?.gender} · {players.length > 0 ? players.length : TIGERS_ROSTER.length} players</Text>
           </View>
 
           <View style={{ backgroundColor: '#EEF4FF', borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12, marginBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 0.5, borderColor: '#eee' }}>
@@ -237,21 +223,20 @@ export default function ParentTeamScreen() {
 
           <View style={styles.card}>
             {(() => {
-              const teamName = team?.name ?? ''
-              const mockPlayers = (teamName.includes('Tiger') || teamName.includes('San Rafael')) ? TIGERS_MOCK : CHEETAHS_MOCK
-              const displayPlayers = players.length > 0 ? players : mockPlayers
+              const displayPlayers = players.length > 0 ? players : TIGERS_ROSTER
               return (
                 <>
                   <Text style={styles.cardLabel}>Players · {displayPlayers.length}</Text>
                   {displayPlayers.map((player, i) => {
-                    const firstPos = (player.positions?.[0] ?? '').toUpperCase()
-                    const posColor = firstPos === 'GK' ? '#F59E0B'
-                      : ['CB', 'LB', 'RB', 'LWB', 'RWB'].includes(firstPos) ? tc
-                      : ['CM', 'LM', 'RM', 'DM', 'AM', 'CAM', 'CDM'].includes(firstPos) ? '#10B981'
-                      : firstPos ? '#FF6B35' : null
+                    const pos = (player.position ?? player.positions?.[0] ?? '').toUpperCase()
+                    const posColor = pos === 'GK' ? '#F59E0B'
+                      : pos === 'DEFENDER' || ['CB', 'LB', 'RB', 'LWB', 'RWB'].includes(pos) ? tc
+                      : pos === 'MIDFIELDER' || ['CM', 'LM', 'RM', 'DM', 'AM', 'CAM', 'CDM'].includes(pos) ? '#10B981'
+                      : pos === 'FORWARD' || pos ? '#FF6B35' : null
+                    const posLabel = player.position ?? player.positions?.[0] ?? ''
                     return (
                       <View
-                        key={player.id}
+                        key={player.id ?? player.number}
                         style={[styles.rosterRow, i < displayPlayers.length - 1 && styles.rosterBorder]}
                       >
                         <View style={[styles.numBadge, { backgroundColor: tc + '20' }]}>
@@ -259,13 +244,13 @@ export default function ParentTeamScreen() {
                         </View>
                         <View style={{ flex: 1 }}>
                           <Text style={styles.rosterName}>{player.name}</Text>
-                          {player.positions?.length > 0 && (
-                            <Text style={styles.rosterPos}>{player.positions.join(' · ')}</Text>
-                          )}
+                          {posLabel ? (
+                            <Text style={styles.rosterPos}>{posLabel}</Text>
+                          ) : null}
                         </View>
                         {posColor ? (
                           <View style={{ backgroundColor: posColor + '22', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
-                            <Text style={{ fontSize: 10, fontWeight: '800', color: posColor }}>{firstPos}</Text>
+                            <Text style={{ fontSize: 10, fontWeight: '800', color: posColor }}>{posLabel}</Text>
                           </View>
                         ) : null}
                       </View>
