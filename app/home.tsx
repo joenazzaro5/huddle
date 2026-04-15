@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Linking, Alert, Animated } from 'react-native'
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Linking, Animated } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter, useFocusEffect } from 'expo-router'
 import { AppHeader } from '../lib/header'
@@ -376,21 +376,9 @@ export default function HomeScreen() {
       return
     }
     const claimerName = currentUser?.email?.split('@')[0] ?? 'Coach'
-    Alert.alert(
-      'Claim snack duty',
-      `Sign up as ${claimerName}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Claim it! 🙌',
-          onPress: async () => {
-            const updated = freshSnacks.map((s: any, i: number) => i === index ? { ...s, name: claimerName, claimed: true } : s)
-            setSnacks(updated)
-            await AsyncStorage.setItem(snackKey, JSON.stringify(updated))
-          },
-        },
-      ]
-    )
+    const updated = freshSnacks.map((s: any, i: number) => i === index ? { ...s, name: claimerName, claimed: true } : s)
+    setSnacks(updated)
+    await AsyncStorage.setItem(snackKey, JSON.stringify(updated))
   }
 
   const drillOfDay = DRILLS_OF_DAY[new Date().getDay() % DRILLS_OF_DAY.length]

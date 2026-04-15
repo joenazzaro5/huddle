@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, Linking, Animated } from 'react-native'
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Linking, Animated } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { AppHeader } from '../lib/header'
@@ -266,31 +266,17 @@ export default function ParentHomeScreen() {
 
   const claimSnack = async (index: number) => {
     const snackKey = `huddle_snacks_${team?.id}`
-    // Pre-check AsyncStorage to get the freshest state
     const stored = await AsyncStorage.getItem(snackKey)
     const freshSnacks = stored ? JSON.parse(stored) : snacks
     const slot = freshSnacks[index]
     if (!slot || slot.claimed) {
-      // Sync local state if it was stale
       if (stored) setSnacks(freshSnacks)
       return
     }
     const claimerName = currentUser?.email?.split('@')[0] ?? 'Parent'
-    Alert.alert(
-      'Claim snack duty',
-      `Sign up as ${claimerName}?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Claim it! 🙌',
-          onPress: async () => {
-            const updated = freshSnacks.map((s: any, i: number) => i === index ? { ...s, name: claimerName, claimed: true } : s)
-            setSnacks(updated)
-            await AsyncStorage.setItem(snackKey, JSON.stringify(updated))
-          },
-        },
-      ]
-    )
+    const updated = freshSnacks.map((s: any, i: number) => i === index ? { ...s, name: claimerName, claimed: true } : s)
+    setSnacks(updated)
+    await AsyncStorage.setItem(snackKey, JSON.stringify(updated))
   }
 
   const formatDay = (dateStr: string) =>

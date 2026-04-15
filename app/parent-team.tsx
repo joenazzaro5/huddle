@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useLocalSearchParams, useFocusEffect } from 'expo-router'
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native'
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { AppHeader } from '../lib/header'
 import { supabase } from '../lib/supabase'
@@ -54,7 +54,7 @@ export default function ParentTeamScreen() {
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [snackData, setSnackData] = useState(() =>
     SEASON_SCHEDULE
-      .filter(e => e.type === 'game')
+      .filter(e => e.type === 'game' && new Date(e.starts_at) >= new Date())
       .map(e => ({
         date: new Date(e.starts_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
         type: 'Game' as string,
@@ -384,28 +384,13 @@ export default function ParentTeamScreen() {
                         const snackKey = `huddle_snacks_${team?.id}`
                         const stored = await AsyncStorage.getItem(snackKey)
                         const freshSnacks = stored ? JSON.parse(stored) : snackData
-                        if (freshSnacks[i]?.claimed) {
-                          if (stored) setSnackData(freshSnacks)
-                          return
-                        }
+                        if (freshSnacks[i]?.claimed) { if (stored) setSnackData(freshSnacks); return }
                         const claimerName = currentUser?.email?.split('@')[0] ?? 'Parent'
-                        Alert.alert(
-                          'Sign up for snacks',
-                          `Claim snack duty for ${item.date} as ${claimerName}?`,
-                          [
-                            { text: 'Cancel', style: 'cancel' },
-                            {
-                              text: 'I got it! 🙌',
-                              onPress: async () => {
-                                const updated = freshSnacks.map((s: any, idx: number) =>
-                                  idx === i ? { ...s, claimed: true, name: claimerName } : s
-                                )
-                                setSnackData(updated)
-                                await AsyncStorage.setItem(snackKey, JSON.stringify(updated))
-                              },
-                            },
-                          ]
+                        const updated = freshSnacks.map((s: any, idx: number) =>
+                          idx === i ? { ...s, claimed: true, name: claimerName } : s
                         )
+                        setSnackData(updated)
+                        await AsyncStorage.setItem(snackKey, JSON.stringify(updated))
                       }}
                       activeOpacity={0.75}
                     >
