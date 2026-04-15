@@ -581,16 +581,20 @@ export default function HomeScreen() {
               style={{ backgroundColor: practicedToday ? '#F0FDF4' : '#F59E0B', borderRadius: 10, paddingVertical: 11, alignItems: 'center', borderWidth: practicedToday ? 1 : 0, borderColor: '#D97706' }}
               onPress={async () => {
                 const today = todayDateStr()
+                const todayIdx = (new Date().getDay() + 6) % 7
+                // Immediate UI update — don't wait for AsyncStorage
+                setPracticedToday(true)
+                if (!practicedDays.includes(todayIdx)) {
+                  setPracticedDays(prev => [...prev, todayIdx])
+                  setPracticeStreak(prev => prev + 1)
+                }
+                // Persist in background
                 const raw = await AsyncStorage.getItem('huddle_streak_data')
                 const streakData = raw ? JSON.parse(raw) : { count: 0, dates: [] }
                 if (!streakData.dates.includes(today)) {
                   const newDates = [...streakData.dates, today]
-                  const newData = { count: newDates.length, dates: newDates }
-                  await AsyncStorage.setItem('huddle_streak_data', JSON.stringify(newData))
-                  setPracticeStreak(newData.count)
-                  setPracticedDays(thisWeekDayIndices(newDates))
+                  await AsyncStorage.setItem('huddle_streak_data', JSON.stringify({ count: newDates.length, dates: newDates }))
                 }
-                setPracticedToday(true)
               }}
               disabled={practicedToday}
               activeOpacity={practicedToday ? 1 : 0.8}
