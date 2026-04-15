@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Image, Modal, Alert } from 'react-native'
 import * as WebBrowser from 'expo-web-browser'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { useLocalSearchParams } from 'expo-router'
 import { supabase } from '../lib/supabase'
 import { generatePracticePlan } from '../lib/ai'
 import { AppHeader } from '../lib/header'
@@ -119,6 +120,7 @@ const SOCCER_RULES = [
 ]
 
 export default function PracticeScreen() {
+  const params = useLocalSearchParams()
   const [team, setTeam] = useState<any>(null)
   const [nextEvent, setNextEvent] = useState<any>(null)
   const [prompt, setPrompt] = useState('')
@@ -149,6 +151,12 @@ export default function PracticeScreen() {
     const feedbackText = entries.map(([drill, rating]) => `${drill} was ${rating}`).join(', ')
     return base ? `${base}. Previous feedback: ${feedbackText}` : `Previous feedback: ${feedbackText}`
   }
+
+  useEffect(() => {
+    if (params.tab === 'planner' || params.tab === 'drills' || params.tab === 'rules') {
+      setActiveTab(params.tab as 'planner' | 'drills' | 'rules')
+    }
+  }, [])
 
   useEffect(() => { loadTeam() }, [])
 

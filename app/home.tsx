@@ -514,7 +514,7 @@ export default function HomeScreen() {
                 </View>
               )
             })}
-            <TouchableOpacity onPress={() => router.push('/practice')}>
+            <TouchableOpacity onPress={() => router.push({ pathname: '/practice', params: { tab: 'planner' } })}>
               <Text style={[styles.viewLink, { color: tc }]}>View full plan →</Text>
             </TouchableOpacity>
           </View>
@@ -667,7 +667,7 @@ export default function HomeScreen() {
         {nextGame && (
           <TouchableOpacity
             style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#F59E0B', padding: 0, overflow: 'hidden' }]}
-            onPress={() => router.push('/games')}
+            onPress={() => router.push({ pathname: '/games', params: { tab: 'games' } })}
             activeOpacity={0.85}
           >
             <View style={{ backgroundColor: '#FFFBEB', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 }}>
