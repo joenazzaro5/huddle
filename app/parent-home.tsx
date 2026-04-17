@@ -198,10 +198,14 @@ export default function ParentHomeScreen() {
       .order('starts_at', { ascending: true })
       .limit(1)
 
-    if (eventData && eventData.length > 0) {
-      const firstEvent = eventData[0]
+    const resolvedEvents = (eventData && eventData.length > 0)
+      ? eventData
+      : [{ id: 'mock-parent-1', type: 'practice', focus: 'Passing', starts_at: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(), location: 'Marin Community Fields', duration_min: 60 }]
+
+    if (resolvedEvents.length > 0) {
+      const firstEvent = resolvedEvents[0]
       setNextEvent(firstEvent)
-      const isRealEvent = firstEvent?.id && !firstEvent.id.startsWith('ss-')
+      const isRealEvent = firstEvent?.id && !firstEvent.id.startsWith('ss-') && !firstEvent.id.startsWith('mock-')
       if (isRealEvent) {
         const { data: myRsvpData } = await supabase
           .from('rsvps').select('status').eq('event_id', firstEvent.id).eq('user_id', userId).maybeSingle()
