@@ -19,6 +19,23 @@ const FALLBACK_PLAN = {
   coachTip: "Remind players to check their shoulder before receiving. The best passers always know what's around them before the ball arrives.",
 }
 
+async function getRecentFeedbackText(): Promise<string> {
+  try {
+    const raw = await AsyncStorage.getItem('huddle_practice_feedback')
+    if (!raw) return ''
+    const all: any[] = JSON.parse(raw)
+    const recent = all.slice(-3)
+    const items = recent.flatMap((fb: any) =>
+      (fb.ratings ?? [])
+        .filter((r: any) => r.rating === 'Hard' || r.rating === 'Easy')
+        .map((r: any) => `${r.drill} was ${r.rating}`)
+    )
+    return items.length > 0
+      ? `Previous feedback from coach: ${items.join(', ')}. Adjust difficulty accordingly.`
+      : ''
+  } catch { return '' }
+}
+
 function todayDateStr() {
   const d = new Date()
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -200,14 +217,17 @@ export default function HomeScreen() {
     setPlanLoading(true)
     setIsOfflinePlan(false)
     try {
+      const feedbackText = await getRecentFeedbackText()
+      const basePrompt = event?.focus
+        ? `${event.focus} focus, ${event?.duration_min ?? 60} minutes`
+        : `${event?.duration_min ?? 60} minute practice session`
+      const promptWithFeedback = feedbackText ? `${basePrompt}. ${feedbackText}` : basePrompt
       const timeoutPromise = new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error('timeout')), 8000)
       )
       const result = await Promise.race([
         generatePracticePlan(
-          event?.focus
-            ? `${event.focus} focus, ${event?.duration_min ?? 60} minutes`
-            : `${event?.duration_min ?? 60} minute practice session`,
+          promptWithFeedback,
           teamData?.name, teamData?.age_group
         ),
         timeoutPromise

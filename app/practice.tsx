@@ -221,12 +221,33 @@ export default function PracticeScreen() {
   const [practicedDrills, setPracticedDrills] = useState<Set<string>>(new Set())
   const [drillFeedback, setDrillFeedback] = useState<Record<string, string>>({})
   const [showFeedbackModal, setShowFeedbackModal] = useState(false)
+  const [feedbackNotes, setFeedbackNotes] = useState('')
+  const [showSwapSheet, setShowSwapSheet] = useState(false)
+  const [swapTargetIndex, setSwapTargetIndex] = useState<number>(1)
+  const [swapReplacementId, setSwapReplacementId] = useState<string | null>(null)
 
   const appendFeedback = (base: string) => {
     const entries = Object.entries(drillFeedback)
     if (entries.length === 0) return base
     const feedbackText = entries.map(([drill, rating]) => `${drill} was ${rating}`).join(', ')
     return base ? `${base}. Previous feedback: ${feedbackText}` : `Previous feedback: ${feedbackText}`
+  }
+
+  const getRecentFeedbackText = async (): Promise<string> => {
+    try {
+      const raw = await AsyncStorage.getItem('huddle_practice_feedback')
+      if (!raw) return ''
+      const all: any[] = JSON.parse(raw)
+      const recent = all.slice(-3)
+      const items = recent.flatMap((fb: any) =>
+        (fb.ratings ?? [])
+          .filter((r: any) => r.rating === 'Hard' || r.rating === 'Easy')
+          .map((r: any) => `${r.drill} was ${r.rating}`)
+      )
+      return items.length > 0
+        ? `Previous feedback from coach: ${items.join(', ')}. Adjust difficulty accordingly.`
+        : ''
+    } catch { return '' }
   }
 
   useFocusEffect(
@@ -294,14 +315,17 @@ export default function PracticeScreen() {
   const autoGenerate = async (event: any, teamData: any) => {
     setPlanLoading(true)
     setIsOfflinePlan(false)
-    const focus = appendFeedback(event?.focus ?? '')
+    const historical = await getRecentFeedbackText()
+    const baseFocus = appendFeedback(event?.focus ?? '')
+    const basePrompt = `${event?.duration_min ?? 60} minute ${baseFocus} session`
+    const finalAutoPrompt = historical ? `${basePrompt}. ${historical}` : basePrompt
     try {
       const timeoutPromise = new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error('timeout')), 8000)
       )
       const result = await Promise.race([
         generatePracticePlan(
-          `${event?.duration_min ?? 60} minute ${focus} session`,
+          finalAutoPrompt,
           teamData?.name,
           teamData?.age_group
         ),
@@ -337,8 +361,10 @@ export default function PracticeScreen() {
   }
 
   const handleGenerate = async () => {
-    const finalPrompt = appendFeedback(buildPrompt())
-    if (!finalPrompt || !team) return
+    const sessionPrompt = appendFeedback(buildPrompt())
+    if (!sessionPrompt || !team) return
+    const historical = await getRecentFeedbackText()
+    const finalPrompt = historical ? `${sessionPrompt}. ${historical}` : sessionPrompt
     setAiLoading(true)
     setIsOfflinePlan(false)
     setPlan(null)
@@ -364,9 +390,11 @@ export default function PracticeScreen() {
     setShowDrillPicker(false)
     const drillNames = DRILLS.filter(d => selectedPickDrills.has(d.id)).map(d => d.title)
     const basePrompt = buildPrompt()
-    const finalPrompt = appendFeedback(drillNames.length > 0
+    const sessionPrompt = appendFeedback(drillNames.length > 0
       ? (basePrompt ? `${basePrompt} — include these drills: ${drillNames.join(', ')}` : drillNames.join(', '))
       : basePrompt)
+    const historical = await getRecentFeedbackText()
+    const finalPrompt = historical ? `${sessionPrompt}. ${historical}` : sessionPrompt
     setAiLoading(true)
     setIsOfflinePlan(false)
     try {
@@ -495,7 +523,7 @@ export default function PracticeScreen() {
             ))}
             {!planLoading && (
               <TouchableOpacity
-                onPress={async () => { await AsyncStorage.removeItem('huddle_active_plan'); autoGenerate(nextEvent, team) }}
+                onPress={() => { setSwapTargetIndex(1); setSwapReplacementId(null); setShowSwapSheet(true) }}
                 style={{ paddingHorizontal: 4, paddingBottom: 2, paddingTop: 6, alignSelf: 'flex-start' }}
                 activeOpacity={0.7}
               >
@@ -514,7 +542,7 @@ export default function PracticeScreen() {
                 onPress={() => setShowFeedbackModal(true)}
                 activeOpacity={0.85}
               >
-                <Text style={{ fontSize: 15, fontWeight: '700', color: '#1A56DB' }}>Practice done ✓</Text>
+                <Text style={{ fontSize: 15, fontWeight: '700', color: '#1A56DB' }}>Give practice feedback</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -764,8 +792,14 @@ export default function PracticeScreen() {
       {/* Post-practice feedback modal */}
       <Modal visible={showFeedbackModal} transparent animationType="slide" onRequestClose={() => setShowFeedbackModal(false)}>
         <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+          <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }} activeOpacity={1} onPress={() => setShowFeedbackModal(false)} />
           <View style={{ backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 36 }}>
-            <Text style={{ fontSize: 20, fontWeight: '800', color: '#1a1a1a', marginBottom: 4 }}>How did practice go? 🏆</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+              <Text style={{ fontSize: 20, fontWeight: '800', color: '#1a1a1a' }}>How did practice go? 🏆</Text>
+              <TouchableOpacity onPress={() => setShowFeedbackModal(false)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Text style={{ fontSize: 20, color: '#888' }}>✕</Text>
+              </TouchableOpacity>
+            </View>
             <Text style={{ fontSize: 13, color: '#888', marginBottom: 20 }}>Rate each drill so your next plan is even better.</Text>
             {plan?.plan?.map((item: any, i: number) => (
               <View key={i} style={{ marginBottom: 16 }}>
@@ -787,13 +821,117 @@ export default function PracticeScreen() {
                 </View>
               </View>
             ))}
+            <TextInput
+              style={{ borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 10, padding: 10, fontSize: 13, color: '#1a1a1a', marginBottom: 12 }}
+              placeholder="Any notes? (optional)"
+              placeholderTextColor="#bbb"
+              value={feedbackNotes}
+              onChangeText={setFeedbackNotes}
+              multiline
+            />
             <TouchableOpacity
               style={{ backgroundColor: '#1A56DB', borderRadius: 14, paddingVertical: 14, alignItems: 'center', marginTop: 4 }}
-              onPress={() => { setShowFeedbackModal(false); Alert.alert('Thanks!', 'Your next plan will be even better.') }}
+              onPress={async () => {
+                const ratings = Object.entries(drillFeedback).map(([drill, rating]) => ({ drill, rating }))
+                const entry = { date: todayDateStr(), ratings, notes: feedbackNotes }
+                const raw = await AsyncStorage.getItem('huddle_practice_feedback')
+                const all = raw ? JSON.parse(raw) : []
+                await AsyncStorage.setItem('huddle_practice_feedback', JSON.stringify([...all, entry]))
+                setShowFeedbackModal(false)
+                setFeedbackNotes('')
+                Alert.alert('Thanks!', 'Your next plan will be even better.')
+              }}
               activeOpacity={0.85}
             >
               <Text style={{ fontSize: 16, fontWeight: '800', color: '#fff' }}>Submit feedback</Text>
             </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Swap drill bottom sheet */}
+      <Modal visible={showSwapSheet} transparent animationType="slide" onRequestClose={() => setShowSwapSheet(false)}>
+        <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+          <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }} activeOpacity={1} onPress={() => setShowSwapSheet(false)} />
+          <View style={{ backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '82%' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20, paddingBottom: 12, borderBottomWidth: 0.5, borderBottomColor: '#eee' }}>
+              <Text style={{ fontSize: 17, fontWeight: '800', color: '#1a1a1a' }}>Swap a drill</Text>
+              <TouchableOpacity onPress={() => setShowSwapSheet(false)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Text style={{ fontSize: 20, color: '#888' }}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView contentContainerStyle={{ padding: 20 }}>
+              <Text style={{ fontSize: 11, fontWeight: '700', color: '#9CA3AF', letterSpacing: 0.3, marginBottom: 10 }}>SWAP OUT</Text>
+              {plan?.plan?.map((item: any, i: number) => (
+                <TouchableOpacity
+                  key={i}
+                  onPress={() => setSwapTargetIndex(i)}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, borderBottomWidth: 0.5, borderBottomColor: '#f5f5f5' }}
+                  activeOpacity={0.7}
+                >
+                  <View style={{
+                    width: 20, height: 20, borderRadius: 10, borderWidth: 2,
+                    borderColor: swapTargetIndex === i ? teamColor : '#ddd',
+                    backgroundColor: swapTargetIndex === i ? teamColor : '#fff',
+                    alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    {swapTargetIndex === i && <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#fff' }} />}
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 11, fontWeight: '600', color: '#9CA3AF' }}>{item.phase}</Text>
+                    <Text style={{ fontSize: 14, fontWeight: '700', color: '#1a1a1a' }}>{item.drill}</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+              <Text style={{ fontSize: 11, fontWeight: '700', color: '#9CA3AF', letterSpacing: 0.3, marginTop: 20, marginBottom: 10 }}>REPLACE WITH</Text>
+              {(() => {
+                const focus = nextEvent?.focus ?? null
+                const drillsToShow = focus ? DRILLS.filter(d => d.focus === focus) : DRILLS
+                return drillsToShow.map(drill => (
+                  <TouchableOpacity
+                    key={drill.id}
+                    onPress={() => setSwapReplacementId(drill.id)}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, borderBottomWidth: 0.5, borderBottomColor: '#f5f5f5' }}
+                    activeOpacity={0.7}
+                  >
+                    <View style={{
+                      width: 20, height: 20, borderRadius: 10, borderWidth: 2,
+                      borderColor: swapReplacementId === drill.id ? teamColor : '#ddd',
+                      backgroundColor: swapReplacementId === drill.id ? teamColor : '#fff',
+                      alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      {swapReplacementId === drill.id && <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#fff' }} />}
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 14, fontWeight: '700', color: '#1a1a1a' }}>{drill.title}</Text>
+                      <Text style={{ fontSize: 12, color: '#888', marginTop: 1 }}>{drill.focus} · {drill.duration} · {drill.level}</Text>
+                    </View>
+                  </TouchableOpacity>
+                ))
+              })()}
+            </ScrollView>
+            <View style={{ padding: 16, paddingBottom: 32, borderTopWidth: 0.5, borderTopColor: '#eee' }}>
+              <TouchableOpacity
+                style={{ backgroundColor: swapReplacementId ? teamColor : '#E0E0E0', borderRadius: 14, paddingVertical: 14, alignItems: 'center' }}
+                disabled={!swapReplacementId}
+                onPress={async () => {
+                  const drill = DRILLS.find(d => d.id === swapReplacementId)
+                  if (drill && plan?.plan) {
+                    const updated = plan.plan.map((item: any, i: number) =>
+                      i === swapTargetIndex ? { ...item, drill: drill.title, desc: drill.desc } : item
+                    )
+                    const newPlan = { ...plan, plan: updated }
+                    setPlan(newPlan)
+                    await AsyncStorage.setItem('huddle_active_plan', JSON.stringify({ plan: newPlan, timestamp: Date.now(), focus: nextEvent?.focus ?? null }))
+                  }
+                  setShowSwapSheet(false)
+                  setSwapReplacementId(null)
+                }}
+                activeOpacity={0.85}
+              >
+                <Text style={{ fontSize: 16, fontWeight: '800', color: '#fff' }}>Use this drill</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
