@@ -432,7 +432,8 @@ export default function ParentHomeScreen() {
             <Text style={styles.cardLabel}>Tonight's drill 🏠</Text>
           </View>
           <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 14 }}>
-            <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 6 }}>Cone Weaving</Text>
+            <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 2 }}>Cone Weaving</Text>
+            <Text style={{ fontSize: 12, color: '#9CA3AF', fontStyle: 'italic', marginBottom: 8 }}>🏠 Do this at home between practices</Text>
             <View style={{ flexDirection: 'row', gap: 6, marginBottom: 8 }}>
               <View style={{ backgroundColor: '#F0F4FF', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
                 <Text style={{ fontSize: 10, fontWeight: '700', color: tc }}>Dribbling</Text>

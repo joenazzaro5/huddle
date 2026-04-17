@@ -421,13 +421,26 @@ export default function ChatScreen() {
                   <View style={[styles.bubbleWrap, isMe && styles.bubbleWrapMe]}>
                     {!isMe && <View style={styles.avatarSpacer} />}
                     {msg.body?.startsWith('POLL:') ? (() => {
-                      let question = 'Poll'
-                      try { question = JSON.parse(msg.body.slice(5)).question ?? 'Poll' } catch {}
+                      let pollData: { question: string; options: string[] } = { question: 'Poll', options: [] }
+                      try { pollData = JSON.parse(msg.body.slice(5)) } catch {}
+                      const voted = pollVotes[msg.id]
                       return (
                         <View style={{ backgroundColor: '#7C3AED', borderRadius: 16, padding: 14, maxWidth: width * 0.72 }}>
                           <Text style={{ fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.7)', marginBottom: 6 }}>📊 POLL</Text>
-                          <Text style={{ fontSize: 15, fontWeight: '700', color: '#fff', marginBottom: 8 }}>{question}</Text>
-                          <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)' }}>Tap to vote</Text>
+                          <Text style={{ fontSize: 15, fontWeight: '700', color: '#fff', marginBottom: 10 }}>{pollData.question}</Text>
+                          {pollData.options.map((opt, optIdx) => {
+                            const isVoted = voted === optIdx
+                            return (
+                              <TouchableOpacity
+                                key={optIdx}
+                                onPress={() => votePoll(msg.id, optIdx)}
+                                style={{ backgroundColor: isVoted ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.15)', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 12, marginBottom: 6, borderWidth: isVoted ? 1.5 : 0, borderColor: 'rgba(255,255,255,0.6)' }}
+                                activeOpacity={0.7}
+                              >
+                                <Text style={{ fontSize: 14, fontWeight: isVoted ? '700' : '500', color: '#fff' }}>{isVoted ? '✓ ' : ''}{opt}</Text>
+                              </TouchableOpacity>
+                            )
+                          })}
                         </View>
                       )
                     })() : (msg.body?.startsWith('https://media') || msg.body?.startsWith('https://i.giphy')) ? (
