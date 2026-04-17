@@ -6,6 +6,7 @@ import { useLocalSearchParams, useFocusEffect } from 'expo-router'
 import { supabase } from '../lib/supabase'
 import { generatePracticePlan } from '../lib/ai'
 import { AppHeader } from '../lib/header'
+import { useRole } from '../lib/roleStore'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
 const FALLBACK_PLAN = {
@@ -312,6 +313,7 @@ function DrillDiagram({ drillName }: { drillName: string }) {
 
 export default function PracticeScreen() {
   const params = useLocalSearchParams()
+  const { activeTeamId } = useRole()
   const [team, setTeam] = useState<any>(null)
   const [allTeams, setAllTeams] = useState<any[]>([])
   const [nextEvent, setNextEvent] = useState<any>(null)
@@ -383,13 +385,9 @@ export default function PracticeScreen() {
       .select('team:teams(*), role')
       .eq('user_id', user.id)
     setAllTeams(memberships ?? [])
-    const { data: membership } = await supabase
-      .from('team_members')
-      .select('team:teams(*)')
-      .eq('user_id', user.id)
-      .eq('role', 'coach')
-      .limit(1)
-      .single()
+    const membership =
+      (activeTeamId ? memberships?.find(m => m.team?.id === activeTeamId) : null) ??
+      memberships?.find(m => m.role === 'coach')
     if (membership?.team) {
       setTeam(membership.team)
       const { data: eventData } = await supabase
@@ -556,7 +554,7 @@ export default function PracticeScreen() {
   }
 
   const canGenerate = buildPrompt().length > 0
-  const teamColor = '#1A56DB'
+  const teamColor = team?.color ?? '#1A56DB'
   const filteredDrills = activeFilter === 'All'
     ? DRILLS
     : activeFilter === 'Favorites'
