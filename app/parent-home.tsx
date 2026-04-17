@@ -123,7 +123,7 @@ export default function ParentHomeScreen() {
     setTeam(teamData)
     setActiveTeamId(teamData.id)
     await loadTeamData(teamData.id, user.id)
-    const storedStreak = await AsyncStorage.getItem('huddle_streak_data')
+    const storedStreak = await AsyncStorage.getItem('huddle_streak_data_parent')
     const streakData = storedStreak ? JSON.parse(storedStreak) : { count: 0, dates: [] }
     setPracticeStreak(streakData.count)
     setPracticedDays(thisWeekDayIndices(streakData.dates))
@@ -474,12 +474,12 @@ export default function ParentHomeScreen() {
               style={{ backgroundColor: practicedToday ? '#F0FDF4' : '#F59E0B', borderRadius: 10, paddingVertical: 11, alignItems: 'center', borderWidth: practicedToday ? 1 : 0, borderColor: '#D97706' }}
               onPress={async () => {
                 const today = todayDateStr()
-                const raw = await AsyncStorage.getItem('huddle_streak_data')
+                const raw = await AsyncStorage.getItem('huddle_streak_data_parent')
                 const streakData = raw ? JSON.parse(raw) : { count: 0, dates: [] }
                 if (!streakData.dates.includes(today)) {
                   const newDates = [...streakData.dates, today]
                   const newData = { count: newDates.length, dates: newDates }
-                  await AsyncStorage.setItem('huddle_streak_data', JSON.stringify(newData))
+                  await AsyncStorage.setItem('huddle_streak_data_parent', JSON.stringify(newData))
                   setPracticeStreak(newData.count)
                   setPracticedDays(thisWeekDayIndices(newDates))
                 }

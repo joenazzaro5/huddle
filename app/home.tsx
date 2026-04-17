@@ -235,7 +235,7 @@ export default function HomeScreen() {
       setLastMessage(msgData?.team_id === teamData.id && !msgData?.is_deleted ? msgData : null)
     }
 
-    const storedStreak = await AsyncStorage.getItem('huddle_streak_data')
+    const storedStreak = await AsyncStorage.getItem('huddle_streak_data_coach')
     const streakData = storedStreak ? JSON.parse(storedStreak) : { count: 0, dates: [] }
     setPracticeStreak(streakData.count)
     setPracticedDays(thisWeekDayIndices(streakData.dates))
@@ -577,11 +577,11 @@ export default function HomeScreen() {
                   setPracticeStreak(prev => prev + 1)
                 }
                 // Persist in background
-                const raw = await AsyncStorage.getItem('huddle_streak_data')
+                const raw = await AsyncStorage.getItem('huddle_streak_data_coach')
                 const streakData = raw ? JSON.parse(raw) : { count: 0, dates: [] }
                 if (!streakData.dates.includes(today)) {
                   const newDates = [...streakData.dates, today]
-                  await AsyncStorage.setItem('huddle_streak_data', JSON.stringify({ count: newDates.length, dates: newDates }))
+                  await AsyncStorage.setItem('huddle_streak_data_coach', JSON.stringify({ count: newDates.length, dates: newDates }))
                 }
               }}
               disabled={practicedToday}
