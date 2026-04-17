@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Animated } from 'react-native'
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, Animated } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useRole } from './roleStore.tsx'
 
@@ -15,7 +15,7 @@ type Props = {
 export function AppHeader({ teamColor = '#1A56DB', teamName, onTeamPress, showTeamSwitch, allTeams, onTeamSelect }: Props) {
   const count = allTeams?.length ?? 0
   const hasMultiple = count > 1
-  const showPills = count >= 2 && count <= 3
+  const showPills = count >= 2
   const { currentRole, setRole, activeTeamId, setActiveTeamId } = useRole()
   const isParent = currentRole === 'parent'
   const fadeAnim = useRef(new Animated.Value(1)).current
@@ -138,10 +138,14 @@ export function AppHeader({ teamColor = '#1A56DB', teamName, onTeamPress, showTe
       </Animated.View>
 
       {showPills && allTeams && onTeamSelect && (
-        <View style={styles.pillsRow}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={{ backgroundColor: '#fff', borderBottomWidth: 0.5, borderBottomColor: '#f0f0f0' }}
+          contentContainerStyle={{ flexDirection: 'row', gap: 8, paddingHorizontal: 14, paddingVertical: 8 }}
+        >
           {allTeams.map(m => {
             const isActive = activeTeamId ? m.team.id === activeTeamId : m.team.name === teamName
-            const abbreviated = m.team.name
             const dotColor = m.team.color ?? '#1A56DB'
             return (
               <TouchableOpacity
@@ -151,11 +155,11 @@ export function AppHeader({ teamColor = '#1A56DB', teamName, onTeamPress, showTe
                 activeOpacity={0.75}
               >
                 <View style={[styles.pillDot, { backgroundColor: isActive ? '#fff' : dotColor }]} />
-                <Text style={[styles.pillText, isActive && styles.pillTextActive]}>{abbreviated}</Text>
+                <Text style={[styles.pillText, isActive && styles.pillTextActive]}>{m.team.name}</Text>
               </TouchableOpacity>
             )
           })}
-        </View>
+        </ScrollView>
       )}
     </View>
   )
