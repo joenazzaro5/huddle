@@ -39,14 +39,31 @@ function thisWeekDayIndices(dates: string[]): number[] {
 }
 
 const DRILLS = [
-  { id: '1', title: 'Cone dribbling', focus: 'Dribbling', duration: '10 min', level: 'Beginner', desc: 'Set up 6 cones in a line 2 yards apart. Players dribble through using both feet.', videoId: 'RukcQggHAZU' },
-  { id: '2', title: 'Ball mastery', focus: 'Dribbling', duration: '12 min', level: 'Beginner', desc: 'Touches, rolls, and stepovers to build close control and confidence on the ball.', videoId: 'YqAyi27WejY' },
-  { id: '3', title: 'Sharks and minnows', focus: 'Dribbling', duration: '8 min', level: 'Beginner', desc: 'Fun tag game — dribblers keep the ball while sharks try to kick it out.', videoId: null },
-  { id: '4', title: 'Triangle passing', focus: 'Passing', duration: '15 min', level: 'Beginner', desc: 'Three players form a triangle. Pass and move to the next cone.', videoId: 'CosG13seo3o' },
-  { id: '5', title: 'Rondo possession', focus: 'Passing', duration: '10 min', level: 'Intermediate', desc: '5 vs 2 in the middle. Keep the ball moving with one or two touches.', videoId: 'Cq0rsuSEgvA' },
-  { id: '6', title: 'Shooting on goal', focus: 'Shooting', duration: '15 min', level: 'Beginner', desc: 'Players take turns shooting from different angles. Rotate goalkeeper every 5 shots.', videoId: 'DnWdr2DI758' },
-  { id: '7', title: '1v1 defending', focus: 'Defending', duration: '10 min', level: 'Intermediate', desc: 'Stay between player and goal. No diving in — wait for the right moment.', videoId: 'OIm6xrR0QRg' },
-  { id: '8', title: 'GK shot stopping', focus: 'Goalkeeping', duration: '12 min', level: 'Beginner', desc: 'Reaction saves at close range. Keeper stays on feet and spreads wide.', videoId: null },
+  // Dribbling
+  { id: '1',  title: 'Cone dribbling',             focus: 'Dribbling',   duration: '10 min', level: 'Beginner',     desc: 'Set up 6 cones in a line 2 yards apart. Players dribble through using both feet.',                                    videoId: 'RukcQggHAZU' },
+  { id: '2',  title: 'Ball mastery',               focus: 'Dribbling',   duration: '12 min', level: 'Beginner',     desc: 'Touches, rolls, and stepovers to build close control and confidence on the ball.',                                   videoId: 'YqAyi27WejY' },
+  { id: '3',  title: 'Sharks and minnows',         focus: 'Dribbling',   duration: '8 min',  level: 'Beginner',     desc: 'Fun tag game — dribblers keep the ball while sharks try to kick it out.',                                            videoId: null },
+  { id: '9',  title: 'Cone Weave',                 focus: 'Dribbling',   duration: '10 min', level: 'Beginner',     desc: 'Weave through 8 cones placed 1 yard apart. Focus on close control with both feet.',                                   videoId: null },
+  { id: '10', title: '1v1 King of the Ring',       focus: 'Dribbling',   duration: '15 min', level: 'Intermediate', desc: 'Two players in a circle, each try to dribble out while stopping the other.',                                         videoId: null },
+  // Passing
+  { id: '4',  title: 'Triangle passing',           focus: 'Passing',     duration: '15 min', level: 'Beginner',     desc: 'Three players form a triangle. Pass and move to the next cone.',                                                     videoId: 'CosG13seo3o' },
+  { id: '5',  title: 'Rondo possession',           focus: 'Passing',     duration: '10 min', level: 'Intermediate', desc: '5 vs 2 in the middle. Keep the ball moving with one or two touches.',                                               videoId: 'Cq0rsuSEgvA' },
+  { id: '11', title: 'Wall Pass Combination',      focus: 'Passing',     duration: '15 min', level: 'Beginner',     desc: 'Player passes to partner, receives a layoff, plays into space. Repeat 10x each side.',                              videoId: null },
+  { id: '12', title: '3-2-1 Passing Pattern',      focus: 'Passing',     duration: '20 min', level: 'Intermediate', desc: 'Three players, two touches max. Create a specific pattern and repeat.',                                              videoId: null },
+  { id: '13', title: 'Long Pass and Control',      focus: 'Passing',     duration: '15 min', level: 'Intermediate', desc: 'Partners 20 yards apart. Chip and control. Focus on first touch.',                                                  videoId: null },
+  // Shooting
+  { id: '6',  title: 'Shooting on goal',           focus: 'Shooting',    duration: '15 min', level: 'Beginner',     desc: 'Players take turns shooting from different angles. Rotate goalkeeper every 5 shots.',                               videoId: 'DnWdr2DI758' },
+  { id: '14', title: 'Shooting from Cutbacks',     focus: 'Shooting',    duration: '15 min', level: 'Intermediate', desc: 'Wide player crosses low cutback, striker finishes.',                                                                videoId: null },
+  { id: '15', title: '1-2 and Shoot',              focus: 'Shooting',    duration: '15 min', level: 'Beginner',     desc: 'Pass to partner, receive back, shoot first time.',                                                                  videoId: null },
+  { id: '16', title: 'Goalkeeper Challenge',       focus: 'Shooting',    duration: '20 min', level: 'Advanced',     desc: 'Beat the keeper 1v1 from the edge of the box.',                                                                    videoId: null },
+  // Defending
+  { id: '7',  title: '1v1 defending',              focus: 'Defending',   duration: '10 min', level: 'Intermediate', desc: 'Stay between player and goal. No diving in — wait for the right moment.',                                          videoId: 'OIm6xrR0QRg' },
+  { id: '17', title: 'Defensive Shape 4v4',        focus: 'Defending',   duration: '20 min', level: 'Intermediate', desc: 'Keep defensive shape and force play wide.',                                                                        videoId: null },
+  { id: '18', title: 'Pressing Trigger',           focus: 'Defending',   duration: '15 min', level: 'Advanced',     desc: 'Coach identifies pressing cues — when keeper has ball, press immediately.',                                        videoId: null },
+  // Goalkeeping
+  { id: '8',  title: 'GK shot stopping',           focus: 'Goalkeeping', duration: '12 min', level: 'Beginner',     desc: 'Reaction saves at close range. Keeper stays on feet and spreads wide.',                                            videoId: null },
+  { id: '19', title: 'Shot Stopping Angles',       focus: 'Goalkeeping', duration: '15 min', level: 'Intermediate', desc: 'Keeper faces shots from different angles, focus on positioning.',                                                  videoId: null },
+  { id: '20', title: 'Distribution Under Pressure',focus: 'Goalkeeping', duration: '15 min', level: 'Advanced',     desc: 'Keeper receives back pass and distributes accurately under pressure.',                                             videoId: null },
 ]
 
 const FOCUSES = ['All', 'Favorites', 'Dribbling', 'Passing', 'Shooting', 'Defending', 'Goalkeeping']
@@ -119,10 +136,17 @@ const SOCCER_RULES = [
   },
 ]
 
-function getDiagramType(drillName: string): 'passing' | 'dribbling' | 'game' {
+type DiagramType = 'cone-weave' | '1v1' | 'wall-pass' | 'shooting' | 'goalkeeper' | 'dribbling' | 'passing' | 'game'
+
+function getDiagramType(drillName: string): DiagramType {
   const n = (drillName ?? '').toLowerCase()
-  if (n.includes('possession') || n.includes('5v5') || n.includes('4v4') || n.includes('scrimmage') || n.includes('game')) return 'game'
-  if (n.includes('dribbl') || n.includes('cone') || n.includes('shark') || n.includes('mastery') || n.includes('weave')) return 'dribbling'
+  if (n.includes('weave')) return 'cone-weave'
+  if (n.includes('1v1') || n.includes('king of the ring')) return '1v1'
+  if (n.includes('wall pass') || n.includes('1-2') || n.includes('combination')) return 'wall-pass'
+  if (n.includes('goalkeeper challenge') || n.includes('cutback') || (n.includes('shoot') && !n.includes('stopping'))) return 'shooting'
+  if (n.includes('gk') || n.includes('stopping') || n.includes('distribution') || n.includes('goalkeeper')) return 'goalkeeper'
+  if (n.includes('possession') || n.includes('5v5') || n.includes('4v4') || n.includes('shape') || n.includes('pressing')) return 'game'
+  if (n.includes('dribbl') || n.includes('cone') || n.includes('shark') || n.includes('mastery')) return 'dribbling'
   return 'passing'
 }
 
@@ -136,6 +160,11 @@ const PDR = () => (
     <Text style={{ fontSize: 8, color: '#fff', fontWeight: '800' }}>P</Text>
   </View>
 )
+const GKBadge = () => (
+  <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: '#F59E0B', alignItems: 'center', justifyContent: 'center' }}>
+    <Text style={{ fontSize: 7, color: '#fff', fontWeight: '800' }}>GK</Text>
+  </View>
+)
 const Cone = () => (
   <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: '#F59E0B' }} />
 )
@@ -143,6 +172,89 @@ const Cone = () => (
 function DrillDiagram({ drillName }: { drillName: string }) {
   const type = getDiagramType(drillName)
   const wrap = { backgroundColor: '#F0F4FF', borderRadius: 10, padding: 12, marginTop: 10, alignItems: 'center' as const }
+
+  if (type === 'cone-weave') {
+    return (
+      <View style={wrap}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', height: 44 }}>
+          <PDB />
+          <Text style={{ fontSize: 9, color: '#6B7280', marginHorizontal: 3 }}>→</Text>
+          {Array.from({ length: 7 }).map((_, i) => (
+            <View key={i} style={{ width: 14, height: 44, alignItems: 'center', justifyContent: i % 2 === 0 ? 'flex-start' : 'flex-end', marginHorizontal: 2 }}>
+              <Cone />
+            </View>
+          ))}
+        </View>
+        <Text style={{ fontSize: 9, color: '#9CA3AF', marginTop: 5, fontWeight: '500' }}>Weave through cones with close control, both feet</Text>
+      </View>
+    )
+  }
+
+  if (type === '1v1') {
+    return (
+      <View style={wrap}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+          <PDB />
+          <View style={{ width: 50, height: 50, borderRadius: 25, borderWidth: 1.5, borderColor: '#9CA3AF', alignItems: 'center', justifyContent: 'center' }}>
+            <Text style={{ fontSize: 10, color: '#6B7280', fontWeight: '700' }}>↔</Text>
+          </View>
+          <PDR />
+        </View>
+        <Text style={{ fontSize: 9, color: '#9CA3AF', marginTop: 5, fontWeight: '500' }}>Stay in the ring · protect your ball</Text>
+      </View>
+    )
+  }
+
+  if (type === 'wall-pass') {
+    return (
+      <View style={wrap}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <View style={{ alignItems: 'center', gap: 4 }}>
+            <Text style={{ fontSize: 11, color: '#10B981', fontWeight: '700' }}>↑</Text>
+            <PDB />
+          </View>
+          <View style={{ alignItems: 'center', gap: 4 }}>
+            <Text style={{ fontSize: 11, color: '#10B981', fontWeight: '700' }}>→</Text>
+            <Text style={{ fontSize: 11, color: '#FF6B35', fontWeight: '700' }}>←</Text>
+          </View>
+          <View style={{ alignItems: 'center', gap: 4 }}>
+            <PDB />
+            <Text style={{ fontSize: 8, color: '#9CA3AF' }}>partner</Text>
+          </View>
+        </View>
+        <Text style={{ fontSize: 9, color: '#9CA3AF', marginTop: 5, fontWeight: '500' }}>Pass → receive layoff → run into space</Text>
+      </View>
+    )
+  }
+
+  if (type === 'shooting') {
+    return (
+      <View style={wrap}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <PDB />
+          <Text style={{ fontSize: 13, color: '#EF4444', fontWeight: '700' }}>→→→</Text>
+          <View style={{ borderWidth: 2, borderColor: '#6B7280', width: 36, height: 22, borderBottomWidth: 0 }} />
+        </View>
+        <Text style={{ fontSize: 9, color: '#9CA3AF', marginTop: 5, fontWeight: '500' }}>Pick a corner · shoot with power and accuracy</Text>
+      </View>
+    )
+  }
+
+  if (type === 'goalkeeper') {
+    return (
+      <View style={wrap}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <View style={{ width: 14, height: 14, borderRadius: 7, backgroundColor: '#1a1a1a' }} />
+          <Text style={{ fontSize: 12, color: '#6B7280', fontWeight: '700' }}>→→</Text>
+          <View style={{ alignItems: 'center' }}>
+            <GKBadge />
+            <View style={{ borderWidth: 2, borderColor: '#6B7280', width: 40, height: 14, borderBottomWidth: 0, marginTop: -3 }} />
+          </View>
+        </View>
+        <Text style={{ fontSize: 9, color: '#9CA3AF', marginTop: 5, fontWeight: '500' }}>Ball in · keeper sets angle and saves</Text>
+      </View>
+    )
+  }
 
   if (type === 'dribbling') {
     return (
@@ -156,10 +268,11 @@ function DrillDiagram({ drillName }: { drillName: string }) {
           <Cone /><Text style={{ fontSize: 11, color: '#6B7280' }}>→</Text>
           <Cone />
         </View>
-        <Text style={{ fontSize: 9, color: '#9CA3AF', marginTop: 5, fontWeight: '500' }}>Player dribbles through cones</Text>
+        <Text style={{ fontSize: 9, color: '#9CA3AF', marginTop: 5, fontWeight: '500' }}>Player dribbles through cones with both feet</Text>
       </View>
     )
   }
+
   if (type === 'game') {
     return (
       <View style={wrap}>
@@ -176,10 +289,12 @@ function DrillDiagram({ drillName }: { drillName: string }) {
             <View style={{ flexDirection: 'row', gap: 5 }}><PDR /><PDR /></View>
           </View>
         </View>
-        <Text style={{ fontSize: 9, color: '#9CA3AF', marginTop: 5, fontWeight: '500' }}>Small-sided game — keep possession</Text>
+        <Text style={{ fontSize: 9, color: '#9CA3AF', marginTop: 5, fontWeight: '500' }}>Small-sided game — maintain shape and possession</Text>
       </View>
     )
   }
+
+  // passing (default)
   return (
     <View style={wrap}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
