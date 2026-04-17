@@ -354,7 +354,7 @@ Slots: ${formationSlots}`
                   const isPictureDay = event.type === 'picture_day'
                   const isParty = event.type === 'party'
                   const typeColor = isGame ? '#FF8C42' : isPictureDay ? '#9C27B0' : isParty ? '#7C3AED' : tc
-                  const typeLabel = isGame ? '🏆 Game' : isPictureDay ? '📸 Picture Day' : isParty ? '🎉 Party' : '⚽ Practice'
+                  const typeLabel = isGame ? '⚽ Game' : isPictureDay ? '📸 Picture Day' : isParty ? '🎉 Party' : '⚽ Practice'
                   return (
                     <TouchableOpacity
                       key={event.id}
@@ -378,7 +378,7 @@ Slots: ${formationSlots}`
                         <Text style={styles.scheduleTitle}>
                           {isGame
                             ? `vs ${event.opponent}${event.home != null ? (event.home ? ' · Home' : ' · Away') : ''}`
-                            : (event.focus ?? event.title ?? event.location ?? '')}
+                            : (event.focus ?? event.title ?? '')}
                         </Text>
                       </View>
                       <View style={{ alignItems: 'flex-end' }}>
