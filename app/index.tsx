@@ -17,13 +17,13 @@ const ONBOARDING = {
     {
       emoji: '⚡',
       title: 'Your practice, ready to go',
-      desc: 'Answer a few questions and get a full session plan built for your team. Then make it yours.',
+      desc: 'Practice plans automatically created for your team\'s age and skill level. Tinker away to make it yours.',
       nextLabel: 'Next: Game day',
     },
     {
       emoji: '📋',
       title: 'Game day, simplified',
-      desc: 'Lineup, substitutions, and playing time. Everything you need on the sideline.',
+      desc: 'Lineup, substitutions, and a plan for every player. Everything you need on the sideline.',
       nextLabel: 'Next: Team communication',
     },
     {
@@ -36,20 +36,20 @@ const ONBOARDING = {
   parent: [
     {
       emoji: '📅',
-      title: 'Always in the loop',
-      desc: 'See the schedule, get reminders, and let the coach know you\'re coming. All in one tap.',
+      title: 'Know before you go',
+      desc: 'See the full schedule, get reminders before practice and games, and always know where to be.',
       nextLabel: 'Next: Stay connected',
     },
     {
       emoji: '💬',
-      title: 'Stay connected',
-      desc: 'Chat with the team, get updates, and know what\'s happening before it happens.',
+      title: 'Always in the loop',
+      desc: 'Team chat, snack schedule, polls, and instant updates when anything changes.',
       nextLabel: 'Next: Build momentum',
     },
     {
       emoji: '🔥',
       title: 'Practice doesn\'t stop at the field',
-      desc: 'Your coach sends a daily drill. Do it at home, build a streak, get better every day.',
+      desc: 'Your coach\'s assistant picks a daily drill for your kid. Do it at home, build a streak, get better every day.',
       nextLabel: null,
     },
   ],
@@ -233,7 +233,6 @@ export default function EntryScreen() {
     return (
       <View style={styles.container}>
         <Text style={styles.roleHeading}>Welcome to Huddle</Text>
-        <Text style={styles.roleSub}>How will you be using Huddle?</Text>
 
         <Animated.View style={{ transform: [{ scale: coachScale }] }}>
           <TouchableOpacity
@@ -244,7 +243,7 @@ export default function EntryScreen() {
             <Text style={styles.roleCardBigEmoji}>📋</Text>
             <View style={{ flex: 1 }}>
               <Text style={styles.roleCardTitle}>Coach</Text>
-              <Text style={styles.roleCardDesc}>Build your practice, run game day, keep your team connected.</Text>
+              <Text style={styles.roleCardDesc}>Build your practice, run game day, and keep your whole team connected.</Text>
             </View>
           </TouchableOpacity>
         </Animated.View>
@@ -258,7 +257,7 @@ export default function EntryScreen() {
             <Text style={styles.roleCardBigEmoji}>👨‍👧</Text>
             <View style={{ flex: 1 }}>
               <Text style={styles.roleCardTitle}>Parent / Guardian</Text>
-              <Text style={styles.roleCardDesc}>Stay in the loop, support your kid, and never miss a thing.</Text>
+              <Text style={styles.roleCardDesc}>Know what's happening, cheer from the sideline, and never miss a moment.</Text>
             </View>
           </TouchableOpacity>
         </Animated.View>
