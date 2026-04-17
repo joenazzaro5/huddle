@@ -5,6 +5,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router'
 import { supabase } from '../lib/supabase'
 import { AppHeader } from '../lib/header'
 import { SEASON_SCHEDULE } from '../lib/season'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
 const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl2c3B5d21od3FkYXB4ZW14bHVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMDIwMjksImV4cCI6MjA5MDY3ODAyOX0.HXsFNltsIhtL0S2tLtzFK55lbQX6GMFQKxw-U3OY6KQ'
 const SUPABASE_URL = 'https://yvspywmhwqdapxemxlug.supabase.co'
@@ -50,7 +51,7 @@ const LEAGUE_STANDINGS = [
   { name: 'Sausalito Stars',   w: 2, l: 6, d: 1, pts:  7, isOwn: false, recent: ['L','L','W','L','L'] },
 ]
 
-const PLAYER_STATS = [
+const INITIAL_PLAYER_STATS = [
   { name: 'Mason B.',  goals: 8, assists: 3 },
   { name: 'Ethan R.',  goals: 4, assists: 6 },
   { name: 'Lucas P.',  goals: 3, assists: 4 },
@@ -70,14 +71,6 @@ function mockParentContact(player: Player) {
     email: `${first.toLowerCase()}${last ? '.' + last.split(' ')[0].toLowerCase() : ''}@gmail.com`,
   }
 }
-
-const SNACK_SCHEDULE_DATA = [
-  { id: 's1', date: 'Apr 19', family: "Sofia's family" },
-  { id: 's2', date: 'Apr 26', family: null },
-  { id: 's3', date: 'May 3',  family: null },
-  { id: 's4', date: 'May 10', family: null },
-  { id: 's5', date: 'May 17', family: null },
-]
 
 const TABS = [
   { key: 'schedule',  label: 'Schedule'  },
@@ -118,8 +111,19 @@ export default function GamesScreen() {
   const [selectedPlayer, setSelectedPlayer] = useState<string | null>(null)
   const [confirmedSubRounds, setConfirmedSubRounds] = useState(0)
   const [originalStarterIds, setOriginalStarterIds] = useState<string[]>([])
-  const [claimedSnacks, setClaimedSnacks] = useState<Set<string>>(new Set(['s1']))
   const [rosterModalPlayer, setRosterModalPlayer] = useState<Player | null>(null)
+  const [currentUser, setCurrentUser] = useState<any>(null)
+  const [playerStats, setPlayerStats] = useState(INITIAL_PLAYER_STATS)
+  const [snackData, setSnackData] = useState(() =>
+    SEASON_SCHEDULE
+      .filter(e => e.type === 'game' && new Date(e.starts_at) >= new Date())
+      .map(e => ({
+        date: new Date(e.starts_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        type: 'Game' as string,
+        name: null as string | null,
+        claimed: false,
+      }))
+  )
 
   useEffect(() => {
     const validTabs = TABS.map(t => t.key)
@@ -133,6 +137,7 @@ export default function GamesScreen() {
   const loadData = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
+    setCurrentUser(user)
 
     const { data: memberships } = await supabase
       .from('team_members')
@@ -183,6 +188,10 @@ export default function GamesScreen() {
         .limit(1)
         .maybeSingle()
       setNextGame(gameData)
+
+      const snackKey = `huddle_snacks_coach_${membership.team.id}`
+      const stored = await AsyncStorage.getItem(snackKey)
+      if (stored) setSnackData(JSON.parse(stored))
     }
     setLoading(false)
   }
@@ -593,32 +602,49 @@ Slots: ${formationSlots}`
       {/* ── Roster ── */}
       {activeTab === 'roster' && (
         <ScrollView contentContainerStyle={styles.content}>
-          <Text style={styles.monthHeader}>PLAYERS · {players.length}</Text>
+          <View style={[styles.teamCard, { backgroundColor: tc }]}>
+            <Text style={styles.teamCardName}>{team?.name}</Text>
+            <Text style={styles.teamCardSub}>{team?.age_group} · {players.length} players</Text>
+          </View>
+
+          <View style={{ backgroundColor: '#EEF4FF', borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12, marginBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 0.5, borderColor: '#eee' }}>
+            <Text style={{ fontSize: 18 }}>🏆</Text>
+            <Text style={{ fontSize: 14, fontWeight: '800', color: tc }}>Team record:</Text>
+            <Text style={{ fontSize: 14, fontWeight: '700', color: '#111' }}>6W · 2L · 1D</Text>
+          </View>
+
           <View style={styles.card}>
-            {players.map((player, i) => (
-              <TouchableOpacity
-                key={player.id}
-                style={[
-                  { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, gap: 12 },
-                  i < players.length - 1 && styles.scheduleBorder,
-                ]}
-                onPress={() => setRosterModalPlayer(player)}
-                activeOpacity={0.7}
-              >
-                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: tc + '18', alignItems: 'center', justifyContent: 'center' }}>
-                  <Text style={{ fontSize: 14, fontWeight: '800', color: tc }}>{player.number ?? '—'}</Text>
-                </View>
-                <Text style={{ fontSize: 15, fontWeight: '600', color: '#1a1a1a', flex: 1 }}>{player.name}</Text>
-                <View style={{ flexDirection: 'row', gap: 4, flexWrap: 'wrap', justifyContent: 'flex-end', maxWidth: 120 }}>
-                  {(player.positions.length > 0 ? player.positions : ['—']).map(pos => (
-                    <View key={pos} style={{ backgroundColor: '#F0F4FF', borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 }}>
-                      <Text style={{ fontSize: 11, fontWeight: '700', color: tc }}>{pos}</Text>
+            <Text style={styles.cardLabel}>Players · {players.length}</Text>
+            {players.map((player, i) => {
+              const pos = (player.positions?.[0] ?? '').toUpperCase()
+              const posColor = pos === 'GK' ? '#F59E0B'
+                : ['CB','LB','RB','LWB','RWB'].includes(pos) ? tc
+                : ['CM','LM','RM','DM','AM','CAM','CDM'].includes(pos) ? '#10B981'
+                : pos ? '#FF6B35' : null
+              const posLabel = player.positions?.[0] ?? ''
+              return (
+                <TouchableOpacity
+                  key={player.id}
+                  style={[styles.rosterRow, i < players.length - 1 && styles.rosterBorder]}
+                  onPress={() => setRosterModalPlayer(player)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.numBadge, { backgroundColor: tc + '20' }]}>
+                    <Text style={[styles.numText, { color: tc }]}>{player.number ?? '—'}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.rosterName}>{player.name}</Text>
+                    {posLabel ? <Text style={styles.rosterPos}>{posLabel}</Text> : null}
+                  </View>
+                  {posColor ? (
+                    <View style={{ backgroundColor: posColor + '22', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
+                      <Text style={{ fontSize: 10, fontWeight: '800', color: posColor }}>{posLabel}</Text>
                     </View>
-                  ))}
-                </View>
-                <Text style={{ fontSize: 16, color: '#D1D5DB' }}>›</Text>
-              </TouchableOpacity>
-            ))}
+                  ) : null}
+                  <Text style={{ fontSize: 16, color: '#D1D5DB' }}>›</Text>
+                </TouchableOpacity>
+              )
+            })}
           </View>
         </ScrollView>
       )}
@@ -626,47 +652,33 @@ Slots: ${formationSlots}`
       {/* ── Standings ── */}
       {activeTab === 'standings' && (
         <ScrollView contentContainerStyle={styles.content}>
-          <Text style={styles.monthHeader}>U10 LEAGUE STANDINGS</Text>
-          <View style={{ backgroundColor: tc + '12', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 10, flexDirection: 'row', gap: 6, alignItems: 'center' }}>
-            <Text style={{ fontSize: 12, fontWeight: '700', color: tc }}>Season record:</Text>
-            <Text style={{ fontSize: 12, fontWeight: '800', color: '#1a1a1a' }}>6W · 2L · 1D</Text>
-            <Text style={{ fontSize: 12, color: '#6B7280', marginLeft: 4 }}>19 pts · 1st place</Text>
-          </View>
           <View style={styles.card}>
-            <View style={{ flexDirection: 'row', paddingVertical: 6, paddingHorizontal: 4, marginBottom: 2 }}>
-              <Text style={{ flex: 1, fontSize: 10, fontWeight: '700', color: '#9CA3AF', letterSpacing: 0.3 }}>TEAM</Text>
-              {['W','L','D','PTS'].map(col => (
-                <Text key={col} style={{ width: 32, textAlign: 'center', fontSize: 10, fontWeight: '700', color: '#9CA3AF', letterSpacing: 0.3 }}>{col}</Text>
-              ))}
-              <Text style={{ width: 68, textAlign: 'right', fontSize: 10, fontWeight: '700', color: '#9CA3AF', letterSpacing: 0.3 }}>FORM</Text>
+            <Text style={styles.cardLabel}>League standings</Text>
+            <View style={styles.standingsHeaderRow}>
+              <Text style={[styles.standingsCell, { flex: 1 }]}>Team</Text>
+              <Text style={styles.standingsColHdr}>W</Text>
+              <Text style={styles.standingsColHdr}>L</Text>
+              <Text style={styles.standingsColHdr}>D</Text>
+              <Text style={[styles.standingsColHdr, { color: tc }]}>Pts</Text>
+              <Text style={[styles.standingsColHdr, { width: 56, textAlign: 'right' }]}>Form</Text>
             </View>
             {LEAGUE_STANDINGS.map((row, i) => (
               <View
                 key={row.name}
                 style={[
-                  { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 4 },
-                  row.isOwn && { backgroundColor: '#EEF4FF', borderRadius: 10, marginHorizontal: -4, paddingHorizontal: 4 },
-                  i < LEAGUE_STANDINGS.length - 1 && !row.isOwn && styles.scheduleBorder,
+                  styles.standingsRow,
+                  row.isOwn && styles.standingsRowUs,
+                  i < LEAGUE_STANDINGS.length - 1 && styles.standingsBorder,
                 ]}
               >
-                <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#C4C9D4', minWidth: 14 }}>{i + 1}</Text>
-                  <Text style={{ fontSize: 13, fontWeight: row.isOwn ? '800' : '600', color: row.isOwn ? tc : '#1a1a1a' }} numberOfLines={1}>{row.name}</Text>
-                  {row.isOwn && (
-                    <View style={{ backgroundColor: tc, borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1 }}>
-                      <Text style={{ fontSize: 9, fontWeight: '700', color: '#fff' }}>US</Text>
-                    </View>
-                  )}
-                </View>
-                {[row.w, row.l, row.d, row.pts].map((val, j) => (
-                  <Text
-                    key={j}
-                    style={{ width: 32, textAlign: 'center', fontSize: 13, fontWeight: j === 3 ? '800' : '600', color: j === 3 ? (row.isOwn ? tc : '#1a1a1a') : '#6B7280' }}
-                  >
-                    {val}
-                  </Text>
-                ))}
-                <View style={{ width: 68, flexDirection: 'row', gap: 3, justifyContent: 'flex-end' }}>
+                <Text style={[styles.standingsTeamName, row.isOwn && { fontWeight: '800', color: tc }]} numberOfLines={1}>
+                  {row.isOwn ? '⭐ ' : ''}{row.name}
+                </Text>
+                <Text style={styles.standingsVal}>{row.w}</Text>
+                <Text style={styles.standingsVal}>{row.l}</Text>
+                <Text style={styles.standingsVal}>{row.d}</Text>
+                <Text style={[styles.standingsVal, { fontWeight: '800', color: row.isOwn ? tc : '#1a1a1a' }]}>{row.pts}</Text>
+                <View style={{ width: 56, flexDirection: 'row', gap: 3, justifyContent: 'flex-end' }}>
                   {row.recent.map((r, ri) => (
                     <View
                       key={ri}
@@ -681,24 +693,63 @@ Slots: ${formationSlots}`
             ))}
           </View>
 
-          <Text style={styles.monthHeader}>PLAYER STATS · SEASON</Text>
-          <View style={styles.card}>
-            <View style={{ flexDirection: 'row', paddingVertical: 6, paddingHorizontal: 4, marginBottom: 2 }}>
-              <Text style={{ flex: 1, fontSize: 10, fontWeight: '700', color: '#9CA3AF', letterSpacing: 0.3 }}>PLAYER</Text>
-              <Text style={{ width: 50, textAlign: 'center', fontSize: 10, fontWeight: '700', color: '#9CA3AF', letterSpacing: 0.3 }}>GOALS</Text>
-              <Text style={{ width: 50, textAlign: 'center', fontSize: 10, fontWeight: '700', color: '#9CA3AF', letterSpacing: 0.3 }}>ASSISTS</Text>
+          <Text style={[styles.cardLabel, { marginBottom: 8, marginLeft: 2 }]}>Season stats</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 12 }}>
+            {[
+              { label: 'Goals',        value: '8',   color: tc        },
+              { label: 'Against',      value: '4',   color: '#EF4444' },
+              { label: 'Clean sheets', value: '2',   color: '#10B981' },
+              { label: 'Win rate',     value: '67%', color: '#F59E0B' },
+            ].map((stat, i) => (
+              <View key={i} style={[styles.statCard, { borderTopColor: stat.color, width: '48%', flexShrink: 1 }]}>
+                <Text style={[styles.statCardValue, { color: stat.color }]}>{stat.value}</Text>
+                <Text style={styles.statCardLabel}>{stat.label}</Text>
+              </View>
+            ))}
+          </View>
+
+          <View style={[styles.card, { paddingVertical: 12 }]}>
+            <Text style={[styles.cardLabel, { marginBottom: 10 }]}>Recent results</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              {['W', 'W', 'D', 'L'].map((r, i) => (
+                <View key={i} style={[styles.resultDot, { backgroundColor: r === 'W' ? '#10B981' : r === 'D' ? '#D97706' : '#EF4444' }]}>
+                  <Text style={styles.resultDotText}>{r}</Text>
+                </View>
+              ))}
+              <Text style={{ fontSize: 12, color: '#aaa', marginLeft: 4 }}>2W · 1L · 1D last 4</Text>
             </View>
-            {PLAYER_STATS.map((ps, i) => (
+          </View>
+
+          <View style={styles.card}>
+            <View style={{ flexDirection: 'row', paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: '#E5E7EB', marginBottom: 2, alignItems: 'center' }}>
+              <Text style={[styles.cardLabel, { flex: 1, marginBottom: 0 }]}>Player stats</Text>
+              <Text style={[styles.standingsColHdr, { color: tc, width: 70 }]}>Goals</Text>
+              <Text style={[styles.standingsColHdr, { width: 70 }]}>Assists</Text>
+            </View>
+            {playerStats.map((ps, i) => (
               <View
                 key={ps.name}
-                style={[
-                  { flexDirection: 'row', alignItems: 'center', paddingVertical: 9, paddingHorizontal: 4 },
-                  i < PLAYER_STATS.length - 1 && styles.scheduleBorder,
-                ]}
+                style={[{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10 }, i < playerStats.length - 1 && styles.standingsBorder]}
               >
-                <Text style={{ flex: 1, fontSize: 14, fontWeight: '600', color: '#1a1a1a' }}>{ps.name}</Text>
-                <Text style={{ width: 50, textAlign: 'center', fontSize: 14, fontWeight: '800', color: tc }}>{ps.goals}</Text>
-                <Text style={{ width: 50, textAlign: 'center', fontSize: 14, fontWeight: '700', color: '#6B7280' }}>{ps.assists}</Text>
+                <Text style={styles.standingsTeamName}>{ps.name}</Text>
+                <View style={{ width: 70, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                  <TouchableOpacity onPress={() => setPlayerStats(prev => prev.map((p, j) => j === i ? { ...p, goals: Math.max(0, p.goals - 1) } : p))}>
+                    <Text style={{ fontSize: 18, color: '#D1D5DB', lineHeight: 22 }}>−</Text>
+                  </TouchableOpacity>
+                  <Text style={{ fontSize: 14, fontWeight: '800', color: tc, minWidth: 16, textAlign: 'center' }}>{ps.goals}</Text>
+                  <TouchableOpacity onPress={() => setPlayerStats(prev => prev.map((p, j) => j === i ? { ...p, goals: p.goals + 1 } : p))}>
+                    <Text style={{ fontSize: 18, color: tc, lineHeight: 22 }}>+</Text>
+                  </TouchableOpacity>
+                </View>
+                <View style={{ width: 70, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                  <TouchableOpacity onPress={() => setPlayerStats(prev => prev.map((p, j) => j === i ? { ...p, assists: Math.max(0, p.assists - 1) } : p))}>
+                    <Text style={{ fontSize: 18, color: '#D1D5DB', lineHeight: 22 }}>−</Text>
+                  </TouchableOpacity>
+                  <Text style={{ fontSize: 14, fontWeight: '700', color: '#10B981', minWidth: 16, textAlign: 'center' }}>{ps.assists}</Text>
+                  <TouchableOpacity onPress={() => setPlayerStats(prev => prev.map((p, j) => j === i ? { ...p, assists: p.assists + 1 } : p))}>
+                    <Text style={{ fontSize: 18, color: '#10B981', lineHeight: 22 }}>+</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             ))}
           </View>
@@ -707,53 +758,59 @@ Slots: ${formationSlots}`
 
       {/* ── Snacks ── */}
       {activeTab === 'snacks' && (
-        <ScrollView contentContainerStyle={styles.content}>
-          <Text style={styles.monthHeader}>SNACK SCHEDULE</Text>
-          <View style={styles.card}>
-            {SNACK_SCHEDULE_DATA.map((item, i) => {
-              const claimed = claimedSnacks.has(item.id)
-              return (
-                <View
-                  key={item.id}
-                  style={[
-                    { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 12 },
-                    i < SNACK_SCHEDULE_DATA.length - 1 && styles.scheduleBorder,
-                  ]}
-                >
-                  <Text style={{ width: 52, fontSize: 13, fontWeight: '700', color: '#1a1a1a' }}>{item.date}</Text>
-                  <Text style={{ flex: 1, fontSize: 13, fontWeight: '600', color: claimed || item.family ? '#1a1a1a' : '#9CA3AF' }}>
-                    {claimed ? 'Your family' : (item.family ?? 'Available')}
-                  </Text>
-                  {claimed ? (
+        <ScrollView contentContainerStyle={{ paddingTop: 12, paddingHorizontal: 16 }}>
+          <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#F59E0B', padding: 0, overflow: 'hidden' }]}>
+            <View style={{ backgroundColor: '#FFFBEB', paddingHorizontal: 16, paddingTop: 14, paddingBottom: 12 }}>
+              <Text style={{ fontSize: 17, fontWeight: '900', color: '#92400E', marginBottom: 2 }}>🍊 Snack duty</Text>
+              <Text style={{ fontSize: 13, color: '#B45309', fontWeight: '500' }}>Who's bringing the goods?</Text>
+            </View>
+            <View style={{ paddingHorizontal: 16 }}>
+              {snackData.map((item, i) => (
+                <View key={i} style={[styles.snackListRow, i < snackData.length - 1 && styles.snackListBorder]}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.snackListDate}>{item.date} · {item.type}</Text>
+                    {item.claimed ? (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                        <Text style={{ fontSize: 14, fontWeight: '700', color: '#059669' }}>✓ {item.name}</Text>
+                        <Text style={{ fontSize: 14 }}>🎉</Text>
+                      </View>
+                    ) : (
+                      <Text style={{ fontSize: 13, color: '#888', marginTop: 2 }}>Nobody yet…</Text>
+                    )}
+                  </View>
+                  {!item.claimed && (
                     <TouchableOpacity
-                      style={{ backgroundColor: '#FEF2F2', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 }}
-                      onPress={() => setClaimedSnacks(prev => { const next = new Set(prev); next.delete(item.id); return next })}
-                      activeOpacity={0.8}
+                      style={styles.snackClaimBtn}
+                      onPress={async () => {
+                        const snackKey = `huddle_snacks_coach_${team?.id}`
+                        const stored = await AsyncStorage.getItem(snackKey)
+                        const freshSnacks = stored ? JSON.parse(stored) : snackData
+                        if (freshSnacks[i]?.claimed) { if (stored) setSnackData(freshSnacks); return }
+                        const claimerName = currentUser?.email?.split('@')[0] ?? 'Coach'
+                        const updated = freshSnacks.map((s: any, idx: number) =>
+                          idx === i ? { ...s, claimed: true, name: claimerName } : s
+                        )
+                        setSnackData(updated)
+                        await AsyncStorage.setItem(snackKey, JSON.stringify(updated))
+                      }}
+                      activeOpacity={0.75}
                     >
-                      <Text style={{ fontSize: 12, fontWeight: '700', color: '#DC2626' }}>Cancel</Text>
-                    </TouchableOpacity>
-                  ) : item.family ? (
-                    <View style={{ backgroundColor: '#F3F4F6', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 }}>
-                      <Text style={{ fontSize: 12, fontWeight: '600', color: '#9CA3AF' }}>Taken</Text>
-                    </View>
-                  ) : (
-                    <TouchableOpacity
-                      style={{ backgroundColor: tc, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 }}
-                      onPress={() => setClaimedSnacks(prev => new Set([...prev, item.id]))}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }}>Claim</Text>
+                      <Text style={styles.snackClaimBtnText}>Claim it! →</Text>
                     </TouchableOpacity>
                   )}
                 </View>
-              )
-            })}
+              ))}
+            </View>
+            <View style={{ paddingHorizontal: 16, paddingVertical: 14, borderTopWidth: 0.5, borderTopColor: '#FDE68A' }}>
+              <Text style={{ fontSize: 13, color: '#92400E', fontWeight: '600', textAlign: 'center' }}>
+                Remember: orange slices &gt; juice boxes 🍊
+              </Text>
+            </View>
           </View>
-          <Text style={{ fontSize: 12, color: '#9CA3AF', textAlign: 'center', marginTop: 4 }}>Tap Claim to sign up for snacks on that date</Text>
         </ScrollView>
       )}
 
-      {/* Roster player modal */}
+      {/* Roster player modal — coach view includes parent contact */}
       <Modal visible={!!rosterModalPlayer} transparent animationType="slide" onRequestClose={() => setRosterModalPlayer(null)}>
         <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }} activeOpacity={1} onPress={() => setRosterModalPlayer(null)}>
           <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 44 }}>
@@ -818,6 +875,7 @@ const styles = StyleSheet.create({
   scheduleTime: { fontSize: 12, fontWeight: '600', color: '#555' },
   scheduleLoc: { fontSize: 11, color: '#aaa', maxWidth: 90 },
   card: { backgroundColor: '#fff', borderRadius: 18, padding: 16, marginBottom: 12, borderWidth: 0.5, borderColor: '#eee' },
+  cardLabel: { fontSize: 10, fontWeight: '700', color: '#aaa', textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 8 },
   gameCard: { borderRadius: 20, padding: 16, marginBottom: 12 },
   gameCardLabel: { fontSize: 10, fontWeight: '700', letterSpacing: 0.3, marginBottom: 2 },
   gameCardTitle: { fontSize: 26, fontWeight: '900', marginBottom: 2 },
@@ -855,4 +913,34 @@ const styles = StyleSheet.create({
   subPlanTime: { fontSize: 12, fontWeight: '700', color: '#6B7280', minWidth: 32, marginTop: 1 },
   subPlanIn: { fontSize: 13, fontWeight: '600', color: '#16A34A' },
   subPlanOut: { fontSize: 13, fontWeight: '600', color: '#DC2626', marginTop: 1 },
+  // Roster
+  teamCard: { borderRadius: 20, padding: 18, marginBottom: 12 },
+  teamCardName: { fontSize: 20, fontWeight: '800', color: '#fff', marginBottom: 4 },
+  teamCardSub: { fontSize: 13, color: 'rgba(255,255,255,0.8)' },
+  rosterRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 },
+  rosterBorder: { borderBottomWidth: 0.5, borderBottomColor: '#f5f5f5' },
+  rosterName: { fontSize: 15, fontWeight: '600', color: '#1a1a1a' },
+  rosterPos: { fontSize: 12, color: '#888', marginTop: 1 },
+  numBadge: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  numText: { fontSize: 13, fontWeight: '800' },
+  // Standings
+  standingsHeaderRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: '#E5E7EB', marginBottom: 2 },
+  standingsColHdr: { fontSize: 11, fontWeight: '700', color: '#aaa', width: 30, textAlign: 'center' },
+  standingsRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10 },
+  standingsRowUs: { backgroundColor: '#EEF4FF', borderRadius: 8, paddingHorizontal: 6, marginHorizontal: -6 },
+  standingsBorder: { borderBottomWidth: 0.5, borderBottomColor: '#f5f5f5' },
+  standingsTeamName: { flex: 1, fontSize: 13, fontWeight: '600', color: '#1a1a1a' },
+  standingsCell: { fontSize: 13, fontWeight: '600', color: '#1a1a1a' },
+  standingsVal: { width: 30, textAlign: 'center', fontSize: 13, fontWeight: '600', color: '#555' },
+  statCard: { backgroundColor: '#fff', borderRadius: 14, padding: 16, borderWidth: 0.5, borderColor: '#eee', borderTopWidth: 3, alignItems: 'center' },
+  statCardValue: { fontSize: 30, fontWeight: '900', marginBottom: 4 },
+  statCardLabel: { fontSize: 11, fontWeight: '600', color: '#888', textAlign: 'center' },
+  resultDot: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  resultDotText: { fontSize: 12, fontWeight: '800', color: '#fff' },
+  // Snacks
+  snackListRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14 },
+  snackListBorder: { borderBottomWidth: 0.5, borderBottomColor: '#FDE68A' },
+  snackListDate: { fontSize: 11, color: '#aaa', fontWeight: '600', marginBottom: 1 },
+  snackClaimBtn: { backgroundColor: '#F59E0B', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 },
+  snackClaimBtnText: { fontSize: 13, fontWeight: '800', color: '#fff' },
 })
