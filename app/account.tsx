@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase'
 import { useRouter } from 'expo-router'
 import { AppHeader } from '../lib/header'
 import { useRole } from '../lib/roleStore'
-import { seedMultiTeamData } from '../lib/seedTestData'
+import { seedMultiTeamData, seedSharksTeam } from '../lib/seedTestData'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
 export default function AccountScreen() {
@@ -126,6 +126,19 @@ export default function AccountScreen() {
               }}
             >
               <Text style={styles.devResetText}>Seed multi-team data (dev)</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.devResetBtn}
+              onPress={async () => {
+                try {
+                  await seedSharksTeam()
+                  Alert.alert('Done', 'San Rafael Sharks added. Restart the app to see them.')
+                } catch (e: any) {
+                  Alert.alert('Error', e.message ?? 'Seed failed')
+                }
+              }}
+            >
+              <Text style={styles.devResetText}>Add Sharks team (dev)</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.devResetBtn}

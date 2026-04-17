@@ -135,8 +135,14 @@ export default function HomeScreen() {
       const n = teamData.name ?? ''
       if (n.includes('Cheetah') || n.includes('Marin')) {
         resolvedEvents = [{ id: 'mock-1', type: 'practice', focus: 'Dribbling', starts_at: '2026-04-22T16:00:00', location: 'Marin Community Fields', duration_min: 60 }]
-      } else if (n.includes('Tiger') || n.includes('San Rafael')) {
+      } else if (n.includes('Tiger')) {
         resolvedEvents = [{ id: 'mock-2', type: 'practice', focus: 'Passing', starts_at: '2026-04-22T16:00:00', location: 'Marin Community Fields', duration_min: 60 }]
+      } else if (n.includes('Shark')) {
+        const d = new Date()
+        d.setDate(d.getDate() + 1)
+        const pad = (x: number) => String(x).padStart(2, '0')
+        const tomorrowStr = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T10:00:00`
+        resolvedEvents = [{ id: 'mock-sharks-1', type: 'game', opponent: 'Mill Valley FC', starts_at: tomorrowStr, location: 'Terra Linda Park, San Rafael', duration_min: 60 }]
       } else {
         resolvedEvents = getScheduleEvents()
       }
@@ -286,7 +292,8 @@ export default function HomeScreen() {
     showToast()
   }
 
-  const tc = '#1A56DB'
+  const tc = team?.color ?? '#1A56DB'
+  const isSharkTeam = !!(team?.name?.includes('Shark'))
 
   if (loading) {
     return <View style={styles.loading}><ActivityIndicator color="#1A56DB" size="large" /></View>
@@ -369,31 +376,69 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* 2. Practice plan preview */}
-        <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#1A56DB', padding: 0, overflow: 'hidden' }]}>
-          <View style={styles.practicePlanHeader}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.planReadyTitle}>Your plan is ready</Text>
-              <Text style={styles.planPersonalizedBadge}>✦ Personalized for your team</Text>
-            </View>
-            {planLoading && <ActivityIndicator color={tc} size="small" />}
-          </View>
-          <View style={styles.practicePlanBody}>
-            <Text style={styles.cardTitle}>{plan?.title ?? 'Building your plan...'}</Text>
-            {!planLoading && plan?.plan?.map((item: any, i: number) => (
-              <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 5 }}>
-                <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#9CA3AF' }} />
-                <Text style={{ fontSize: 13, fontWeight: '600', color: '#374151' }}>{item.drill}</Text>
+        {/* 2. Practice plan / Substitution plan */}
+        {isSharkTeam ? (
+          <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: tc, padding: 0, overflow: 'hidden' }]}>
+            <View style={[styles.practicePlanHeader, { backgroundColor: '#FEF2F2' }]}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.planReadyTitle}>Game day lineup</Text>
+                <Text style={styles.planPersonalizedBadge}>✦ U12 Boys · 7v7</Text>
               </View>
-            ))}
-            <Text style={[styles.planMeta, { marginTop: 10 }]}>
-              {`${nextEvent?.duration_min ?? 60} min · ${team?.age_group ?? 'your team'}`}
-            </Text>
-            <TouchableOpacity onPress={() => router.push('/practice')}>
-              <Text style={[styles.viewLink, { color: tc }]}>See the full plan →</Text>
-            </TouchableOpacity>
+            </View>
+            <View style={styles.practicePlanBody}>
+              <Text style={[styles.cardTitle, { marginBottom: 8 }]}>Starting 7</Text>
+              {[
+                { pos: 'GK', name: 'Alex M.' },
+                { pos: 'RD', name: 'Jordan K.' },
+                { pos: 'LD', name: 'Tyler S.' },
+                { pos: 'CM', name: 'Ethan R.' },
+                { pos: 'RM', name: 'Lucas P.' },
+                { pos: 'LM', name: 'Noah C.' },
+                { pos: 'ST', name: 'Mason B.' },
+              ].map((p, i) => (
+                <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                  <View style={{ width: 28, backgroundColor: tc, borderRadius: 4, alignItems: 'center', paddingVertical: 2 }}>
+                    <Text style={{ fontSize: 9, fontWeight: '800', color: '#fff' }}>{p.pos}</Text>
+                  </View>
+                  <Text style={{ fontSize: 13, fontWeight: '600', color: '#374151' }}>{p.name}</Text>
+                </View>
+              ))}
+              <Text style={[styles.cardTitle, { fontSize: 14, marginTop: 12, marginBottom: 4 }]}>Bench</Text>
+              <Text style={{ fontSize: 13, color: '#6B7280' }}>Liam T. · Owen G. · Carter H. · Dylan W.</Text>
+              <View style={{ backgroundColor: '#FEF2F2', borderRadius: 8, padding: 10, marginTop: 10 }}>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: tc }}>Sub waves: bring in full bench at 8 min and 24 min</Text>
+              </View>
+              <TouchableOpacity onPress={() => router.push('/games')}>
+                <Text style={[styles.viewLink, { color: tc }]}>Build your lineup →</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
+        ) : (
+          <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: tc, padding: 0, overflow: 'hidden' }]}>
+            <View style={styles.practicePlanHeader}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.planReadyTitle}>Your plan is ready</Text>
+                <Text style={styles.planPersonalizedBadge}>✦ Personalized for your team</Text>
+              </View>
+              {planLoading && <ActivityIndicator color={tc} size="small" />}
+            </View>
+            <View style={styles.practicePlanBody}>
+              <Text style={styles.cardTitle}>{plan?.title ?? 'Building your plan...'}</Text>
+              {!planLoading && plan?.plan?.map((item: any, i: number) => (
+                <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 5 }}>
+                  <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#9CA3AF' }} />
+                  <Text style={{ fontSize: 13, fontWeight: '600', color: '#374151' }}>{item.drill}</Text>
+                </View>
+              ))}
+              <Text style={[styles.planMeta, { marginTop: 10 }]}>
+                {`${nextEvent?.duration_min ?? 60} min · ${team?.age_group ?? 'your team'}`}
+              </Text>
+              <TouchableOpacity onPress={() => router.push('/practice')}>
+                <Text style={[styles.viewLink, { color: tc }]}>See the full plan →</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
 
         {/* 3. Streak */}
         <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#F59E0B', padding: 0, overflow: 'hidden' }]}>

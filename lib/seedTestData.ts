@@ -42,7 +42,7 @@ export async function seedMultiTeamData() {
   } else {
     const { data: created2, error: e2 } = await supabase
       .from('teams')
-      .insert({ name: 'San Rafael Tigers', age_group: 'U8', gender: 'Girls', color: '#DC2626' })
+      .insert({ name: 'San Rafael Tigers', age_group: 'U8', gender: 'Girls', color: '#F59E0B' })
       .select()
       .single()
     if (e2) throw e2
@@ -64,6 +64,72 @@ export async function seedMultiTeamData() {
   if (e4) throw e4
   console.log('[seed] Upserted parent membership for San Rafael Tigers')
 
-  console.log('[seed] Done. team1:', team1.id, 'team2:', team2.id)
-  return { team1, team2 }
+  const team3 = await seedSharksTeam(user.id)
+
+  console.log('[seed] Done. team1:', team1.id, 'team2:', team2.id, 'team3:', team3.id)
+  return { team1, team2, team3 }
+}
+
+export async function seedSharksTeam(userId?: string) {
+  const uid = userId ?? (await supabase.auth.getUser()).data.user?.id
+  if (!uid) throw new Error('Not signed in')
+
+  // --- San Rafael Sharks (coach) ---
+  let team3: any
+  const { data: existing3 } = await supabase
+    .from('teams')
+    .select('*')
+    .eq('name', 'San Rafael Sharks')
+    .maybeSingle()
+
+  if (existing3) {
+    team3 = existing3
+    console.log('[seed] San Rafael Sharks already exists:', team3.id)
+  } else {
+    const { data: created3, error: e5 } = await supabase
+      .from('teams')
+      .insert({ name: 'San Rafael Sharks', age_group: 'U12', gender: 'Boys', color: '#DC2626' })
+      .select()
+      .single()
+    if (e5) throw e5
+    team3 = created3
+    console.log('[seed] Created San Rafael Sharks:', team3.id)
+  }
+
+  // --- Coach membership for San Rafael Sharks ---
+  const { error: e6 } = await supabase
+    .from('team_members')
+    .upsert({ user_id: uid, team_id: team3.id, role: 'coach' }, { onConflict: 'user_id,team_id' })
+  if (e6) throw e6
+  console.log('[seed] Upserted coach membership for San Rafael Sharks')
+
+  // --- Game tomorrow vs Mill Valley FC ---
+  const { data: existingGame } = await supabase
+    .from('events')
+    .select('id')
+    .eq('team_id', team3.id)
+    .eq('type', 'game')
+    .eq('opponent', 'Mill Valley FC')
+    .maybeSingle()
+
+  if (!existingGame) {
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    tomorrow.setHours(10, 0, 0, 0)
+    const { error: e7 } = await supabase
+      .from('events')
+      .insert({
+        team_id: team3.id,
+        type: 'game',
+        opponent: 'Mill Valley FC',
+        starts_at: tomorrow.toISOString(),
+        location: 'Terra Linda Park, San Rafael',
+        address: 'Terra Linda Park, San Rafael, CA',
+        duration_min: 60,
+      })
+    if (e7) throw e7
+    console.log('[seed] Created game event for San Rafael Sharks')
+  }
+
+  return team3
 }
