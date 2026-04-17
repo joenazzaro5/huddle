@@ -1,33 +1,13 @@
-import { useEffect, useState, useRef } from 'react'
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, TextInput, Modal } from 'react-native'
+import { useEffect, useState } from 'react'
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, TextInput } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter, useLocalSearchParams } from 'expo-router'
 import { supabase } from '../lib/supabase'
 import { AppHeader } from '../lib/header'
 import { SEASON_SCHEDULE } from '../lib/season'
-import AsyncStorage from '@react-native-async-storage/async-storage'
 
 const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl2c3B5d21od3FkYXB4ZW14bHVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMDIwMjksImV4cCI6MjA5MDY3ODAyOX0.HXsFNltsIhtL0S2tLtzFK55lbQX6GMFQKxw-U3OY6KQ'
 const SUPABASE_URL = 'https://yvspywmhwqdapxemxlug.supabase.co'
-
-const PLAYER_STATS_INIT = [
-  { name: 'Sofia',     pos: 'GK',  goals: 0, assists: 0, yellows: 0 },
-  { name: 'Emma',      pos: 'MID', goals: 4, assists: 1, yellows: 0 },
-  { name: 'Olivia',    pos: 'MID', goals: 2, assists: 5, yellows: 1 },
-  { name: 'Isabella',  pos: 'FWD', goals: 3, assists: 2, yellows: 0 },
-  { name: 'Charlotte', pos: 'MID', goals: 1, assists: 3, yellows: 0 },
-  { name: 'Mia',       pos: 'DEF', goals: 2, assists: 1, yellows: 0 },
-  { name: 'Ava',       pos: 'DEF', goals: 1, assists: 2, yellows: 0 },
-]
-
-const STANDINGS = [
-  { team:'Marin Cheetahs', w:4, l:1, d:1, pts:13, isUs:true },
-  { team:'Tiburon FC',     w:3, l:2, d:1, pts:10 },
-  { team:'Mill Valley SC', w:3, l:2, d:0, pts:9 },
-  { team:'Novato United',  w:2, l:2, d:2, pts:8 },
-  { team:'San Anselmo FC', w:1, l:4, d:1, pts:4 },
-  { team:'Fairfax FC',     w:0, l:5, d:1, pts:1 },
-]
 
 // 7v7 formations for U10 (GK + 6 outfield)
 const FORMATIONS: Record<string, { position: string; x: number; y: number }[]> = {
@@ -60,6 +40,7 @@ const FORMATIONS: Record<string, { position: string; x: number; y: number }[]> =
   ],
 }
 const FORMATION_NAMES = ['3-1-2', '2-3-1', '2-2-2'] as const
+const WAVE_MINS = [8, 16, 24]
 
 type Player = {
   id: string
@@ -78,9 +59,8 @@ export default function GamesScreen() {
   const [team, setTeam] = useState<any>(null)
   const [allTeams, setAllTeams] = useState<any[]>([])
   const [players, setPlayers] = useState<Player[]>([])
-  const [events, setEvents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'schedule' | 'games' | 'roster' | 'standings' | 'snacks'>('schedule')
+  const [activeTab, setActiveTab] = useState<'schedule' | 'games'>('games')
   const [lineupPrompt, setLineupPrompt] = useState('')
   const [lineupLoading, setLineupLoading] = useState(false)
   const [lineupGenerated, setLineupGenerated] = useState(true)
@@ -88,38 +68,22 @@ export default function GamesScreen() {
   const [lineupBuilderOpen, setLineupBuilderOpen] = useState(false)
   const [lineupFocusPills, setLineupFocusPills] = useState<string[]>([])
   const [nextGame, setNextGame] = useState<any>(null)
-  const [currentUser, setCurrentUser] = useState<any>(null)
   const [selectedPlayer, setSelectedPlayer] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<'field' | 'list'>('field')
-
-  const [playedPlayers, setPlayedPlayers] = useState<Set<string>>(new Set())
-  const [snackData, setSnackData] = useState(() =>
-    SEASON_SCHEDULE
-      .filter(e => e.type === 'game' && new Date(e.starts_at) >= new Date())
-      .map(e => ({
-        date: new Date(e.starts_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        type: 'Game' as string,
-        name: null as string | null,
-        claimed: false,
-      }))
-  )
-  const [playerStats, setPlayerStats] = useState(PLAYER_STATS_INIT)
-  const [logModalVisible, setLogModalVisible] = useState(false)
-  const [logPlayerName, setLogPlayerName] = useState(PLAYER_STATS_INIT[0].name)
-  const [logStatType, setLogStatType] = useState<'goals' | 'assists' | 'yellows'>('goals')
+  const [confirmedWaves, setConfirmedWaves] = useState(0)
+  const [originalStarterIds, setOriginalStarterIds] = useState<string[]>([])
 
   useEffect(() => {
-    if (params.tab) setActiveTab(params.tab as typeof activeTab)
+    if (params.tab === 'schedule' || params.tab === 'games') {
+      setActiveTab(params.tab)
+    }
   }, [params.tab])
 
-  useEffect(() => {
-    loadData()
-  }, [])
+  useEffect(() => { loadData() }, [])
 
   const loadData = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
-    setCurrentUser(user)
 
     const { data: memberships } = await supabase
       .from('team_members')
@@ -146,7 +110,7 @@ export default function GamesScreen() {
         .order('number', { ascending: true })
 
       if (playerData) {
-        setPlayers(playerData.map((p, i) => ({
+        const mapped = playerData.map((p, i) => ({
           id: p.id,
           name: p.name,
           number: p.number,
@@ -155,7 +119,9 @@ export default function GamesScreen() {
           fieldSlot: i < 7 ? i : null,
           minutes: 0,
           targetPercent: 50,
-        })))
+        }))
+        setPlayers(mapped)
+        setOriginalStarterIds(mapped.slice(0, 7).map(p => p.id))
       }
 
       const { data: gameData } = await supabase
@@ -168,16 +134,6 @@ export default function GamesScreen() {
         .limit(1)
         .maybeSingle()
       setNextGame(gameData)
-
-      const { data: allEvents } = await supabase
-        .from('events')
-        .select('*')
-        .eq('team_id', membership.team.id)
-        .order('starts_at', { ascending: true })
-      setEvents(allEvents ?? [])
-
-      const storedSnacks = await AsyncStorage.getItem(`huddle_snacks_${membership.team.id}`)
-      if (storedSnacks) setSnackData(JSON.parse(storedSnacks))
     }
     setLoading(false)
   }
@@ -187,7 +143,6 @@ export default function GamesScreen() {
     setLineupLoading(true)
 
     const playerList = players.map(p => `#${p.number ?? '?'} ${p.name}${p.positions.length ? ` (${p.positions.join('/')})` : ''}`).join(', ')
-
     const formationSlots = FORMATIONS[activeFormation].map((s, i) => `${i}=${s.position}`).join(', ')
     const systemPrompt = `You are a youth soccer coaching assistant for ${team.name} (${team.age_group}, 7v7).
 Formation: ${activeFormation}
@@ -219,6 +174,7 @@ Slots: ${formationSlots}`
       const data = await response.json()
 
       if (data?.starters) {
+        const matchedIds: string[] = []
         setPlayers(prev => {
           const updated = prev.map(p => ({ ...p, isOn: false, fieldSlot: null }))
           data.starters.forEach((s: any) => {
@@ -228,10 +184,15 @@ Slots: ${formationSlots}`
             )
             if (idx >= 0) {
               updated[idx] = { ...updated[idx], isOn: true, fieldSlot: s.slot }
+              matchedIds.push(updated[idx].id)
             }
           })
           return updated
         })
+        if (matchedIds.length > 0) {
+          setOriginalStarterIds(matchedIds)
+          setConfirmedWaves(0)
+        }
         if (data.subPlan) Alert.alert('Sub plan', data.subPlan + (data.coachNote ? '\n\n💡 ' + data.coachNote : ''))
       } else {
         setPlayers(prev => prev.map((p, i) => ({ ...p, isOn: i < 7, fieldSlot: i < 7 ? i : null })))
@@ -242,15 +203,6 @@ Slots: ${formationSlots}`
 
     setLineupGenerated(true)
     setLineupLoading(false)
-  }
-
-  const makeSub = (inPlayer: Player, outPlayer: Player) => {
-    setPlayers(prev => prev.map(p => {
-      if (p.id === inPlayer.id) return { ...p, isOn: true, fieldSlot: outPlayer.fieldSlot }
-      if (p.id === outPlayer.id) return { ...p, isOn: false, fieldSlot: null }
-      return p
-    }))
-    setPlayedPlayers(prev => { const n = new Set(prev); n.add(inPlayer.id); n.add(outPlayer.id); return n })
   }
 
   const handlePlayerTap = (playerId: string) => {
@@ -275,8 +227,6 @@ Slots: ${formationSlots}`
     setSelectedPlayer(null)
   }
 
-  const formatMins = (m: number) => m < 1 ? '0m' : `${Math.floor(m)}m`
-
   const groupEventsByMonth = (evts: any[]) => {
     const groups: { month: string; events: any[] }[] = []
     evts.forEach(evt => {
@@ -296,6 +246,21 @@ Slots: ${formationSlots}`
   const offPlayers = players.filter(p => !p.isOn)
   const tc = '#1A56DB'
 
+  // Sub wave computation
+  const benchPlayers = players.filter(p => !originalStarterIds.includes(p.id))
+  const starterPlayers = players.filter(p => originalStarterIds.includes(p.id))
+  const nonGkStarters = starterPlayers.filter(p =>
+    activeFormationSlots[p.fieldSlot ?? 0]?.position !== 'GK'
+  )
+  const subCount = Math.min(benchPlayers.length, nonGkStarters.length)
+  const waveInBench = benchPlayers.slice(0, subCount)
+  const waveOutStarters = nonGkStarters.slice(0, subCount)
+  const waves = [
+    { min: WAVE_MINS[0], ins: waveInBench, outs: waveOutStarters },
+    { min: WAVE_MINS[1], ins: waveOutStarters, outs: waveInBench },
+    { min: WAVE_MINS[2], ins: waveInBench, outs: waveOutStarters },
+  ]
+
   if (loading) return <View style={styles.loading}><ActivityIndicator color="#1A56DB" size="large" /></View>
 
   return (
@@ -307,27 +272,26 @@ Slots: ${formationSlots}`
         onTeamSelect={() => {}}
       />
 
-      <View style={{ height: 44, backgroundColor: '#fff', borderBottomWidth: 0.5, borderBottomColor: '#eee' }}>
-        <ScrollView horizontal={true} showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingLeft: 0 }}>
-          {(['schedule', 'games', 'roster', 'standings', 'snacks'] as const).map((tab) => {
-            const labels: Record<string, string> = { schedule: 'Schedule', games: 'Games', roster: 'Roster', standings: 'Standings', snacks: 'Snacks' }
-            const isActive = activeTab === tab
-            return (
-              <TouchableOpacity
-                key={tab}
-                style={{ paddingHorizontal: 16, paddingVertical: 12 }}
-                onPress={() => setActiveTab(tab)}
-              >
-                <Text style={{ fontSize: 13, color: isActive ? '#1A56DB' : '#999', fontWeight: isActive ? '700' : '500' }}>
-                  {labels[tab]}
-                </Text>
-                {isActive && (
-                  <View style={{ height: 2.5, backgroundColor: '#1A56DB', borderRadius: 2, marginTop: 4 }} />
-                )}
-              </TouchableOpacity>
-            )
-          })}
-        </ScrollView>
+      {/* 2-tab bar */}
+      <View style={{ height: 44, backgroundColor: '#fff', borderBottomWidth: 0.5, borderBottomColor: '#eee', flexDirection: 'row' }}>
+        {(['schedule', 'games'] as const).map((tab) => {
+          const labels = { schedule: 'Schedule', games: 'Game Day' }
+          const isActive = activeTab === tab
+          return (
+            <TouchableOpacity
+              key={tab}
+              style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingBottom: 2 }}
+              onPress={() => setActiveTab(tab)}
+            >
+              <Text style={{ fontSize: 14, color: isActive ? tc : '#999', fontWeight: isActive ? '700' : '500' }}>
+                {labels[tab]}
+              </Text>
+              {isActive && (
+                <View style={{ position: 'absolute', bottom: 0, left: '20%', right: '20%', height: 2.5, backgroundColor: tc, borderRadius: 2 }} />
+              )}
+            </TouchableOpacity>
+          )
+        })}
       </View>
 
       {activeTab === 'schedule' ? (
@@ -387,211 +351,8 @@ Slots: ${formationSlots}`
             </View>
           ))}
         </ScrollView>
-      ) : activeTab === 'roster' ? (
-        <ScrollView contentContainerStyle={styles.content}>
-          <View style={[styles.teamCard, { backgroundColor: tc }]}>
-            <Text style={styles.teamCardName}>{team?.name}</Text>
-            <Text style={styles.teamCardSub}>{team?.age_group} · {team?.gender} · {players.length} players</Text>
-          </View>
-
-          <View style={{ backgroundColor: '#EEF4FF', borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12, marginBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 0.5, borderColor: '#eee' }}>
-            <Text style={{ fontSize: 18 }}>🏆</Text>
-            <Text style={{ fontSize: 14, fontWeight: '700', color: tc }}>Team record:</Text>
-            <Text style={{ fontSize: 14, fontWeight: '700', color: '#111' }}>4W · 1L · 1D</Text>
-          </View>
-
-          <View style={styles.card}>
-            <Text style={styles.cardLabel}>Players · {players.length}</Text>
-            {players.map((player, i) => {
-              const firstPos = (player.positions?.[0] ?? '').toUpperCase()
-              const posColor = firstPos === 'GK' ? '#F59E0B'
-                : ['CB','LB','RB','LWB','RWB'].includes(firstPos) ? '#1A56DB'
-                : ['CM','LM','RM','DM','AM','CAM','CDM'].includes(firstPos) ? '#10B981'
-                : firstPos ? '#FF6B35' : null
-              return (
-                <TouchableOpacity
-                  key={player.id}
-                  style={[styles.rosterRow, i < players.length - 1 && styles.rosterBorder]}
-                  onPress={() => router.push({ pathname: '/player', params: { id: player.id } })}
-                  activeOpacity={0.7}
-                >
-                  <View style={[styles.numBadge, { backgroundColor: tc + '20' }]}>
-                    <Text style={[styles.numText, { color: tc }]}>{player.number ?? '—'}</Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      <Text style={styles.rosterName}>{player.name}</Text>
-                      {i === 0 && <Text style={{ fontSize: 13 }}>⭐</Text>}
-                    </View>
-                    {player.positions?.length > 0 && (
-                      <Text style={styles.rosterPos}>{player.positions.join(' · ')}</Text>
-                    )}
-                  </View>
-                  {posColor ? (
-                    <View style={{ backgroundColor: posColor + '22', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, marginRight: 6 }}>
-                      <Text style={{ fontSize: 10, fontWeight: '700', color: posColor }}>{firstPos}</Text>
-                    </View>
-                  ) : null}
-                  <Text style={styles.chevron}>›</Text>
-                </TouchableOpacity>
-              )
-            })}
-          </View>
-        </ScrollView>
-      ) : activeTab === 'snacks' ? (
-        <ScrollView contentContainerStyle={{ paddingTop: 12, paddingHorizontal: 16 }}>
-          <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#F59E0B', padding: 0, overflow: 'hidden' }]}>
-            <View style={{ backgroundColor: '#FFFBEB', paddingHorizontal: 16, paddingTop: 14, paddingBottom: 12 }}>
-              <Text style={{ fontSize: 17, fontWeight: '900', color: '#92400E', marginBottom: 2 }}>🍊 Snack duty</Text>
-              <Text style={{ fontSize: 13, color: '#B45309', fontWeight: '500' }}>Who's bringing the goods?</Text>
-            </View>
-            <View style={{ paddingHorizontal: 16 }}>
-              {snackData.map((item, i) => (
-                <View key={i} style={[styles.snackListRow, i < snackData.length - 1 && styles.snackListBorder]}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.snackListDate}>{item.date} · {item.type}</Text>
-                    {item.claimed ? (
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
-                        <Text style={{ fontSize: 14, fontWeight: '700', color: '#059669' }}>✓ {item.name}</Text>
-                        <Text style={{ fontSize: 14 }}>🎉</Text>
-                      </View>
-                    ) : (
-                      <Text style={{ fontSize: 13, color: '#888', marginTop: 2 }}>Nobody yet…</Text>
-                    )}
-                  </View>
-                  {!item.claimed && (
-                    <TouchableOpacity
-                      style={styles.snackClaimBtn}
-                      onPress={async () => {
-                        const snackKey = `huddle_snacks_${team?.id}`
-                        const stored = await AsyncStorage.getItem(snackKey)
-                        const freshSnacks = stored ? JSON.parse(stored) : snackData
-                        if (freshSnacks[i]?.claimed) { if (stored) setSnackData(freshSnacks); return }
-                        const claimerName = currentUser?.email?.split('@')[0] ?? 'Coach'
-                        const updated = freshSnacks.map((s: any, j: number) => j === i ? { ...s, claimed: true, name: claimerName } : s)
-                        setSnackData(updated)
-                        if (snackKey) await AsyncStorage.setItem(snackKey, JSON.stringify(updated))
-                      }}
-                      activeOpacity={0.75}
-                    >
-                      <Text style={styles.snackClaimBtnText}>Claim it! →</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              ))}
-            </View>
-            <View style={{ paddingHorizontal: 16, paddingVertical: 14, borderTopWidth: 0.5, borderTopColor: '#FDE68A' }}>
-              <Text style={{ fontSize: 13, color: '#92400E', fontWeight: '600', textAlign: 'center' }}>
-                Remember: orange slices &gt; juice boxes 🍊
-              </Text>
-            </View>
-          </View>
-        </ScrollView>
-      ) : activeTab === 'standings' ? (
-        <ScrollView contentContainerStyle={styles.content}>
-          <View style={styles.card}>
-            <Text style={styles.cardLabel}>League standings</Text>
-            {/* Header row */}
-            <View style={styles.standingsHeaderRow}>
-              <Text style={[styles.standingsCell, { flex: 1 }]}>Team</Text>
-              <Text style={styles.standingsColHdr}>W</Text>
-              <Text style={styles.standingsColHdr}>L</Text>
-              <Text style={styles.standingsColHdr}>D</Text>
-              <Text style={[styles.standingsColHdr, { color: tc }]}>Pts</Text>
-            </View>
-            {STANDINGS.map((row, i) => (
-              <View key={i} style={[styles.standingsRow, row.isUs && styles.standingsRowUs, i < STANDINGS.length - 1 && styles.standingsBorder]}>
-                <Text style={[styles.standingsTeamName, row.isUs && { fontWeight: '700', color: tc }]} numberOfLines={1}>{row.team}</Text>
-                <Text style={styles.standingsVal}>{row.w}</Text>
-                <Text style={styles.standingsVal}>{row.l}</Text>
-                <Text style={styles.standingsVal}>{row.d}</Text>
-                <Text style={[styles.standingsVal, { fontWeight: '700', color: tc }]}>{row.pts}</Text>
-              </View>
-            ))}
-          </View>
-
-          {/* Season stats — 2x2 grid */}
-          <Text style={[styles.cardLabel, { marginBottom: 8, marginLeft: 2 }]}>Season stats</Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 12 }}>
-            {[
-              { label: 'Goals',        value: '12', color: '#1A56DB' },
-              { label: 'Against',      value: '6',  color: '#EF4444' },
-              { label: 'Clean sheets', value: '2',  color: '#10B981' },
-              { label: 'Win rate',     value: '67%',color: '#F59E0B' },
-            ].map((stat, i) => (
-              <View key={i} style={[styles.statCard, { borderTopColor: stat.color, width: '48%', flexShrink: 1 }]}>
-                <Text style={[styles.statCardValue, { color: stat.color }]}>{stat.value}</Text>
-                <Text style={styles.statCardLabel}>{stat.label}</Text>
-              </View>
-            ))}
-          </View>
-          {/* Win/loss sparkline */}
-          <View style={[styles.card, { marginBottom: 12, paddingVertical: 12 }]}>
-            <Text style={[styles.cardLabel, { marginBottom: 10 }]}>Recent results</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              {['W','W','L','W','W'].map((r, i) => (
-                <View key={i} style={[styles.resultDot, { backgroundColor: r === 'W' ? '#10B981' : '#EF4444' }]}>
-                  <Text style={styles.resultDotText}>{r}</Text>
-                </View>
-              ))}
-              <Text style={{ fontSize: 12, color: '#aaa', marginLeft: 4 }}>4W · 1L this season</Text>
-            </View>
-          </View>
-
-          {/* Top performers */}
-          <View style={styles.card}>
-            <Text style={styles.cardLabel}>Top performers</Text>
-            {[
-              { name: 'Sofia',    pos: 'GK',  stat: 3, type: 'clean sheets' },
-              { name: 'Emma',     pos: 'MID', stat: 4, type: 'goals' },
-              { name: 'Olivia',   pos: 'MID', stat: 5, type: 'assists' },
-              { name: 'Isabella', pos: 'FWD', stat: 3, type: 'goals' },
-            ].map((p, i, arr) => (
-              <View key={i} style={[{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 12 }, i < arr.length - 1 && { borderBottomWidth: 0.5, borderBottomColor: '#f5f5f5' }]}>
-                <Text style={{ fontSize: 15, fontWeight: '700', color: '#1a1a1a', flex: 1 }}>{p.name}</Text>
-                <View style={{ backgroundColor: '#F3F4F6', borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 }}>
-                  <Text style={{ fontSize: 10, fontWeight: '700', color: '#555' }}>{p.pos}</Text>
-                </View>
-                <Text style={{ fontSize: 20, fontWeight: '700', color: tc, minWidth: 24, textAlign: 'right' }}>{p.stat}</Text>
-                <Text style={{ fontSize: 12, color: '#888', minWidth: 80 }}>{p.type}</Text>
-              </View>
-            ))}
-          </View>
-
-          {/* Player stats table */}
-          <View style={[styles.card, { padding: 0, overflow: 'hidden' }]}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 14, paddingBottom: 10 }}>
-              <Text style={styles.cardLabel}>Player stats</Text>
-              <TouchableOpacity
-                style={{ backgroundColor: tc, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 }}
-                onPress={() => setLogModalVisible(true)}
-              >
-                <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }}>Log stats +</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 8, borderBottomWidth: 0.5, borderBottomColor: '#f0f0f0' }}>
-              <Text style={{ flex: 1, fontSize: 11, fontWeight: '700', color: '#9CA3AF' }}>PLAYER</Text>
-              <Text style={{ width: 36, textAlign: 'center', fontSize: 11, fontWeight: '700', color: '#9CA3AF' }}>G</Text>
-              <Text style={{ width: 36, textAlign: 'center', fontSize: 11, fontWeight: '700', color: '#9CA3AF' }}>A</Text>
-              <Text style={{ width: 36, textAlign: 'center', fontSize: 11, fontWeight: '700', color: '#D97706' }}>Y</Text>
-            </View>
-            {playerStats.map((p, i) => (
-              <View key={i} style={[{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 11 }, i < playerStats.length - 1 && { borderBottomWidth: 0.5, borderBottomColor: '#f5f5f5' }]}>
-                <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <View style={{ borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, backgroundColor: p.pos === 'GK' ? '#FEF3C7' : p.pos === 'DEF' ? '#EEF4FF' : p.pos === 'FWD' ? '#FEE2E2' : '#D1FAE5' }}>
-                    <Text style={{ fontSize: 10, fontWeight: '700', color: p.pos === 'GK' ? '#D97706' : p.pos === 'DEF' ? '#1A56DB' : p.pos === 'FWD' ? '#DC2626' : '#059669' }}>{p.pos}</Text>
-                  </View>
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: '#1a1a1a' }}>{p.name}</Text>
-                </View>
-                <Text style={{ width: 36, textAlign: 'center', fontSize: 14, fontWeight: '700', color: p.goals > 0 ? '#1a1a1a' : '#ccc' }}>{p.goals}</Text>
-                <Text style={{ width: 36, textAlign: 'center', fontSize: 14, fontWeight: '700', color: p.assists > 0 ? '#1a1a1a' : '#ccc' }}>{p.assists}</Text>
-                <Text style={{ width: 36, textAlign: 'center', fontSize: 14, fontWeight: '700', color: p.yellows > 0 ? '#D97706' : '#ccc' }}>{p.yellows}</Text>
-              </View>
-            ))}
-          </View>
-        </ScrollView>
       ) : (
-        /* Games tab — game day content */
+        /* Game Day tab */
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
           {nextGame && (
@@ -614,22 +375,7 @@ Slots: ${formationSlots}`
             </TouchableOpacity>
           </View>
 
-          {/* Formation pills */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 10 }}>
-            <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 2 }}>
-              {FORMATION_NAMES.map(f => (
-                <TouchableOpacity
-                  key={f}
-                  onPress={() => setActiveFormation(f)}
-                  style={[styles.formationPill, activeFormation === f && { backgroundColor: tc, borderColor: tc }]}
-                >
-                  <Text style={[styles.formationPillText, { color: activeFormation === f ? '#fff' : '#555' }]}>{f}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </ScrollView>
-
-          {/* AI Lineup Builder — prominent blue card */}
+          {/* AI Lineup Builder */}
           <TouchableOpacity
             style={styles.lineupBuilderToggle}
             onPress={() => setLineupBuilderOpen(v => !v)}
@@ -660,7 +406,7 @@ Slots: ${formationSlots}`
               </View>
               <TextInput
                 style={styles.promptInput}
-                placeholder={`e.g. #1 Sofia in goal all game, rotate everyone equally`}
+                placeholder="e.g. #1 Sofia in goal all game, rotate everyone equally"
                 placeholderTextColor="#bbb"
                 value={lineupPrompt}
                 onChangeText={setLineupPrompt}
@@ -685,6 +431,22 @@ Slots: ${formationSlots}`
               {selectedPlayer && (
                 <Text style={styles.fieldHint}>Tap another player to swap · tap same to deselect</Text>
               )}
+
+              {/* Formation pills — directly above the field */}
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
+                <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 2 }}>
+                  {FORMATION_NAMES.map(f => (
+                    <TouchableOpacity
+                      key={f}
+                      onPress={() => setActiveFormation(f)}
+                      style={[styles.formationPill, activeFormation === f && { backgroundColor: tc, borderColor: tc }]}
+                    >
+                      <Text style={[styles.formationPillText, { color: activeFormation === f ? '#fff' : '#555' }]}>{f}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </ScrollView>
+
               <View style={styles.field}>
                 <View style={styles.fieldCenterCircle} />
                 <View style={styles.fieldCenterLine} />
@@ -786,98 +548,57 @@ Slots: ${formationSlots}`
             </>
           )}
 
-          {/* Sub window */}
-          {offPlayers.length > 0 && (() => {
-            const subIn = offPlayers[0]
-            const subOut = onPlayers.find(p => activeFormationSlots[p.fieldSlot ?? 0]?.position !== 'GK') ?? onPlayers[0]
-            return (
-              <View style={styles.subPlanCard}>
-                <Text style={styles.subPlanTitle}>Next sub window</Text>
-                <Text style={{ fontSize: 13, color: '#6B7280', marginBottom: 12 }}>
-                  Sub at ~8 min · ~16 min · ~24 min
-                </Text>
-                {subIn && subOut && (
-                  <>
-                    <View style={{ backgroundColor: '#F0F4FF', borderRadius: 10, padding: 12, marginBottom: 12 }}>
-                      <Text style={{ fontSize: 12, color: '#6B7280', marginBottom: 4, fontWeight: '600' }}>Suggested next sub</Text>
-                      <Text style={{ fontSize: 14, fontWeight: '700', color: '#1a1a1a' }}>
-                        <Text style={{ color: '#10B981' }}>↑ {subIn.name}</Text>
-                        {'  '}
-                        <Text style={{ color: '#E24B4A' }}>↓ {subOut.name}</Text>
-                      </Text>
+          {/* Sub waves card */}
+          {subCount > 0 && (
+            <View style={styles.subPlanCard}>
+              <Text style={styles.subPlanTitle}>Sub waves</Text>
+              {waves.map((wave, i) => {
+                const done = confirmedWaves > i
+                return (
+                  <View key={i} style={[styles.subPlanRow, i < waves.length - 1 && styles.subPlanBorder]}>
+                    <Text style={[styles.subPlanTime, done && { color: '#10B981' }]}>
+                      {done ? '✓' : `${wave.min}m`}
+                    </Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.subPlanIn}>↑ {wave.ins.map(p => p.name.split(' ')[0]).join(', ')}</Text>
+                      <Text style={styles.subPlanOut}>↓ {wave.outs.map(p => p.name.split(' ')[0]).join(', ')}</Text>
                     </View>
-                    <TouchableOpacity
-                      style={{ backgroundColor: tc, borderRadius: 12, paddingVertical: 13, alignItems: 'center' }}
-                      onPress={() => makeSub(subIn, subOut)}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={{ fontSize: 14, fontWeight: '700', color: '#fff' }}>Make sub →</Text>
-                    </TouchableOpacity>
-                  </>
-                )}
-              </View>
-            )
-          })()}
+                  </View>
+                )
+              })}
+              {confirmedWaves < 3 ? (
+                <TouchableOpacity
+                  style={{ backgroundColor: tc, borderRadius: 12, paddingVertical: 13, alignItems: 'center', marginTop: 12 }}
+                  onPress={() => setConfirmedWaves(v => v + 1)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={{ fontSize: 14, fontWeight: '700', color: '#fff' }}>
+                    Confirm Wave {confirmedWaves + 1} · at {WAVE_MINS[confirmedWaves]} min →
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                <View style={{ backgroundColor: '#F0FDF4', borderRadius: 12, paddingVertical: 12, alignItems: 'center', marginTop: 12 }}>
+                  <Text style={{ fontSize: 14, fontWeight: '700', color: '#059669' }}>All waves complete ✓</Text>
+                </View>
+              )}
+            </View>
+          )}
 
-          <TouchableOpacity style={[styles.resetLineupBtn, { borderColor: tc }]} onPress={() => {
-            setLineupPrompt('')
-            setPlayedPlayers(new Set())
-            setPlayers(prev => prev.map((p, i) => ({ ...p, isOn: i < 7, fieldSlot: i < 7 ? i : null, minutes: 0 })))
-          }}>
+          <TouchableOpacity
+            style={[styles.resetLineupBtn, { borderColor: tc }]}
+            onPress={() => {
+              setLineupPrompt('')
+              setConfirmedWaves(0)
+              const reset = players.map((p, i) => ({ ...p, isOn: i < 7, fieldSlot: i < 7 ? i : null, minutes: 0 }))
+              setPlayers(reset)
+              setOriginalStarterIds(reset.slice(0, 7).map(p => p.id))
+            }}
+          >
             <Text style={[styles.resetLineupText, { color: tc }]}>Reset lineup</Text>
           </TouchableOpacity>
 
         </ScrollView>
       )}
-
-      <Modal visible={logModalVisible} transparent animationType="slide" onRequestClose={() => setLogModalVisible(false)}>
-        <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-          <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.3)' }} activeOpacity={1} onPress={() => setLogModalVisible(false)} />
-          <View style={{ backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-              <Text style={{ fontSize: 17, fontWeight: '700', color: '#1a1a1a' }}>Log a stat</Text>
-              <TouchableOpacity onPress={() => setLogModalVisible(false)}>
-                <Text style={{ fontSize: 18, color: '#888' }}>✕</Text>
-              </TouchableOpacity>
-            </View>
-            <Text style={{ fontSize: 12, fontWeight: '700', color: '#9CA3AF', marginBottom: 10, letterSpacing: 0.3 }}>Player</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20 }} contentContainerStyle={{ gap: 8 }}>
-              {playerStats.map(p => (
-                <TouchableOpacity
-                  key={p.name}
-                  style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1.5, backgroundColor: logPlayerName === p.name ? tc : '#F9FAFB', borderColor: logPlayerName === p.name ? tc : '#E5E7EB' }}
-                  onPress={() => setLogPlayerName(p.name)}
-                >
-                  <Text style={{ fontSize: 13, fontWeight: '700', color: logPlayerName === p.name ? '#fff' : '#555' }}>{p.name}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-            <Text style={{ fontSize: 12, fontWeight: '700', color: '#9CA3AF', marginBottom: 10, letterSpacing: 0.3 }}>Stat type</Text>
-            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 24 }}>
-              {([['goals', 'Goal ⚽'], ['assists', 'Assist 🎯'], ['yellows', 'Yellow 🟨']] as const).map(([type, label]) => (
-                <TouchableOpacity
-                  key={type}
-                  style={{ flex: 1, paddingVertical: 12, borderRadius: 12, borderWidth: 1.5, alignItems: 'center', backgroundColor: logStatType === type ? tc : '#F9FAFB', borderColor: logStatType === type ? tc : '#E5E7EB' }}
-                  onPress={() => setLogStatType(type)}
-                >
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: logStatType === type ? '#fff' : '#555', textAlign: 'center' }}>{label}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-            <TouchableOpacity
-              style={{ backgroundColor: tc, borderRadius: 14, paddingVertical: 15, alignItems: 'center' }}
-              onPress={() => {
-                setPlayerStats(prev => prev.map(p =>
-                  p.name === logPlayerName ? { ...p, [logStatType]: p[logStatType] + 1 } : p
-                ))
-                setLogModalVisible(false)
-              }}
-            >
-              <Text style={{ fontSize: 15, fontWeight: '700', color: '#fff' }}>Save</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   )
 }
@@ -885,10 +606,6 @@ Slots: ${formationSlots}`
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F7F7F5' },
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  subTabsScroll: { backgroundColor: '#fff', borderBottomWidth: 0.5, borderBottomColor: '#eee', paddingHorizontal: 0 },
-  subTabsContent: { flexDirection: 'row', alignItems: 'center' },
-  subTab: { paddingVertical: 12, alignItems: 'center', borderBottomWidth: 2.5, borderBottomColor: 'transparent' },
-  subTabText: { fontSize: 13, includeFontPadding: false },
   content: { paddingTop: 12, paddingHorizontal: 16, paddingBottom: 32 },
   emptyState: { alignItems: 'center', paddingVertical: 60 },
   emptyText: { fontSize: 14, color: '#aaa' },
@@ -903,42 +620,17 @@ const styles = StyleSheet.create({
   scheduleTitle: { fontSize: 13, fontWeight: '600', color: '#1a1a1a' },
   scheduleTime: { fontSize: 12, fontWeight: '600', color: '#555' },
   scheduleLoc: { fontSize: 11, color: '#aaa', maxWidth: 90 },
-  teamCard: { borderRadius: 20, padding: 18, marginBottom: 12 },
-  teamCardName: { fontSize: 20, fontWeight: '800', color: '#fff', marginBottom: 4 },
-  teamCardSub: { fontSize: 13, color: 'rgba(255,255,255,0.8)' },
   card: { backgroundColor: '#fff', borderRadius: 18, padding: 16, marginBottom: 12, borderWidth: 0.5, borderColor: '#eee' },
   cardLabel: { fontSize: 10, fontWeight: '700', color: '#9CA3AF', letterSpacing: 0.3, marginBottom: 8 },
   cardTitle: { fontSize: 16, fontWeight: '700', color: '#111827' },
   cardSub: { fontSize: 12, color: '#888' },
-  rosterRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 },
-  rosterBorder: { borderBottomWidth: 0.5, borderBottomColor: '#f5f5f5' },
-  rosterName: { fontSize: 15, fontWeight: '600', color: '#1a1a1a' },
-  rosterPos: { fontSize: 12, color: '#888', marginTop: 1 },
-  starterChip: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
-  starterText: { fontSize: 11, fontWeight: '700' },
-  chevron: { fontSize: 18, color: '#ccc', marginLeft: 4 },
   gameCard: { borderRadius: 20, padding: 16, marginBottom: 12 },
-  gameCardLabel: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.5)', letterSpacing: 0.3, marginBottom: 2 },
-  gameCardTitle: { fontSize: 26, fontWeight: '900', color: '#fff', marginBottom: 2 },
-  gameCardSub: { fontSize: 14, color: 'rgba(255,255,255,0.7)' },
-  aiHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 },
-  aiIcon: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  aiIconText: { fontSize: 14 },
+  gameCardLabel: { fontSize: 10, fontWeight: '700', letterSpacing: 0.3, marginBottom: 2 },
+  gameCardTitle: { fontSize: 26, fontWeight: '900', marginBottom: 2 },
+  gameCardSub: { fontSize: 14 },
   promptInput: { backgroundColor: '#F7F7F5', borderRadius: 14, padding: 14, fontSize: 14, color: '#1a1a1a', borderWidth: 1.5, borderColor: '#E0E0E0', minHeight: 130, textAlignVertical: 'top', marginBottom: 12, lineHeight: 22 },
   generateBtn: { borderRadius: 14, padding: 14, alignItems: 'center', marginBottom: 8 },
   generateBtnText: { fontSize: 15, fontWeight: '700', color: '#fff' },
-  skipBtn: { padding: 12, alignItems: 'center' },
-  skipBtnText: { fontSize: 13, color: '#aaa' },
-  timerCard: { borderRadius: 16, padding: 16, marginBottom: 12 },
-  timerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
-  timerLabel: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.5)', letterSpacing: 0.3 },
-  timerTime: { fontSize: 52, fontWeight: '900', color: '#fff', letterSpacing: -1 },
-  timerActions: { flexDirection: 'row', gap: 8 },
-  timerBtn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10 },
-  timerBtnText: { fontSize: 13, fontWeight: '600' },
-  timerBtnOutline: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10 },
-  timerBtnOutlineText: { fontSize: 13, fontWeight: '600' },
-  viewToggle: { flexDirection: 'row', gap: 8 },
   viewToggleBtn: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20 },
   viewToggleText: { fontSize: 13, fontWeight: '600' },
   fieldContainer: { marginBottom: 14 },
@@ -951,14 +643,12 @@ const styles = StyleSheet.create({
   fieldPlayer: { position: 'absolute', width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', marginLeft: -26, marginTop: -26, borderWidth: 1.5 },
   fieldPlayerNum: { fontSize: 13, fontWeight: '900' },
   fieldPlayerName: { fontSize: 8, fontWeight: '600', maxWidth: 48 },
-  fieldPlayerMins: { fontSize: 8 },
   benchArea: { backgroundColor: '#fff', borderRadius: 14, padding: 12, borderWidth: 0.5, borderColor: '#eee' },
   benchLabel: { fontSize: 10, fontWeight: '700', color: '#9CA3AF', letterSpacing: 0.3, marginBottom: 8 },
   benchPlayer: { alignItems: 'center', width: 64, borderRadius: 10, padding: 8, backgroundColor: '#fff', borderWidth: 1, borderColor: '#E5E7EB' },
   benchPlayerNum: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
   benchPlayerNumText: { fontSize: 13, fontWeight: '700' },
   benchPlayerName: { fontSize: 10, fontWeight: '600', color: '#555', maxWidth: 56, textAlign: 'center' },
-  benchPlayerMins: { fontSize: 10, fontWeight: '600', marginTop: 2 },
   section: { marginBottom: 12 },
   sectionLabel: { fontSize: 10, fontWeight: '700', color: '#9CA3AF', letterSpacing: 0.3, marginBottom: 8 },
   playerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 14, marginBottom: 6, backgroundColor: '#fff', borderWidth: 0.5, borderColor: '#eee' },
@@ -967,10 +657,6 @@ const styles = StyleSheet.create({
   numText: { fontSize: 13, fontWeight: '700' },
   playerName: { fontSize: 15, fontWeight: '600', color: '#1a1a1a' },
   playerPos: { fontSize: 11, color: '#aaa', marginTop: 1 },
-  playerMins: { fontSize: 13, fontWeight: '600', minWidth: 28, textAlign: 'right' },
-  fairPlayCard: { backgroundColor: '#FFF0F0', borderRadius: 14, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: '#FFCCCC' },
-  fairPlayTitle: { fontSize: 14, fontWeight: '700', color: '#E24B4A', marginBottom: 6 },
-  fairPlayAlert: { fontSize: 13, color: '#E24B4A', marginBottom: 3 },
   resetLineupBtn: { borderRadius: 14, paddingVertical: 13, alignItems: 'center', borderWidth: 1.5, marginBottom: 14 },
   resetLineupText: { fontSize: 14, fontWeight: '700' },
   lineupBuilderToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#1A56DB', borderRadius: 16, padding: 16, marginBottom: 10 },
@@ -978,48 +664,11 @@ const styles = StyleSheet.create({
   lineupBuilderSub: { fontSize: 13, fontWeight: '500', color: 'rgba(255,255,255,0.7)' },
   formationPill: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1.5, borderColor: '#E5E7EB', backgroundColor: '#F9FAFB' },
   formationPillText: { fontSize: 13, fontWeight: '700' },
-  snackListRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14 },
-  snackListBorder: { borderBottomWidth: 0.5, borderBottomColor: '#FDE68A' },
-  snackListDate: { fontSize: 11, color: '#aaa', fontWeight: '600', marginBottom: 1 },
-  snackListName: { fontSize: 14, fontWeight: '600' },
-  snackClaimBtn: { backgroundColor: '#F59E0B', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 },
-  snackClaimBtnText: { fontSize: 13, fontWeight: '700', color: '#fff' },
-  snackWarning: { fontSize: 11, color: '#FF8C42', fontWeight: '600', marginTop: 2 },
-  snackPlusIcon: { fontSize: 20, fontWeight: '300', marginLeft: 8 },
-  snackFootnote: { fontSize: 11, color: '#aaa', marginTop: 14, fontStyle: 'italic', textAlign: 'center' },
-  pollClosesLabel: { fontSize: 11, fontWeight: '700', color: '#888', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 },
-  pollQuestion: { fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 14 },
-  pollRow: { marginBottom: 12, paddingVertical: 4 },
-  pollLabelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
-  pollOptionLabel: { fontSize: 14 },
-  pollVoteCount: { fontSize: 12, color: '#aaa', fontWeight: '600' },
-  pollBarBg: { height: 6, backgroundColor: '#f0f0f0', borderRadius: 3, overflow: 'hidden' },
-  pollBarFill: { height: 6, borderRadius: 3 },
-  newPollBtn: { borderRadius: 12, paddingVertical: 11, alignItems: 'center', borderWidth: 1.5, marginTop: 8 },
-  newPollBtnText: { fontSize: 13, fontWeight: '700' },
   subPlanCard: { backgroundColor: '#fff', borderRadius: 16, padding: 14, marginBottom: 12, borderWidth: 0.5, borderColor: '#E5E7EB' },
   subPlanTitle: { fontSize: 13, fontWeight: '700', color: '#1a1a1a', marginBottom: 10 },
   subPlanRow: { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 8, gap: 12 },
   subPlanBorder: { borderBottomWidth: 0.5, borderBottomColor: '#f5f5f5' },
   subPlanTime: { fontSize: 12, fontWeight: '700', color: '#6B7280', minWidth: 32, marginTop: 1 },
-  subPlanIn:  { fontSize: 13, fontWeight: '600', color: '#16A34A' },
+  subPlanIn: { fontSize: 13, fontWeight: '600', color: '#16A34A' },
   subPlanOut: { fontSize: 13, fontWeight: '600', color: '#DC2626', marginTop: 1 },
-  projMinsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 12 },
-  projMinsChip: { backgroundColor: '#F3F4F6', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
-  projMinsChipText: { fontSize: 11, fontWeight: '600', color: '#555' },
-  // Standings
-  standingsHeaderRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: '#E5E7EB', marginBottom: 2 },
-  standingsColHdr: { fontSize: 11, fontWeight: '700', color: '#aaa', width: 30, textAlign: 'center' },
-  standingsRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10 },
-  standingsRowUs: { backgroundColor: '#EEF4FF', borderRadius: 8, paddingHorizontal: 6, marginHorizontal: -6 },
-  standingsBorder: { borderBottomWidth: 0.5, borderBottomColor: '#f5f5f5' },
-  standingsTeamName: { flex: 1, fontSize: 13, fontWeight: '600', color: '#1a1a1a' },
-  standingsCell: { fontSize: 13, fontWeight: '600', color: '#1a1a1a' },
-  standingsVal: { width: 30, textAlign: 'center', fontSize: 13, fontWeight: '600', color: '#555' },
-  // Season stats — horizontal scroll cards
-  statCard: { backgroundColor: '#fff', borderRadius: 14, padding: 16, width: 100, borderWidth: 0.5, borderColor: '#eee', borderTopWidth: 3, alignItems: 'center' },
-  statCardValue: { fontSize: 30, fontWeight: '800', marginBottom: 4 },
-  statCardLabel: { fontSize: 11, fontWeight: '600', color: '#888', textAlign: 'center' },
-  resultDot: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  resultDotText: { fontSize: 12, fontWeight: '700', color: '#fff' },
 })
