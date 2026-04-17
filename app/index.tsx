@@ -9,6 +9,8 @@ import { useRouter } from 'expo-router'
 import { supabase } from '../lib/supabase'
 
 const BLUE = '#1A56DB'
+const NAVY = '#0D1B2A'
+const GREEN = '#1A7A4A'
 
 const ONBOARDING = {
   coach: [
@@ -53,7 +55,7 @@ const ONBOARDING = {
   ],
 }
 
-type Screen = 'checking' | 'role' | 'onboarding' | 'auth'
+type Screen = 'checking' | 'splash' | 'role' | 'onboarding' | 'auth'
 type Role = 'coach' | 'parent' | null
 type AuthMode = 'signin' | 'signup'
 
@@ -71,6 +73,45 @@ export default function EntryScreen() {
   const coachScale = useRef(new Animated.Value(1)).current
   const parentScale = useRef(new Animated.Value(1)).current
   const emojiAnim = useRef(new Animated.Value(1)).current
+
+  // Splash animations
+  const splashBallScale = useRef(new Animated.Value(0.3)).current
+  const splashBallTranslate = useRef(new Animated.Value(-60)).current
+  const splashWordmark = useRef(new Animated.Value(0)).current
+  const splashTagline = useRef(new Animated.Value(0)).current
+  const splashBenefits = useRef(new Animated.Value(0)).current
+  const splashButton = useRef(new Animated.Value(0)).current
+  const splashButtonPulse = useRef(new Animated.Value(1)).current
+
+  useEffect(() => {
+    if (screen !== 'splash') return
+    // Ball bounces in immediately
+    Animated.parallel([
+      Animated.spring(splashBallScale, {
+        toValue: 1, useNativeDriver: true, damping: 6, stiffness: 180,
+      }),
+      Animated.spring(splashBallTranslate, {
+        toValue: 0, useNativeDriver: true, damping: 6, stiffness: 180,
+      }),
+    ]).start()
+    // Wordmark after 300ms
+    setTimeout(() => Animated.timing(splashWordmark, { toValue: 1, duration: 350, useNativeDriver: true }).start(), 300)
+    // Tagline after 600ms
+    setTimeout(() => Animated.timing(splashTagline, { toValue: 1, duration: 350, useNativeDriver: true }).start(), 600)
+    // Benefits after 900ms
+    setTimeout(() => Animated.timing(splashBenefits, { toValue: 1, duration: 350, useNativeDriver: true }).start(), 900)
+    // Button after 1200ms
+    setTimeout(() => {
+      Animated.timing(splashButton, { toValue: 1, duration: 350, useNativeDriver: true }).start(() => {
+        Animated.loop(
+          Animated.sequence([
+            Animated.timing(splashButtonPulse, { toValue: 1.04, duration: 700, useNativeDriver: true }),
+            Animated.timing(splashButtonPulse, { toValue: 1, duration: 700, useNativeDriver: true }),
+          ])
+        ).start()
+      })
+    }, 1200)
+  }, [screen])
 
   // Emoji bounce on each slide mount
   useEffect(() => {
@@ -90,7 +131,7 @@ export default function EntryScreen() {
       const seen = await AsyncStorage.getItem('huddle_onboarding_complete')
       const { data: { session } } = await supabase.auth.getSession()
       if (!seen) {
-        setScreen('role')
+        setScreen('splash')
       } else if (session) {
         router.replace('/home')
       } else {
@@ -136,6 +177,42 @@ export default function EntryScreen() {
       else Alert.alert('Check your email', 'We sent you a confirmation link.')
       setLoading(false)
     }
+  }
+
+  // ── Splash screen ───────────────────────────────────────────────
+  if (screen === 'splash') {
+    return (
+      <View style={styles.splashContainer}>
+        <View style={styles.splashCenter}>
+          <Animated.Text style={[
+            styles.splashBall,
+            { transform: [{ scale: splashBallScale }, { translateY: splashBallTranslate }] },
+          ]}>
+            ⚽
+          </Animated.Text>
+
+          <Animated.Text style={[styles.splashWordmark, { opacity: splashWordmark }]}>
+            HUDDLE
+          </Animated.Text>
+
+          <Animated.Text style={[styles.splashTagline, { opacity: splashTagline }]}>
+            Your team. Your season.
+          </Animated.Text>
+
+          <Animated.View style={[styles.splashBenefitsWrap, { opacity: splashBenefits }]}>
+            <Text style={styles.splashBenefit}>⚡ Practice plans built for your team</Text>
+            <Text style={styles.splashBenefit}>📋 Game day tools for the sideline</Text>
+            <Text style={styles.splashBenefit}>💬 Keep everyone connected</Text>
+          </Animated.View>
+        </View>
+
+        <Animated.View style={{ opacity: splashButton, transform: [{ scale: splashButtonPulse }] }}>
+          <TouchableOpacity style={styles.splashBtn} onPress={() => setScreen('role')} activeOpacity={0.85}>
+            <Text style={styles.splashBtnText}>Get started →</Text>
+          </TouchableOpacity>
+        </Animated.View>
+      </View>
+    )
   }
 
   // ── Checking session ────────────────────────────────────────────
@@ -320,6 +397,33 @@ const styles = StyleSheet.create({
   },
   iconEmoji: { fontSize: 42 },
   wordmark: { fontSize: 48, fontWeight: '900', color: '#fff', letterSpacing: -2, marginBottom: 8 },
+
+  // ── Intro Splash ──────────────────────────────────────────────────
+  splashContainer: {
+    flex: 1, backgroundColor: NAVY,
+    paddingHorizontal: 32, paddingTop: 80, paddingBottom: 48,
+    justifyContent: 'space-between',
+  },
+  splashCenter: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 0 },
+  splashBall: { fontSize: 72, marginBottom: 24 },
+  splashWordmark: {
+    fontSize: 52, fontWeight: '900', color: '#fff',
+    letterSpacing: 4, marginBottom: 12,
+  },
+  splashTagline: {
+    fontSize: 17, color: GREEN, fontWeight: '600',
+    marginBottom: 40, textAlign: 'center',
+  },
+  splashBenefitsWrap: { gap: 14, alignItems: 'flex-start' },
+  splashBenefit: {
+    fontSize: 15, color: 'rgba(255,255,255,0.75)',
+    fontWeight: '500', lineHeight: 22,
+  },
+  splashBtn: {
+    backgroundColor: GREEN, borderRadius: 18,
+    paddingVertical: 18, alignItems: 'center',
+  },
+  splashBtnText: { fontSize: 17, fontWeight: '800', color: '#fff', letterSpacing: 0.3 },
 
   // ── Shared container ─────────────────────────────────────────────
   container: { flex: 1, backgroundColor: '#fff', paddingHorizontal: 24, paddingTop: 56, paddingBottom: 40 },
