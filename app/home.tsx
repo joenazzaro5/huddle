@@ -421,6 +421,9 @@ export default function HomeScreen() {
           </View>
         ) : nextEvent ? (
           <View style={[styles.heroCard, { backgroundColor: tc }]}>
+            <Text style={[styles.heroDateLabel, { letterSpacing: 0.5 }]}>
+              {nextEvent.type === 'game' ? '⚽ GAME' : nextEvent.type === 'practice' ? '⚽ PRACTICE' : (nextEvent.type ?? '').toUpperCase()}
+            </Text>
             <Text style={styles.heroDateLabel}>
               {new Date(nextEvent.starts_at).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
             </Text>
@@ -476,10 +479,10 @@ export default function HomeScreen() {
         {/* 2. Practice plan / Substitution plan */}
         {isSharkTeam ? (
           <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: tc, padding: 0, overflow: 'hidden' }]}>
-            <View style={[styles.practicePlanHeader, { backgroundColor: '#FEF2F2' }]}>
+            <View style={[styles.practicePlanHeader, { backgroundColor: tc + '15' }]}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.planReadyTitle}>Game day lineup</Text>
-                <Text style={styles.planPersonalizedBadge}>✦ U12 Boys · 7v7</Text>
+                <Text style={styles.planPersonalizedBadge}>✦ {team?.age_group ?? 'Youth'} · 7v7</Text>
               </View>
             </View>
             <View style={styles.practicePlanBody}>
@@ -503,7 +506,7 @@ export default function HomeScreen() {
               <Text style={[styles.cardTitle, { fontSize: 14, marginTop: 12, marginBottom: 4 }]}>Bench</Text>
               <Text style={{ fontSize: 13, color: '#6B7280', marginBottom: 12 }}>Liam T. · Owen G. · Carter H. · Dylan W.</Text>
               <Text style={{ fontSize: 11, fontWeight: '700', color: '#9CA3AF', letterSpacing: 0.3, marginBottom: 6 }}>SUB ROUNDS</Text>
-              <View style={{ backgroundColor: '#FEF2F2', borderRadius: 10, overflow: 'hidden', marginBottom: 12 }}>
+              <View style={{ backgroundColor: tc + '12', borderRadius: 10, overflow: 'hidden', marginBottom: 12 }}>
                 {[
                   { label: 'Sub round 1', min: '8 min' },
                   { label: 'Sub round 2', min: '16 min' },
@@ -514,7 +517,7 @@ export default function HomeScreen() {
                     style={{
                       flexDirection: 'row', alignItems: 'center', gap: 10,
                       paddingHorizontal: 12, paddingVertical: 9,
-                      borderBottomWidth: i < 2 ? 0.5 : 0, borderBottomColor: '#FEE2E2',
+                      borderBottomWidth: i < 2 ? 0.5 : 0, borderBottomColor: tc + '30',
                     }}
                   >
                     <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: tc, alignItems: 'center', justifyContent: 'center' }}>
