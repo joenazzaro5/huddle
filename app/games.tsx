@@ -29,53 +29,8 @@ const STANDINGS = [
   { team:'Fairfax FC',     w:0, l:5, d:1, pts:1 },
 ]
 
-// All formations: 7 slots (GK + 6 outfield), x/y as % of field width/height
+// 7v7 formations for U10 (GK + 6 outfield)
 const FORMATIONS: Record<string, { position: string; x: number; y: number }[]> = {
-  '4-3-3': [
-    { position: 'GK', x: 50, y: 85 },
-    { position: 'LB', x: 22, y: 67 },
-    { position: 'RB', x: 78, y: 67 },
-    { position: 'LM', x: 22, y: 44 },
-    { position: 'RM', x: 78, y: 44 },
-    { position: 'LW', x: 28, y: 18 },
-    { position: 'RW', x: 72, y: 18 },
-  ],
-  '4-4-2': [
-    { position: 'GK', x: 50, y: 85 },
-    { position: 'LB', x: 20, y: 68 },
-    { position: 'RB', x: 80, y: 68 },
-    { position: 'LM', x: 20, y: 46 },
-    { position: 'RM', x: 80, y: 46 },
-    { position: 'CF', x: 35, y: 20 },
-    { position: 'ST', x: 65, y: 20 },
-  ],
-  '3-4-3': [
-    { position: 'GK', x: 50, y: 85 },
-    { position: 'CB', x: 50, y: 68 },
-    { position: 'LM', x: 18, y: 48 },
-    { position: 'CM', x: 50, y: 44 },
-    { position: 'RM', x: 82, y: 48 },
-    { position: 'LW', x: 22, y: 18 },
-    { position: 'RW', x: 78, y: 18 },
-  ],
-  '3-5-2': [
-    { position: 'GK', x: 50, y: 85 },
-    { position: 'CB', x: 50, y: 68 },
-    { position: 'LB', x: 22, y: 64 },
-    { position: 'LM', x: 18, y: 44 },
-    { position: 'CM', x: 50, y: 42 },
-    { position: 'RM', x: 82, y: 44 },
-    { position: 'ST', x: 50, y: 18 },
-  ],
-  '4-2-3-1': [
-    { position: 'GK', x: 50, y: 85 },
-    { position: 'LB', x: 22, y: 68 },
-    { position: 'RB', x: 78, y: 68 },
-    { position: 'DM', x: 50, y: 52 },
-    { position: 'LW', x: 20, y: 32 },
-    { position: 'RW', x: 80, y: 32 },
-    { position: 'ST', x: 50, y: 15 },
-  ],
   '3-1-2': [
     { position: 'GK', x: 50, y: 85 },
     { position: 'LB', x: 22, y: 67 },
@@ -85,8 +40,26 @@ const FORMATIONS: Record<string, { position: string; x: number; y: number }[]> =
     { position: 'CF', x: 32, y: 18 },
     { position: 'ST', x: 68, y: 18 },
   ],
+  '2-3-1': [
+    { position: 'GK', x: 50, y: 85 },
+    { position: 'LB', x: 30, y: 68 },
+    { position: 'RB', x: 70, y: 68 },
+    { position: 'LM', x: 22, y: 46 },
+    { position: 'CM', x: 50, y: 44 },
+    { position: 'RM', x: 78, y: 46 },
+    { position: 'ST', x: 50, y: 18 },
+  ],
+  '2-2-2': [
+    { position: 'GK', x: 50, y: 85 },
+    { position: 'LB', x: 30, y: 68 },
+    { position: 'RB', x: 70, y: 68 },
+    { position: 'LM', x: 32, y: 46 },
+    { position: 'RM', x: 68, y: 46 },
+    { position: 'LW', x: 32, y: 20 },
+    { position: 'RW', x: 68, y: 20 },
+  ],
 }
-const FORMATION_NAMES = ['3-1-2', '4-3-3', '4-4-2', '3-4-3', '3-5-2', '4-2-3-1'] as const
+const FORMATION_NAMES = ['3-1-2', '2-3-1', '2-2-2'] as const
 
 type Player = {
   id: string
@@ -123,6 +96,7 @@ export default function GamesScreen() {
   const [viewMode, setViewMode] = useState<'field' | 'list'>('field')
   const timerRef = useRef<any>(null)
 
+  const [playedPlayers, setPlayedPlayers] = useState<Set<string>>(new Set())
   const [snackData, setSnackData] = useState(() =>
     SEASON_SCHEDULE
       .filter(e => e.type === 'game' && new Date(e.starts_at) >= new Date())
@@ -397,7 +371,7 @@ Slots: ${formationSlots}`
                   const isPictureDay = event.type === 'picture_day'
                   const isParty = event.type === 'party'
                   const typeColor = isGame ? '#FF8C42' : isPictureDay ? '#9C27B0' : isParty ? '#7C3AED' : tc
-                  const typeLabel = isGame ? '⚽ Game' : isPictureDay ? '📸 Picture Day' : isParty ? '🎉 Party' : '🏃 Practice'
+                  const typeLabel = isGame ? '🏆 Game' : isPictureDay ? '📸 Picture Day' : isParty ? '🎉 Party' : '⚽ Practice'
                   return (
                     <View
                       key={event.id}
@@ -643,7 +617,7 @@ Slots: ${formationSlots}`
 
           {nextGame && (
             <View style={[styles.gameCard, { backgroundColor: '#fff', borderWidth: 0.5, borderColor: '#eee', borderLeftWidth: 4, borderLeftColor: tc }]}>
-              <Text style={[styles.gameCardLabel, { color: tc }]}>NEXT GAME</Text>
+              <Text style={[styles.gameCardLabel, { color: tc }]}>Next game</Text>
               <Text style={[styles.gameCardTitle, { color: '#111827' }]}>vs {nextGame.opponent}</Text>
               <Text style={[styles.gameCardSub, { color: '#6B7280' }]}>
                 {new Date(nextGame.starts_at).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
@@ -702,8 +676,8 @@ Slots: ${formationSlots}`
             activeOpacity={0.85}
           >
             <View>
-              <Text style={styles.lineupBuilderTitle}>⚡ AI Lineup Builder</Text>
-              <Text style={styles.lineupBuilderSub}>Tap to generate your optimal lineup</Text>
+              <Text style={styles.lineupBuilderTitle}>⚡ Build your lineup</Text>
+              <Text style={styles.lineupBuilderSub}>Tap to generate your starting lineup</Text>
             </View>
             <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 18 }}>{lineupBuilderOpen ? '▲' : '▼'}</Text>
           </TouchableOpacity>
@@ -860,69 +834,46 @@ Slots: ${formationSlots}`
             </>
           )}
 
-          {/* Substitution plan */}
-          {(() => {
-            const on = players.filter(p => p.isOn).sort((a,b)=>(a.fieldSlot??99)-(b.fieldSlot??99))
-            const bench = players.filter(p => !p.isOn)
-            if (bench.length === 0) return null
-            const gk  = on.find(p => p.fieldSlot === 0)
-            const def = on.find(p => [1,2,3].includes(p.fieldSlot??-1))
-            const mf  = on.find(p => p.fieldSlot === 4)
-            const fwd = on.find(p => [5,6].includes(p.fieldSlot??-1))
-            type Sub = { minute:number; onName:string; onId:string; offName:string; offId:string }
-            const tl: Sub[] = []
-            let bi = 0
-            if (mf  && bench[bi]) { tl.push({minute:15,onName:bench[bi].name,onId:bench[bi].id,offName:mf.name,offId:mf.id}); bi++ }
-            if (def && bench[bi]) { tl.push({minute:20,onName:bench[bi].name,onId:bench[bi].id,offName:def.name,offId:def.id}); bi++ }
-            if (fwd && bench[bi]) { tl.push({minute:25,onName:bench[bi].name,onId:bench[bi].id,offName:fwd.name,offId:fwd.id}); bi++ }
-            if (gk  && bench[bi]) { tl.push({minute:30,onName:bench[bi].name,onId:bench[bi].id,offName:gk.name,offId:gk.id}); bi++ }
-            const first = [...tl]
-            if (first[0]) tl.push({minute:35,onName:first[0].offName,onId:first[0].offId,offName:first[0].onName,offId:first[0].onId})
-            if (first[1]) tl.push({minute:40,onName:first[1].offName,onId:first[1].offId,offName:first[1].onName,offId:first[1].onId})
-            if (first[2]) tl.push({minute:45,onName:first[2].offName,onId:first[2].offId,offName:first[2].onName,offId:first[2].onId})
-            tl.sort((a,b) => a.minute - b.minute)
-            const proj: Record<string,number> = {}
-            players.forEach(p => { proj[p.id] = 0 })
-            const field = new Set(on.map(p => p.id))
-            let prev = 0
-            for (const evt of tl) {
-              field.forEach(id => { proj[id] = (proj[id]??0) + (evt.minute - prev) })
-              prev = evt.minute
-              field.delete(evt.offId)
-              field.add(evt.onId)
-            }
-            field.forEach(id => { proj[id] = (proj[id]??0) + (60 - prev) })
+          {/* Substitution guide */}
+          {players.length > 0 && (() => {
+            const notPlayed = players.filter(p => !playedPlayers.has(p.id))
+            const suggestSub = notPlayed.find(p => !p.isOn)
             return (
               <View style={styles.subPlanCard}>
-                <Text style={styles.subPlanTitle}>Sub plan · Equal time</Text>
-                {tl.map((evt, i) => (
-                  <View key={i} style={[styles.subPlanRow, i < tl.length - 1 && styles.subPlanBorder]}>
-                    <Text style={styles.subPlanTime}>{evt.minute}'</Text>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.subPlanIn}>↑ {evt.onName}</Text>
-                      <Text style={styles.subPlanOut}>↓ {evt.offName}</Text>
-                    </View>
+                <Text style={styles.subPlanTitle}>Substitution guide</Text>
+                <Text style={{ fontSize: 12, color: '#9CA3AF', marginBottom: 10 }}>Tap a player to mark as played</Text>
+                {players.map((p, i) => {
+                  const hasPlayed = playedPlayers.has(p.id)
+                  return (
+                    <TouchableOpacity
+                      key={p.id}
+                      style={[{ flexDirection: 'row', alignItems: 'center', paddingVertical: 9, gap: 12 }, i < players.length - 1 && { borderBottomWidth: 0.5, borderBottomColor: '#f5f5f5' }]}
+                      onPress={() => setPlayedPlayers(prev => {
+                        const next = new Set(prev)
+                        if (next.has(p.id)) next.delete(p.id)
+                        else next.add(p.id)
+                        return next
+                      })}
+                      activeOpacity={0.7}
+                    >
+                      <View style={{ width: 22, height: 22, borderRadius: 11, borderWidth: 1.5, borderColor: hasPlayed ? '#10B981' : '#ddd', backgroundColor: hasPlayed ? '#10B981' : '#fff', alignItems: 'center', justifyContent: 'center' }}>
+                        {hasPlayed && <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>✓</Text>}
+                      </View>
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: hasPlayed ? '#9CA3AF' : '#1a1a1a', flex: 1 }}>{p.name}</Text>
+                      {p.isOn && <Text style={{ fontSize: 11, color: '#10B981', fontWeight: '600' }}>On field</Text>}
+                    </TouchableOpacity>
+                  )
+                })}
+                {suggestSub && (
+                  <View style={{ backgroundColor: '#F0F4FF', borderRadius: 10, padding: 10, marginTop: 12 }}>
+                    <Text style={{ fontSize: 13, fontWeight: '600', color: '#1A56DB' }}>
+                      Consider subbing in: {suggestSub.name}
+                    </Text>
                   </View>
-                ))}
-                <View style={styles.projMinsRow}>
-                  {players.map(p => (
-                    <View key={p.id} style={styles.projMinsChip}>
-                      <Text style={styles.projMinsChipText}>{p.name.split(' ')[0]} {proj[p.id]??0}m</Text>
-                    </View>
-                  ))}
-                </View>
+                )}
               </View>
             )
           })()}
-
-          {gameTime > 120 && players.some(p => p.minutes < fairShare * 0.7) && (
-            <View style={styles.fairPlayCard}>
-              <Text style={styles.fairPlayTitle}>⚠ Playing time alert</Text>
-              {players.filter(p => p.minutes < fairShare * 0.7).map(p => (
-                <Text key={p.id} style={styles.fairPlayAlert}>{p.name} needs more time ({formatMins(p.minutes)} vs {formatMins(fairShare)} avg)</Text>
-              ))}
-            </View>
-          )}
 
           <TouchableOpacity style={[styles.resetLineupBtn, { borderColor: tc }]} onPress={() => {
             clearInterval(timerRef.current)
@@ -948,7 +899,7 @@ Slots: ${formationSlots}`
                 <Text style={{ fontSize: 18, color: '#888' }}>✕</Text>
               </TouchableOpacity>
             </View>
-            <Text style={{ fontSize: 12, fontWeight: '700', color: '#9CA3AF', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>Player</Text>
+            <Text style={{ fontSize: 12, fontWeight: '700', color: '#9CA3AF', marginBottom: 10, letterSpacing: 0.3 }}>Player</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 20 }} contentContainerStyle={{ gap: 8 }}>
               {playerStats.map(p => (
                 <TouchableOpacity
@@ -960,7 +911,7 @@ Slots: ${formationSlots}`
                 </TouchableOpacity>
               ))}
             </ScrollView>
-            <Text style={{ fontSize: 12, fontWeight: '700', color: '#9CA3AF', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>Stat type</Text>
+            <Text style={{ fontSize: 12, fontWeight: '700', color: '#9CA3AF', marginBottom: 10, letterSpacing: 0.3 }}>Stat type</Text>
             <View style={{ flexDirection: 'row', gap: 8, marginBottom: 24 }}>
               {([['goals', 'Goal ⚽'], ['assists', 'Assist 🎯'], ['yellows', 'Yellow 🟨']] as const).map(([type, label]) => (
                 <TouchableOpacity
@@ -1000,13 +951,13 @@ const styles = StyleSheet.create({
   content: { paddingTop: 12, paddingHorizontal: 16, paddingBottom: 32 },
   emptyState: { alignItems: 'center', paddingVertical: 60 },
   emptyText: { fontSize: 14, color: '#aaa' },
-  monthHeader: { fontSize: 12, fontWeight: '700', color: '#aaa', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8, marginTop: 4 },
+  monthHeader: { fontSize: 12, fontWeight: '700', color: '#aaa', letterSpacing: 0.3, marginBottom: 8, marginTop: 4 },
   scheduleRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, gap: 12 },
   scheduleRowAlt: { backgroundColor: '#FAFAFA' },
   scheduleBorder: { borderBottomWidth: 0.5, borderBottomColor: '#f0f0f0' },
   scheduleDateCol: { width: 32, alignItems: 'center' },
   scheduleDay: { fontSize: 16, fontWeight: '800', color: '#1a1a1a' },
-  scheduleDOW: { fontSize: 10, color: '#aaa', fontWeight: '600', textTransform: 'uppercase' },
+  scheduleDOW: { fontSize: 10, color: '#aaa', fontWeight: '600' },
   scheduleType: { fontSize: 11, fontWeight: '700', marginBottom: 1 },
   scheduleTitle: { fontSize: 13, fontWeight: '600', color: '#1a1a1a' },
   scheduleTime: { fontSize: 12, fontWeight: '600', color: '#555' },
@@ -1015,7 +966,7 @@ const styles = StyleSheet.create({
   teamCardName: { fontSize: 20, fontWeight: '800', color: '#fff', marginBottom: 4 },
   teamCardSub: { fontSize: 13, color: 'rgba(255,255,255,0.8)' },
   card: { backgroundColor: '#fff', borderRadius: 18, padding: 16, marginBottom: 12, borderWidth: 0.5, borderColor: '#eee' },
-  cardLabel: { fontSize: 10, fontWeight: '700', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 8 },
+  cardLabel: { fontSize: 10, fontWeight: '700', color: '#9CA3AF', letterSpacing: 0.3, marginBottom: 8 },
   cardTitle: { fontSize: 16, fontWeight: '700', color: '#111827' },
   cardSub: { fontSize: 12, color: '#888' },
   rosterRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 },
@@ -1026,7 +977,7 @@ const styles = StyleSheet.create({
   starterText: { fontSize: 11, fontWeight: '700' },
   chevron: { fontSize: 18, color: '#ccc', marginLeft: 4 },
   gameCard: { borderRadius: 20, padding: 16, marginBottom: 12 },
-  gameCardLabel: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 },
+  gameCardLabel: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.5)', letterSpacing: 0.3, marginBottom: 2 },
   gameCardTitle: { fontSize: 26, fontWeight: '900', color: '#fff', marginBottom: 2 },
   gameCardSub: { fontSize: 14, color: 'rgba(255,255,255,0.7)' },
   aiHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 },
@@ -1039,7 +990,7 @@ const styles = StyleSheet.create({
   skipBtnText: { fontSize: 13, color: '#aaa' },
   timerCard: { borderRadius: 16, padding: 16, marginBottom: 12 },
   timerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
-  timerLabel: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 0.5 },
+  timerLabel: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.5)', letterSpacing: 0.3 },
   timerTime: { fontSize: 52, fontWeight: '900', color: '#fff', letterSpacing: -1 },
   timerActions: { flexDirection: 'row', gap: 8 },
   timerBtn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10 },
@@ -1061,14 +1012,14 @@ const styles = StyleSheet.create({
   fieldPlayerName: { fontSize: 8, fontWeight: '600', maxWidth: 48 },
   fieldPlayerMins: { fontSize: 8 },
   benchArea: { backgroundColor: '#fff', borderRadius: 14, padding: 12, borderWidth: 0.5, borderColor: '#eee' },
-  benchLabel: { fontSize: 10, fontWeight: '700', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 8 },
+  benchLabel: { fontSize: 10, fontWeight: '700', color: '#9CA3AF', letterSpacing: 0.3, marginBottom: 8 },
   benchPlayer: { alignItems: 'center', width: 64, borderRadius: 10, padding: 8, backgroundColor: '#fff', borderWidth: 1, borderColor: '#E5E7EB' },
   benchPlayerNum: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
   benchPlayerNumText: { fontSize: 13, fontWeight: '700' },
   benchPlayerName: { fontSize: 10, fontWeight: '600', color: '#555', maxWidth: 56, textAlign: 'center' },
   benchPlayerMins: { fontSize: 10, fontWeight: '600', marginTop: 2 },
   section: { marginBottom: 12 },
-  sectionLabel: { fontSize: 10, fontWeight: '700', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 8 },
+  sectionLabel: { fontSize: 10, fontWeight: '700', color: '#9CA3AF', letterSpacing: 0.3, marginBottom: 8 },
   playerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 14, marginBottom: 6, backgroundColor: '#fff', borderWidth: 0.5, borderColor: '#eee' },
   playerRowBench: { backgroundColor: '#F7F7F5' },
   numBadge: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },

@@ -400,7 +400,7 @@ export default function ParentHomeScreen() {
         {/* 2. Practice plan card — full plan with streak */}
         <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: tc, padding: 0, overflow: 'hidden' }]}>
           <View style={{ backgroundColor: '#F0F4FF', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Text style={styles.cardLabel}>This week's plan</Text>
+            <Text style={styles.cardLabel}>This week's focus</Text>
             <Text style={{ fontSize: 11, fontWeight: '600', color: tc + 'aa' }}>Read only</Text>
           </View>
           <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8 }}>
@@ -429,7 +429,7 @@ export default function ParentHomeScreen() {
         {/* Drill of the day */}
         <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#F59E0B', padding: 0, overflow: 'hidden' }]}>
           <View style={{ backgroundColor: '#FFFBEB', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 }}>
-            <Text style={styles.cardLabel}>Drill of the day 🎯</Text>
+            <Text style={styles.cardLabel}>Tonight's drill 🏠</Text>
           </View>
           <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 14 }}>
             <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 6 }}>Cone Weaving</Text>
@@ -665,7 +665,7 @@ const styles = StyleSheet.create({
   content: { padding: 14 },
   heroCard: { borderRadius: 20, padding: 16, marginBottom: 12 },
   heroTopRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 },
-  heroMeta: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.65)', textTransform: 'uppercase', letterSpacing: 0.5 },
+  heroMeta: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.65)', letterSpacing: 0.3 },
   heroDay: { fontSize: 15, fontWeight: '700', color: '#fff', marginBottom: 2 },
   heroTitle: { fontSize: 24, fontWeight: '900', color: '#fff', letterSpacing: -0.5, marginBottom: 4 },
   heroTime: { fontSize: 14, color: 'rgba(255,255,255,0.9)', fontWeight: '600', marginBottom: 4 },
@@ -680,7 +680,7 @@ const styles = StyleSheet.create({
   emptyTitle: { fontSize: 16, fontWeight: '700', color: '#1a1a1a', marginBottom: 6 },
   emptySub: { fontSize: 13, color: '#6B7280', textAlign: 'center' },
   card: { backgroundColor: '#fff', borderRadius: 18, padding: 16, marginBottom: 12, borderWidth: 0.5, borderColor: '#eee' },
-  cardLabel: { fontSize: 10, fontWeight: '700', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 8 },
+  cardLabel: { fontSize: 10, fontWeight: '700', color: '#9CA3AF', letterSpacing: 0.3, marginBottom: 8 },
   practicePreviewHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
   bellIcon: { fontSize: 16 },
   practiceFocus: { fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 4 },
@@ -711,7 +711,7 @@ const styles = StyleSheet.create({
   planPhaseRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10 },
   planPhaseBorder: { borderBottomWidth: 0.5, borderBottomColor: '#f5f5f5' },
   phaseAccent: { width: 4, height: 40, borderRadius: 2 },
-  planPhaseLabel: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 },
+  planPhaseLabel: { fontSize: 10, fontWeight: '700', letterSpacing: 0.3, marginBottom: 2 },
   planPhaseDrill: { fontSize: 14, fontWeight: '700', color: '#1a1a1a' },
   planPhaseDur: { fontSize: 12, fontWeight: '600', color: '#888' },
   practiceStreakNote: { backgroundColor: '#FFF7ED', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 },

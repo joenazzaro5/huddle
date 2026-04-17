@@ -14,20 +14,20 @@ const ONBOARDING = {
   coach: [
     {
       emoji: '⚡',
-      title: 'Practice plans in seconds',
-      desc: 'AI builds a custom session for your team. You just coach.',
+      title: 'Your practice, ready to go',
+      desc: 'Answer a few questions and get a full session plan built for your team. Then make it yours.',
       nextLabel: 'Next: Game day',
     },
     {
       emoji: '📋',
-      title: 'Game day, handled',
-      desc: 'AI lineup, smart sub rotations, equal playing time. All from the sideline.',
+      title: 'Game day, simplified',
+      desc: 'Lineup, substitutions, and playing time. Everything you need on the sideline.',
       nextLabel: 'Next: Team communication',
     },
     {
       emoji: '🏆',
-      title: 'Your whole team, connected',
-      desc: 'Real chat, RSVPs, snack duty. Everyone shows up ready.',
+      title: 'One place for your whole team',
+      desc: 'Schedules, RSVPs, chat, and updates. Coaches and parents always on the same page.',
       nextLabel: null,
     },
   ],
@@ -35,19 +35,19 @@ const ONBOARDING = {
     {
       emoji: '📅',
       title: 'Always in the loop',
-      desc: 'Schedule, reminders, RSVP in one tap. Never miss a thing.',
+      desc: 'See the schedule, get reminders, and let the coach know you\'re coming. All in one tap.',
       nextLabel: 'Next: Stay connected',
     },
     {
       emoji: '💬',
-      title: 'Never miss a beat',
-      desc: 'Real team chat, snack duty, and updates the moment they happen.',
+      title: 'Stay connected',
+      desc: 'Chat with the team, get updates, and know what\'s happening before it happens.',
       nextLabel: 'Next: Build momentum',
     },
     {
       emoji: '🔥',
-      title: 'Keep the momentum going',
-      desc: 'AI drill of the day and practice streaks. Your kid improves every day.',
+      title: 'Practice doesn\'t stop at the field',
+      desc: 'Your coach sends a daily drill. Do it at home, build a streak, get better every day.',
       nextLabel: null,
     },
   ],
@@ -167,7 +167,7 @@ export default function EntryScreen() {
             <Text style={styles.roleCardBigEmoji}>📋</Text>
             <View style={{ flex: 1 }}>
               <Text style={styles.roleCardTitle}>Coach</Text>
-              <Text style={styles.roleCardDesc}>AI practice plans, smart lineups, and everything your team needs to have a great season.</Text>
+              <Text style={styles.roleCardDesc}>Build your practice, run game day, keep your team connected.</Text>
             </View>
           </TouchableOpacity>
         </Animated.View>
@@ -181,7 +181,7 @@ export default function EntryScreen() {
             <Text style={styles.roleCardBigEmoji}>👨‍👧</Text>
             <View style={{ flex: 1 }}>
               <Text style={styles.roleCardTitle}>Parent / Guardian</Text>
-              <Text style={styles.roleCardDesc}>Schedules, real-time updates, and a front-row seat to your child's progress.</Text>
+              <Text style={styles.roleCardDesc}>Stay in the loop, support your kid, and never miss a thing.</Text>
             </View>
           </TouchableOpacity>
         </Animated.View>

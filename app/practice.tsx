@@ -382,26 +382,14 @@ export default function PracticeScreen() {
                       <Text style={{ fontSize: 12, color: '#888' }}>Building your plan...</Text>
                     </View>
                   ) : (
-                    <View style={{
-                      paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10,
-                      backgroundColor: isAiPlan ? '#D1FAE5' : '#F3F4F6',
-                    }}>
-                      <Text style={{ fontSize: 10, fontWeight: '700', color: isAiPlan ? '#065F46' : '#6B7280' }}>
-                        {isAiPlan ? '✨ AI Generated' : '📋 Default plan'}
+                    <View style={{ paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10, backgroundColor: '#F3F4F6' }}>
+                      <Text style={{ fontSize: 10, fontWeight: '600', color: '#9CA3AF' }}>
+                        {planLoading ? '⏳ Generating...' : '✦ Personalized for your team'}
                       </Text>
                     </View>
                   )}
                 </View>
               </View>
-              {!planLoading && (
-                <TouchableOpacity
-                  onPress={async () => { await AsyncStorage.removeItem('huddle_active_plan'); autoGenerate(nextEvent, team) }}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: 4, padding: 6 }}
-                >
-                  <Text style={{ fontSize: 18 }}>🔀</Text>
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: teamColor }}>New plan</Text>
-                </TouchableOpacity>
-              )}
             </View>
             {!planLoading && plan?.plan?.map((item: any, i: number) => (
               <View key={i}>
@@ -422,11 +410,18 @@ export default function PracticeScreen() {
                     {expandedDrill === i && <Text style={styles.phaseDesc}>{item.desc}</Text>}
                   </View>
                 </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={async () => { await AsyncStorage.removeItem('huddle_active_plan'); autoGenerate(nextEvent, team) }}
+                  style={{ paddingHorizontal: 4, paddingBottom: 4, alignSelf: 'flex-start' }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={{ fontSize: 12, color: '#9CA3AF', fontWeight: '500' }}>Try a different drill →</Text>
+                </TouchableOpacity>
               </View>
             ))}
             {!planLoading && plan?.coachTip && (
               <View style={styles.tipBox}>
-                <Text style={styles.tipLabel}>💡 Coach tip</Text>
+                <Text style={styles.tipLabel}>Before you start 💡</Text>
                 <Text style={styles.tipText}>{plan?.coachTip}</Text>
               </View>
             )}
@@ -436,7 +431,7 @@ export default function PracticeScreen() {
                 onPress={() => setShowFeedbackModal(true)}
                 activeOpacity={0.85}
               >
-                <Text style={{ fontSize: 15, fontWeight: '700', color: '#1A56DB' }}>Practice feedback</Text>
+                <Text style={{ fontSize: 15, fontWeight: '700', color: '#1A56DB' }}>How did it go?</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -509,7 +504,7 @@ export default function PracticeScreen() {
                 >
                   {aiLoading
                     ? <ActivityIndicator color="#fff" size="small" />
-                    : <Text style={styles.generateFullBtnText}>Generate plan →</Text>
+                    : <Text style={styles.generateFullBtnText}>Build practice plan</Text>
                   }
                 </TouchableOpacity>
               )}
@@ -789,18 +784,18 @@ const styles = StyleSheet.create({
   subTabText: { fontSize: 13 },
   content: { padding: 16 },
   contextCard: { borderRadius: 16, padding: 14, marginBottom: 12, backgroundColor: '#fff', borderWidth: 0.5, borderColor: '#eee' },
-  contextLabel: { fontSize: 10, fontWeight: '700', color: '#aaa', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 },
+  contextLabel: { fontSize: 10, fontWeight: '700', color: '#aaa', letterSpacing: 0.3, marginBottom: 2 },
   contextTitle: { fontSize: 18, fontWeight: '800', color: '#1a1a1a', marginBottom: 2 },
   contextSub: { fontSize: 12, color: '#888' },
   card: { backgroundColor: '#fff', borderRadius: 18, padding: 16, marginBottom: 12, borderWidth: 0.5, borderColor: '#eee' },
-  cardLabel: { fontSize: 10, fontWeight: '700', color: '#aaa', textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 6 },
+  cardLabel: { fontSize: 10, fontWeight: '700', color: '#aaa', letterSpacing: 0.3, marginBottom: 6 },
   cardTitle: { fontSize: 15, fontWeight: '800', color: '#1a1a1a' },
   cardSub: { fontSize: 12, color: '#888' },
   planTitle: { fontSize: 15, fontWeight: '800', color: '#1a1a1a', marginBottom: 10 },
   offlineLabel: { fontSize: 11, color: '#aaa', marginTop: 2, marginBottom: 4 },
   phaseCard: { borderRadius: 12, overflow: 'hidden', borderWidth: 1, borderColor: '#eee', marginBottom: 8 },
   phaseHeader: { paddingHorizontal: 12, paddingVertical: 7, flexDirection: 'row', justifyContent: 'space-between' },
-  phaseLabel: { fontSize: 10, fontWeight: '800', color: '#fff', textTransform: 'uppercase', letterSpacing: 0.5 },
+  phaseLabel: { fontSize: 10, fontWeight: '800', color: '#fff', letterSpacing: 0.3 },
   phaseDuration: { fontSize: 10, color: 'rgba(255,255,255,0.85)', fontWeight: '600' },
   phaseBody: { backgroundColor: '#fff', padding: 12 },
   drillRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
@@ -856,7 +851,7 @@ const styles = StyleSheet.create({
   ruleCard: { backgroundColor: '#fff', borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 0.5, borderColor: '#eee' },
   ruleName: { fontSize: 17, fontWeight: '800', color: '#1a1a1a', marginBottom: 6 },
   ruleWhenRow: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 8 },
-  ruleWhenLabel: { fontSize: 12, fontWeight: '700', color: '#aaa', textTransform: 'uppercase', letterSpacing: 0.3 },
+  ruleWhenLabel: { fontSize: 12, fontWeight: '700', color: '#aaa', letterSpacing: 0.3 },
   ruleWhen: { fontSize: 12, color: '#555', flex: 1 },
   ruleExplanation: { fontSize: 14, color: '#333', lineHeight: 21, marginBottom: 10 },
 })
