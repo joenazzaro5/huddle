@@ -39,6 +39,9 @@ const FALLBACK_PLAN = {
   coachTip: "Remind players to check their shoulder before receiving. The best passers always know what's around them before the ball arrives.",
 }
 
+const PHASE_COLORS_HOME = ['#10B981', '#1A56DB', '#F97316']
+const FOCUS_PILLS = ['Dribbling', 'Passing', 'Shooting', 'Defending', 'All'] as const
+
 async function getRecentFeedbackText(): Promise<string> {
   try {
     const raw = await AsyncStorage.getItem('huddle_practice_feedback')
@@ -166,6 +169,9 @@ export default function HomeScreen() {
   const [practiceStreak, setPracticeStreak] = useState(0)
   const [practicedDays, setPracticedDays] = useState<number[]>([])
   const [streakMilestone, setStreakMilestone] = useState<string | null>(null)
+  const [selectedFocus, setSelectedFocus] = useState<string>('All')
+  const [feedbackModalOpen, setFeedbackModalOpen] = useState(false)
+  const [drillRatings, setDrillRatings] = useState<Record<string, string>>({})
   const confettiAnims = useRef(
     Array.from({ length: 20 }, () => ({
       opacity: new Animated.Value(0),
@@ -250,6 +256,8 @@ export default function HomeScreen() {
       }
     }
     setNextEvent(resolvedEvents[0] ?? null)
+    const validFocuses: string[] = ['Dribbling', 'Passing', 'Shooting', 'Defending']
+    setSelectedFocus(validFocuses.includes(resolvedEvents[0]?.focus) ? resolvedEvents[0].focus : 'All')
 
     const cacheKey = 'huddle_active_plan'
     const rawCache = await AsyncStorage.getItem(cacheKey)
@@ -329,6 +337,16 @@ export default function HomeScreen() {
     } finally {
       setPlanLoading(false)
     }
+  }
+
+  const regeneratePlanWithFocus = async (focus: string) => {
+    if (!team) return
+    setSelectedFocus(focus)
+    await AsyncStorage.removeItem('huddle_active_plan')
+    autoGeneratePlan(
+      focus === 'All' ? { ...nextEvent, focus: null } : { ...nextEvent, focus },
+      team
+    )
   }
 
   const switchTeam = async (teamData: any) => {
@@ -548,27 +566,148 @@ export default function HomeScreen() {
           </View>
         ) : (
           <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: tc, padding: 0, overflow: 'hidden' }]}>
-            <View style={styles.practicePlanHeader}>
+            {/* Header */}
+            <View style={[styles.practicePlanHeader, { flexDirection: 'row', alignItems: 'center' }]}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.planReadyTitle}>Your plan is ready</Text>
+                <Text style={styles.planReadyTitle}>Your practice plan</Text>
                 <Text style={styles.planPersonalizedBadge}>✦ Personalized for your team</Text>
               </View>
               {planLoading && <ActivityIndicator color={tc} size="small" />}
             </View>
+
             <View style={styles.practicePlanBody}>
-              <Text style={styles.cardTitle}>{plan?.title ?? 'Building your plan...'}</Text>
+              {/* Focus selector pills */}
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 14 }}>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  {FOCUS_PILLS.map(f => {
+                    const isActive = selectedFocus === f
+                    const fc = FOCUS_COLORS_HOME[f] ?? { bg: '#F3F4F6', text: '#6B7280' }
+                    return (
+                      <TouchableOpacity
+                        key={f}
+                        onPress={() => regeneratePlanWithFocus(f)}
+                        disabled={planLoading}
+                        style={{
+                          paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1.5,
+                          backgroundColor: isActive ? (f === 'All' ? tc : fc.bg) : '#F9FAFB',
+                          borderColor: isActive ? (f === 'All' ? tc : fc.text) : '#E5E7EB',
+                        }}
+                        activeOpacity={0.75}
+                      >
+                        <Text style={{ fontSize: 12, fontWeight: '700', color: isActive ? (f === 'All' ? '#fff' : fc.text) : '#9CA3AF' }}>
+                          {f}
+                        </Text>
+                      </TouchableOpacity>
+                    )
+                  })}
+                </View>
+              </ScrollView>
+
+              {/* Session title */}
+              <Text style={[styles.cardTitle, { marginBottom: 10 }]}>{plan?.title ?? 'Building your plan...'}</Text>
+
+              {/* Drills with phase labels */}
               {!planLoading && plan?.plan?.map((item: any, i: number) => (
-                <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 5 }}>
-                  <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#9CA3AF' }} />
-                  <Text style={{ fontSize: 13, fontWeight: '600', color: '#374151' }}>{item.drill}</Text>
+                <View
+                  key={i}
+                  style={{
+                    paddingVertical: 9,
+                    borderBottomWidth: i < (plan.plan.length - 1) ? 0.5 : 0,
+                    borderBottomColor: '#F3F4F6',
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 }}>
+                    <Text style={{ fontSize: 10, fontWeight: '700', color: PHASE_COLORS_HOME[i] ?? '#9CA3AF', letterSpacing: 0.3 }}>
+                      {(item.phase ?? `Phase ${i + 1}`).toUpperCase()}
+                    </Text>
+                    <Text style={{ fontSize: 11, fontWeight: '600', color: '#9CA3AF' }}>{item.duration}</Text>
+                  </View>
+                  <Text style={{ fontSize: 14, fontWeight: '700', color: '#1a1a1a' }}>{item.drill}</Text>
                 </View>
               ))}
-              <Text style={[styles.planMeta, { marginTop: 10 }]}>
-                {`${nextEvent?.duration_min ?? 60} min · ${team?.age_group ?? 'your team'}`}
-              </Text>
-              <TouchableOpacity onPress={() => router.push('/practice')}>
-                <Text style={[styles.viewLink, { color: tc }]}>See the full plan →</Text>
-              </TouchableOpacity>
+
+              {/* Coach tip */}
+              {!planLoading && plan?.coachTip && (
+                <View style={{ backgroundColor: '#F0F4FF', borderRadius: 10, padding: 10, marginTop: 12 }}>
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: tc, marginBottom: 3 }}>💡 Coach tip</Text>
+                  <Text style={{ fontSize: 13, color: '#374151', lineHeight: 19 }}>
+                    {plan.coachTip.split('. ')[0] + (plan.coachTip.includes('. ') ? '.' : '')}
+                  </Text>
+                </View>
+              )}
+
+              {/* CTAs */}
+              <View style={{ flexDirection: 'row', gap: 8, marginTop: 14 }}>
+                <TouchableOpacity
+                  style={{ flex: 1, backgroundColor: tc, borderRadius: 10, paddingVertical: 11, alignItems: 'center' }}
+                  onPress={() => router.push('/practice')}
+                  activeOpacity={0.85}
+                >
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#fff' }}>Customize →</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={{ flex: 1, backgroundColor: '#F3F4F6', borderRadius: 10, paddingVertical: 11, alignItems: 'center' }}
+                  onPress={() => setFeedbackModalOpen(v => !v)}
+                  activeOpacity={0.85}
+                >
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#374151' }}>
+                    {feedbackModalOpen ? 'Close' : 'Give practice feedback'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Inline feedback */}
+              {feedbackModalOpen && (
+                <View style={{ marginTop: 12, backgroundColor: '#F7F7F5', borderRadius: 12, padding: 12 }}>
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: '#9CA3AF', letterSpacing: 0.3, marginBottom: 10 }}>HOW DID THE DRILLS GO?</Text>
+                  {plan?.plan?.map((item: any, i: number) => (
+                    <View key={i} style={{ marginBottom: 10 }}>
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: '#1a1a1a', marginBottom: 6 }}>{item.drill}</Text>
+                      <View style={{ flexDirection: 'row', gap: 6 }}>
+                        {['Too easy', 'Just right', 'Too hard'].map(rating => {
+                          const key = `${i}-${item.drill}`
+                          const isSelected = drillRatings[key] === rating
+                          return (
+                            <TouchableOpacity
+                              key={rating}
+                              style={{
+                                flex: 1, paddingVertical: 7, borderRadius: 8, alignItems: 'center',
+                                backgroundColor: isSelected ? tc : '#fff',
+                                borderWidth: 1, borderColor: isSelected ? tc : '#E5E7EB',
+                              }}
+                              onPress={() => setDrillRatings(prev => ({ ...prev, [key]: rating }))}
+                              activeOpacity={0.8}
+                            >
+                              <Text style={{ fontSize: 11, fontWeight: '700', color: isSelected ? '#fff' : '#6B7280' }}>{rating}</Text>
+                            </TouchableOpacity>
+                          )
+                        })}
+                      </View>
+                    </View>
+                  ))}
+                  <TouchableOpacity
+                    style={{ backgroundColor: tc, borderRadius: 10, paddingVertical: 11, alignItems: 'center', marginTop: 4 }}
+                    onPress={async () => {
+                      const fb = {
+                        date: todayDateStr(),
+                        planTitle: plan?.title,
+                        ratings: plan?.plan?.map((item: any, i: number) => ({
+                          drill: item.drill,
+                          rating: drillRatings[`${i}-${item.drill}`] ?? null,
+                        })) ?? [],
+                      }
+                      const raw = await AsyncStorage.getItem('huddle_practice_feedback')
+                      const all: any[] = raw ? JSON.parse(raw) : []
+                      await AsyncStorage.setItem('huddle_practice_feedback', JSON.stringify([...all, fb]))
+                      setFeedbackModalOpen(false)
+                      setDrillRatings({})
+                    }}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={{ fontSize: 14, fontWeight: '700', color: '#fff' }}>Submit feedback</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
           </View>
         )}
