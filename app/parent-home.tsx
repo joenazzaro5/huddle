@@ -628,12 +628,12 @@ export default function ParentHomeScreen() {
             <Text style={styles.cardLabel}>🍊 Snack schedule</Text>
           </View>
           <View style={styles.cardBody}>
-            {snacks.slice(0, 2).map((item, i) => {
+            {snacks.slice(0, 3).map((item, i, arr) => {
               const originalIndex = snacks.indexOf(item)
               return (
                 <TouchableOpacity
                   key={i}
-                  style={[styles.snackRow, i < 1 && styles.snackBorder]}
+                  style={[styles.snackRow, i < arr.length - 1 && styles.snackBorder]}
                   onPress={() => !item.claimed && claimSnack(originalIndex)}
                   activeOpacity={item.claimed ? 1 : 0.7}
                   disabled={item.claimed}
