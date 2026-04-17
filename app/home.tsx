@@ -501,9 +501,29 @@ export default function HomeScreen() {
                 </View>
               ))}
               <Text style={[styles.cardTitle, { fontSize: 14, marginTop: 12, marginBottom: 4 }]}>Bench</Text>
-              <Text style={{ fontSize: 13, color: '#6B7280' }}>Liam T. · Owen G. · Carter H. · Dylan W.</Text>
-              <View style={{ backgroundColor: '#FEF2F2', borderRadius: 8, padding: 10, marginTop: 10 }}>
-                <Text style={{ fontSize: 12, fontWeight: '700', color: tc }}>Sub waves: bring in full bench at 8 min and 24 min</Text>
+              <Text style={{ fontSize: 13, color: '#6B7280', marginBottom: 12 }}>Liam T. · Owen G. · Carter H. · Dylan W.</Text>
+              <Text style={{ fontSize: 11, fontWeight: '700', color: '#9CA3AF', letterSpacing: 0.3, marginBottom: 6 }}>SUB ROUNDS</Text>
+              <View style={{ backgroundColor: '#FEF2F2', borderRadius: 10, overflow: 'hidden', marginBottom: 12 }}>
+                {[
+                  { label: 'Sub round 1', min: '8 min' },
+                  { label: 'Sub round 2', min: '16 min' },
+                  { label: 'Sub round 3', min: '24 min' },
+                ].map((round, i) => (
+                  <View
+                    key={i}
+                    style={{
+                      flexDirection: 'row', alignItems: 'center', gap: 10,
+                      paddingHorizontal: 12, paddingVertical: 9,
+                      borderBottomWidth: i < 2 ? 0.5 : 0, borderBottomColor: '#FEE2E2',
+                    }}
+                  >
+                    <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: tc, alignItems: 'center', justifyContent: 'center' }}>
+                      <Text style={{ fontSize: 10, fontWeight: '800', color: '#fff' }}>{i + 1}</Text>
+                    </View>
+                    <Text style={{ fontSize: 13, fontWeight: '600', color: '#374151', flex: 1 }}>{round.label}</Text>
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: tc }}>at {round.min}</Text>
+                  </View>
+                ))}
               </View>
               <TouchableOpacity onPress={() => router.push('/games')}>
                 <Text style={[styles.viewLink, { color: tc }]}>Build your lineup →</Text>
