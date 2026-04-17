@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, TextInput } from 'react-native'
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Alert, TextInput, Modal } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter, useLocalSearchParams } from 'expo-router'
 import { supabase } from '../lib/supabase'
@@ -42,13 +42,34 @@ const FORMATION_NAMES = ['3-1-2', '2-3-1', '2-2-2'] as const
 const SUB_ROUND_MINS = [8, 16, 24]
 
 const LEAGUE_STANDINGS = [
-  { name: 'Marin Cheetahs',    w: 6, l: 2, d: 1, pts: 19, isOwn: true },
-  { name: 'Novato Eagles',     w: 5, l: 3, d: 1, pts: 16, isOwn: false },
-  { name: 'San Rafael Sharks', w: 5, l: 3, d: 0, pts: 15, isOwn: false },
-  { name: 'Mill Valley FC',    w: 4, l: 4, d: 1, pts: 13, isOwn: false },
-  { name: 'Tiburon Tigers',    w: 3, l: 4, d: 2, pts: 11, isOwn: false },
-  { name: 'Sausalito Stars',   w: 2, l: 6, d: 1, pts:  7, isOwn: false },
+  { name: 'Marin Cheetahs',    w: 6, l: 2, d: 1, pts: 19, isOwn: true,  recent: ['W','W','D','L','W'] },
+  { name: 'Novato Eagles',     w: 5, l: 3, d: 1, pts: 16, isOwn: false, recent: ['W','L','W','W','L'] },
+  { name: 'San Rafael Sharks', w: 5, l: 3, d: 0, pts: 15, isOwn: false, recent: ['L','W','W','W','L'] },
+  { name: 'Mill Valley FC',    w: 4, l: 4, d: 1, pts: 13, isOwn: false, recent: ['L','W','D','L','W'] },
+  { name: 'Tiburon Tigers',    w: 3, l: 4, d: 2, pts: 11, isOwn: false, recent: ['D','L','W','L','D'] },
+  { name: 'Sausalito Stars',   w: 2, l: 6, d: 1, pts:  7, isOwn: false, recent: ['L','L','W','L','L'] },
 ]
+
+const PLAYER_STATS = [
+  { name: 'Mason B.',  goals: 8, assists: 3 },
+  { name: 'Ethan R.',  goals: 4, assists: 6 },
+  { name: 'Lucas P.',  goals: 3, assists: 4 },
+  { name: 'Noah C.',   goals: 2, assists: 5 },
+  { name: 'Jordan K.', goals: 1, assists: 3 },
+  { name: 'Tyler S.',  goals: 1, assists: 2 },
+]
+
+function mockParentContact(player: Player) {
+  const first = player.name.split(' ')[0]
+  const last = player.name.split(' ').slice(1).join(' ')
+  const phones = ['555-0171','555-0182','555-0193','555-0104','555-0115','555-0126','555-0137','555-0148','555-0159','555-0160']
+  const idx = (player.number ?? 0) % phones.length
+  return {
+    parentName: `${last || first} Family`,
+    phone: `(415) ${phones[idx]}`,
+    email: `${first.toLowerCase()}${last ? '.' + last.split(' ')[0].toLowerCase() : ''}@gmail.com`,
+  }
+}
 
 const SNACK_SCHEDULE_DATA = [
   { id: 's1', date: 'Apr 19', family: "Sofia's family" },
@@ -98,6 +119,7 @@ export default function GamesScreen() {
   const [confirmedSubRounds, setConfirmedSubRounds] = useState(0)
   const [originalStarterIds, setOriginalStarterIds] = useState<string[]>([])
   const [claimedSnacks, setClaimedSnacks] = useState<Set<string>>(new Set(['s1']))
+  const [rosterModalPlayer, setRosterModalPlayer] = useState<Player | null>(null)
 
   useEffect(() => {
     const validTabs = TABS.map(t => t.key)
@@ -574,25 +596,28 @@ Slots: ${formationSlots}`
           <Text style={styles.monthHeader}>PLAYERS · {players.length}</Text>
           <View style={styles.card}>
             {players.map((player, i) => (
-              <View
+              <TouchableOpacity
                 key={player.id}
                 style={[
                   { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, gap: 12 },
                   i < players.length - 1 && styles.scheduleBorder,
                 ]}
+                onPress={() => setRosterModalPlayer(player)}
+                activeOpacity={0.7}
               >
                 <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: tc + '18', alignItems: 'center', justifyContent: 'center' }}>
                   <Text style={{ fontSize: 14, fontWeight: '800', color: tc }}>{player.number ?? '—'}</Text>
                 </View>
                 <Text style={{ fontSize: 15, fontWeight: '600', color: '#1a1a1a', flex: 1 }}>{player.name}</Text>
-                <View style={{ flexDirection: 'row', gap: 4, flexWrap: 'wrap', justifyContent: 'flex-end', maxWidth: 130 }}>
+                <View style={{ flexDirection: 'row', gap: 4, flexWrap: 'wrap', justifyContent: 'flex-end', maxWidth: 120 }}>
                   {(player.positions.length > 0 ? player.positions : ['—']).map(pos => (
                     <View key={pos} style={{ backgroundColor: '#F0F4FF', borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3 }}>
                       <Text style={{ fontSize: 11, fontWeight: '700', color: tc }}>{pos}</Text>
                     </View>
                   ))}
                 </View>
-              </View>
+                <Text style={{ fontSize: 16, color: '#D1D5DB' }}>›</Text>
+              </TouchableOpacity>
             ))}
           </View>
         </ScrollView>
@@ -602,12 +627,18 @@ Slots: ${formationSlots}`
       {activeTab === 'standings' && (
         <ScrollView contentContainerStyle={styles.content}>
           <Text style={styles.monthHeader}>U10 LEAGUE STANDINGS</Text>
+          <View style={{ backgroundColor: tc + '12', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 10, flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+            <Text style={{ fontSize: 12, fontWeight: '700', color: tc }}>Season record:</Text>
+            <Text style={{ fontSize: 12, fontWeight: '800', color: '#1a1a1a' }}>6W · 2L · 1D</Text>
+            <Text style={{ fontSize: 12, color: '#6B7280', marginLeft: 4 }}>19 pts · 1st place</Text>
+          </View>
           <View style={styles.card}>
             <View style={{ flexDirection: 'row', paddingVertical: 6, paddingHorizontal: 4, marginBottom: 2 }}>
               <Text style={{ flex: 1, fontSize: 10, fontWeight: '700', color: '#9CA3AF', letterSpacing: 0.3 }}>TEAM</Text>
               {['W','L','D','PTS'].map(col => (
-                <Text key={col} style={{ width: 34, textAlign: 'center', fontSize: 10, fontWeight: '700', color: '#9CA3AF', letterSpacing: 0.3 }}>{col}</Text>
+                <Text key={col} style={{ width: 32, textAlign: 'center', fontSize: 10, fontWeight: '700', color: '#9CA3AF', letterSpacing: 0.3 }}>{col}</Text>
               ))}
+              <Text style={{ width: 68, textAlign: 'right', fontSize: 10, fontWeight: '700', color: '#9CA3AF', letterSpacing: 0.3 }}>FORM</Text>
             </View>
             {LEAGUE_STANDINGS.map((row, i) => (
               <View
@@ -618,9 +649,9 @@ Slots: ${formationSlots}`
                   i < LEAGUE_STANDINGS.length - 1 && !row.isOwn && styles.scheduleBorder,
                 ]}
               >
-                <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#C4C9D4', minWidth: 16 }}>{i + 1}</Text>
-                  <Text style={{ fontSize: 14, fontWeight: row.isOwn ? '800' : '600', color: row.isOwn ? tc : '#1a1a1a' }}>{row.name}</Text>
+                <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#C4C9D4', minWidth: 14 }}>{i + 1}</Text>
+                  <Text style={{ fontSize: 13, fontWeight: row.isOwn ? '800' : '600', color: row.isOwn ? tc : '#1a1a1a' }} numberOfLines={1}>{row.name}</Text>
                   {row.isOwn && (
                     <View style={{ backgroundColor: tc, borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1 }}>
                       <Text style={{ fontSize: 9, fontWeight: '700', color: '#fff' }}>US</Text>
@@ -630,11 +661,44 @@ Slots: ${formationSlots}`
                 {[row.w, row.l, row.d, row.pts].map((val, j) => (
                   <Text
                     key={j}
-                    style={{ width: 34, textAlign: 'center', fontSize: 13, fontWeight: j === 3 ? '800' : '600', color: j === 3 ? (row.isOwn ? tc : '#1a1a1a') : '#6B7280' }}
+                    style={{ width: 32, textAlign: 'center', fontSize: 13, fontWeight: j === 3 ? '800' : '600', color: j === 3 ? (row.isOwn ? tc : '#1a1a1a') : '#6B7280' }}
                   >
                     {val}
                   </Text>
                 ))}
+                <View style={{ width: 68, flexDirection: 'row', gap: 3, justifyContent: 'flex-end' }}>
+                  {row.recent.map((r, ri) => (
+                    <View
+                      key={ri}
+                      style={{
+                        width: 10, height: 10, borderRadius: 5,
+                        backgroundColor: r === 'W' ? '#16A34A' : r === 'D' ? '#D97706' : '#DC2626',
+                      }}
+                    />
+                  ))}
+                </View>
+              </View>
+            ))}
+          </View>
+
+          <Text style={styles.monthHeader}>PLAYER STATS · SEASON</Text>
+          <View style={styles.card}>
+            <View style={{ flexDirection: 'row', paddingVertical: 6, paddingHorizontal: 4, marginBottom: 2 }}>
+              <Text style={{ flex: 1, fontSize: 10, fontWeight: '700', color: '#9CA3AF', letterSpacing: 0.3 }}>PLAYER</Text>
+              <Text style={{ width: 50, textAlign: 'center', fontSize: 10, fontWeight: '700', color: '#9CA3AF', letterSpacing: 0.3 }}>GOALS</Text>
+              <Text style={{ width: 50, textAlign: 'center', fontSize: 10, fontWeight: '700', color: '#9CA3AF', letterSpacing: 0.3 }}>ASSISTS</Text>
+            </View>
+            {PLAYER_STATS.map((ps, i) => (
+              <View
+                key={ps.name}
+                style={[
+                  { flexDirection: 'row', alignItems: 'center', paddingVertical: 9, paddingHorizontal: 4 },
+                  i < PLAYER_STATS.length - 1 && styles.scheduleBorder,
+                ]}
+              >
+                <Text style={{ flex: 1, fontSize: 14, fontWeight: '600', color: '#1a1a1a' }}>{ps.name}</Text>
+                <Text style={{ width: 50, textAlign: 'center', fontSize: 14, fontWeight: '800', color: tc }}>{ps.goals}</Text>
+                <Text style={{ width: 50, textAlign: 'center', fontSize: 14, fontWeight: '700', color: '#6B7280' }}>{ps.assists}</Text>
               </View>
             ))}
           </View>
@@ -661,9 +725,13 @@ Slots: ${formationSlots}`
                     {claimed ? 'Your family' : (item.family ?? 'Available')}
                   </Text>
                   {claimed ? (
-                    <View style={{ backgroundColor: '#F0FDF4', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 }}>
-                      <Text style={{ fontSize: 12, fontWeight: '700', color: '#059669' }}>✓ Claimed</Text>
-                    </View>
+                    <TouchableOpacity
+                      style={{ backgroundColor: '#FEF2F2', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 }}
+                      onPress={() => setClaimedSnacks(prev => { const next = new Set(prev); next.delete(item.id); return next })}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={{ fontSize: 12, fontWeight: '700', color: '#DC2626' }}>Cancel</Text>
+                    </TouchableOpacity>
                   ) : item.family ? (
                     <View style={{ backgroundColor: '#F3F4F6', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 }}>
                       <Text style={{ fontSize: 12, fontWeight: '600', color: '#9CA3AF' }}>Taken</Text>
@@ -684,6 +752,51 @@ Slots: ${formationSlots}`
           <Text style={{ fontSize: 12, color: '#9CA3AF', textAlign: 'center', marginTop: 4 }}>Tap Claim to sign up for snacks on that date</Text>
         </ScrollView>
       )}
+
+      {/* Roster player modal */}
+      <Modal visible={!!rosterModalPlayer} transparent animationType="slide" onRequestClose={() => setRosterModalPlayer(null)}>
+        <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }} activeOpacity={1} onPress={() => setRosterModalPlayer(null)}>
+          <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 44 }}>
+            {rosterModalPlayer && (() => {
+              const contact = mockParentContact(rosterModalPlayer)
+              return (
+                <>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 20 }}>
+                    <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: tc + '18', alignItems: 'center', justifyContent: 'center' }}>
+                      <Text style={{ fontSize: 22, fontWeight: '900', color: tc }}>{rosterModalPlayer.number ?? '—'}</Text>
+                    </View>
+                    <View>
+                      <Text style={{ fontSize: 20, fontWeight: '800', color: '#1a1a1a' }}>{rosterModalPlayer.name}</Text>
+                      <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 2 }}>#{rosterModalPlayer.number ?? '—'}</Text>
+                    </View>
+                  </View>
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: '#9CA3AF', letterSpacing: 0.3, marginBottom: 8 }}>POSITIONS</Text>
+                  <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginBottom: 18 }}>
+                    {(rosterModalPlayer.positions.length > 0 ? rosterModalPlayer.positions : ['—']).map(pos => (
+                      <View key={pos} style={{ backgroundColor: '#F0F4FF', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 }}>
+                        <Text style={{ fontSize: 13, fontWeight: '700', color: tc }}>{pos}</Text>
+                      </View>
+                    ))}
+                  </View>
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: '#9CA3AF', letterSpacing: 0.3, marginBottom: 10 }}>PARENT CONTACT</Text>
+                  <View style={{ backgroundColor: '#F7F7F5', borderRadius: 12, padding: 14, gap: 6, marginBottom: 20 }}>
+                    <Text style={{ fontSize: 14, fontWeight: '700', color: '#1a1a1a' }}>{contact.parentName}</Text>
+                    <Text style={{ fontSize: 13, color: '#6B7280' }}>{contact.phone}</Text>
+                    <Text style={{ fontSize: 13, color: '#6B7280' }}>{contact.email}</Text>
+                  </View>
+                  <TouchableOpacity
+                    style={{ backgroundColor: '#F3F4F6', borderRadius: 12, paddingVertical: 13, alignItems: 'center' }}
+                    onPress={() => setRosterModalPlayer(null)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={{ fontSize: 14, fontWeight: '700', color: '#6B7280' }}>Close</Text>
+                  </TouchableOpacity>
+                </>
+              )
+            })()}
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
     </SafeAreaView>
   )
