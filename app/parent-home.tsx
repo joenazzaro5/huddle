@@ -224,11 +224,18 @@ export default function ParentHomeScreen() {
   const formatDay = (dateStr: string) =>
     new Date(dateStr).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
 
+  const formatTime12 = (d: Date) => {
+    const h = d.getHours()
+    const m = d.getMinutes()
+    const ampm = h >= 12 ? 'PM' : 'AM'
+    const hour = h % 12 || 12
+    return `${hour}:${String(m).padStart(2, '0')} ${ampm}`
+  }
+
   const formatTimeRange = (dateStr: string, dur: number) => {
     const s = new Date(dateStr)
     const e = new Date(s.getTime() + dur * 60000)
-    const f = (d: Date) => d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-    return `${f(s)} – ${f(e)}`
+    return `${formatTime12(s)} – ${formatTime12(e)}`
   }
 
   const daysUntil = (dateStr: string) => {
@@ -238,8 +245,7 @@ export default function ParentHomeScreen() {
     return `${days} days`
   }
 
-  const formatMsgTime = (dateStr: string) =>
-    new Date(dateStr).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+  const formatMsgTime = (dateStr: string) => formatTime12(new Date(dateStr))
 
   const getSenderName = (msg: any) => {
     if (!msg?.sender) return 'Team'
@@ -438,15 +444,15 @@ export default function ParentHomeScreen() {
         </View>
 
         {/* 4. Chat preview */}
-        {lastMessage && lastMessage.team_id === team?.id && (
-          <TouchableOpacity
-            style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#10B981', padding: 0, overflow: 'hidden' }]}
-            onPress={() => router.push('/chat')}
-          >
-            <View style={{ backgroundColor: '#F0FDF4', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 }}>
-              <Text style={styles.cardLabel}>💬 Team chat</Text>
-            </View>
-            <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
+        <TouchableOpacity
+          style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#10B981', padding: 0, overflow: 'hidden' }]}
+          onPress={() => router.push('/chat')}
+        >
+          <View style={{ backgroundColor: '#F0FDF4', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 }}>
+            <Text style={styles.cardLabel}>💬 Team chat</Text>
+          </View>
+          <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
+            {lastMessage && lastMessage.team_id === team?.id ? (
               <View style={styles.chatPreviewRow}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.chatSender}>{getSenderName(lastMessage)}</Text>
@@ -454,10 +460,12 @@ export default function ParentHomeScreen() {
                 </View>
                 <Text style={styles.chatPreviewTime}>{formatMsgTime(lastMessage.created_at)}</Text>
               </View>
-              <Text style={[styles.viewLink, { color: tc }]}>Open chat →</Text>
-            </View>
-          </TouchableOpacity>
-        )}
+            ) : (
+              <Text style={{ fontSize: 13, color: '#aaa', marginBottom: 4 }}>No messages yet — say hi! 👋</Text>
+            )}
+            <Text style={[styles.viewLink, { color: tc }]}>Open chat →</Text>
+          </View>
+        </TouchableOpacity>
 
       </ScrollView>
     </SafeAreaView>
