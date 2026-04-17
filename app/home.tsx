@@ -20,13 +20,13 @@ const FOCUS_COLORS_HOME: Record<string, { bg: string; text: string }> = {
 }
 
 const HOME_DRILLS = [
-  { id: 1, name: 'Cone Weaving',         focus: 'Dribbling', duration: '10 min', desc: 'Set up 6 cones in a line. Dribble through using both feet. Focus on soft touches.',    diagram: 'cone-weave' },
-  { id: 2, name: 'Wall Pass Combos',      focus: 'Passing',   duration: '10 min', desc: 'Find a wall. Pass and receive at varying distances. Focus on first touch.',            diagram: 'wall-pass' },
-  { id: 3, name: 'Shooting at Target',    focus: 'Shooting',  duration: '10 min', desc: 'Mark a target on the wall. Practice shooting from different angles.',                  diagram: 'shooting' },
-  { id: 4, name: '1v1 Shadow Dribbling',  focus: 'Dribbling', duration: '8 min',  desc: 'Set two cones 5m apart. Dribble back and forth, changing direction quickly.',         diagram: '1v1' },
-  { id: 5, name: 'Passing Triangle',      focus: 'Passing',   duration: '10 min', desc: 'Place 3 cones in a triangle. Pass around the triangle, sprinting to each cone.',      diagram: 'passing' },
-  { id: 6, name: 'Toe Taps & Sole Rolls', focus: 'Dribbling', duration: '8 min',  desc: 'Alternate toe taps on the ball for 30s then sole rolls left/right for 30s.',         diagram: 'dribbling' },
-  { id: 7, name: 'Long Pass & Control',   focus: 'Passing',   duration: '12 min', desc: 'Pass long to a target, sprint to receive. Focus on chest and thigh control.',         diagram: 'passing' },
+  { id: 1, name: 'Cone Weaving',         focus: 'Dribbling', duration: '10 min', desc: 'Place 6 cones in a straight line, about 1 meter apart. Dribble the ball through all of them using both your left and right foot — try not to knock any over! Go slow at first, then speed up as you get the hang of it.' },
+  { id: 2, name: 'Wall Pass Combos',      focus: 'Passing',   duration: '10 min', desc: 'Find a wall and stand about 3 big steps away. Kick the ball at the wall, then control it when it bounces back to you. Try moving closer or farther to make it harder — focus on stopping the ball with one touch.' },
+  { id: 3, name: 'Shooting at Target',    focus: 'Shooting',  duration: '10 min', desc: 'Use chalk or tape to mark a target circle on a wall or fence. Stand back a few steps and try to hit the target from different angles — left side, right side, and straight on. See how many times in a row you can hit it!' },
+  { id: 4, name: '1v1 Shadow Dribbling',  focus: 'Dribbling', duration: '8 min',  desc: 'Place two cones about 5 big steps apart. Dribble the ball back and forth between them, changing direction at each cone. Practice using the inside and outside of both feet — the goal is quick, tight touches.' },
+  { id: 5, name: 'Passing Triangle',      focus: 'Passing',   duration: '10 min', desc: 'Set up 3 cones in a triangle shape, each about 5 steps apart. Pass the ball from one cone to the next, then run to where you just passed from. Keep going around the triangle — it works your brain and your feet at the same time!' },
+  { id: 6, name: 'Toe Taps & Sole Rolls', focus: 'Dribbling', duration: '8 min',  desc: 'Put the ball in front of you and alternate tapping the top of it with each foot — left, right, left, right — for 30 seconds. Then roll the ball side-to-side with the bottom of your foot for 30 seconds. Simple but amazing for ball control!' },
+  { id: 7, name: 'Long Pass & Control',   focus: 'Passing',   duration: '12 min', desc: 'Stand far from a wall or target and kick the ball hard toward it, then sprint to where it lands. Practice stopping the ball with your chest, thigh, or foot — whatever it takes to bring it under control. The sprint is part of the drill!' },
 ]
 
 const FALLBACK_PLAN = {
@@ -88,60 +88,6 @@ function getChatPreviewText(body: string | null | undefined): string {
   return body
 }
 
-function HomeDrillDiagram({ type }: { type: string }) {
-  if (type === 'cone-weave') return (
-    <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center', height: 50, gap: 4, backgroundColor: '#F0F4FF', borderRadius: 10, paddingHorizontal: 12 }}>
-      {Array.from({ length: 7 }).map((_, i) => (
-        <View key={i} style={{ alignItems: 'center', marginBottom: i % 2 === 0 ? 0 : 16 }}>
-          <Text style={{ fontSize: 10 }}>🔵</Text>
-        </View>
-      ))}
-    </View>
-  )
-  if (type === 'wall-pass') return (
-    <View style={{ height: 50, backgroundColor: '#F0FDF4', borderRadius: 10, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 }}>
-      <Text style={{ fontSize: 12 }}>👤</Text>
-      <Text style={{ fontSize: 11, color: '#059669', fontWeight: '700' }}>↑</Text>
-      <View style={{ width: 28, height: 24, borderWidth: 2, borderColor: '#059669', borderRadius: 4, alignItems: 'center', justifyContent: 'center' }}>
-        <Text style={{ fontSize: 8, color: '#059669', fontWeight: '700' }}>WALL</Text>
-      </View>
-      <Text style={{ fontSize: 11, color: '#059669', fontWeight: '700' }}>↓</Text>
-    </View>
-  )
-  if (type === 'shooting') return (
-    <View style={{ height: 50, backgroundColor: '#FFF7ED', borderRadius: 10, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 }}>
-      <Text style={{ fontSize: 12 }}>👤</Text>
-      <Text style={{ fontSize: 11, color: '#D97706', fontWeight: '700' }}>→→→</Text>
-      <Text style={{ fontSize: 16 }}>⚽</Text>
-      <View style={{ width: 28, height: 28, borderWidth: 2, borderColor: '#D97706', borderBottomWidth: 0, borderRadius: 2 }} />
-    </View>
-  )
-  if (type === '1v1') return (
-    <View style={{ height: 50, backgroundColor: '#F5F3FF', borderRadius: 10, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 10 }}>
-      <Text style={{ fontSize: 12 }}>👤</Text>
-      <Text style={{ fontSize: 11, color: '#7C3AED', fontWeight: '700' }}>↔</Text>
-      <Text style={{ fontSize: 16 }}>⚽</Text>
-      <Text style={{ fontSize: 11, color: '#7C3AED', fontWeight: '700' }}>↔</Text>
-      <Text style={{ fontSize: 12 }}>👤</Text>
-    </View>
-  )
-  if (type === 'dribbling') return (
-    <View style={{ height: 50, backgroundColor: '#F0F4FF', borderRadius: 10, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 10 }}>
-      <Text style={{ fontSize: 12 }}>👤</Text>
-      <Text style={{ fontSize: 11, color: '#1A56DB', fontWeight: '700' }}>↙↗↙↗</Text>
-      <Text style={{ fontSize: 16 }}>⚽</Text>
-    </View>
-  )
-  return (
-    <View style={{ height: 50, backgroundColor: '#F0FDF4', borderRadius: 10, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 }}>
-      <Text style={{ fontSize: 12 }}>👤</Text>
-      <Text style={{ fontSize: 11, color: '#059669', fontWeight: '700' }}>→</Text>
-      <Text style={{ fontSize: 16 }}>⚽</Text>
-      <Text style={{ fontSize: 11, color: '#059669', fontWeight: '700' }}>→</Text>
-      <Text style={{ fontSize: 12 }}>👤</Text>
-    </View>
-  )
-}
 
 export default function HomeScreen() {
   const router = useRouter()
@@ -732,8 +678,10 @@ export default function HomeScreen() {
                 <Text style={{ fontSize: 10, fontWeight: '700', color: '#7C3AED' }}>{todayDrill.duration}</Text>
               </View>
             </View>
-            <Text style={{ fontSize: 14, color: '#374151', lineHeight: 21, marginBottom: 14 }}>{todayDrill.desc}</Text>
-            <HomeDrillDiagram type={todayDrill.diagram} />
+            <View style={{ backgroundColor: '#FFFBEB', borderRadius: 10, padding: 12, marginBottom: 14, borderWidth: 1, borderColor: '#FDE68A' }}>
+              <Text style={{ fontSize: 12, fontWeight: '700', color: '#D97706', marginBottom: 6 }}>Here's what to do:</Text>
+              <Text style={{ fontSize: 14, color: '#374151', lineHeight: 22 }}>{todayDrill.desc}</Text>
+            </View>
 
             <TouchableOpacity
               style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F0F4FF', borderRadius: 10, paddingVertical: 10, marginTop: 12 }}
