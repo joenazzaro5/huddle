@@ -87,14 +87,10 @@ export default function GamesScreen() {
   const [activeFormation, setActiveFormation] = useState<string>('3-1-2')
   const [lineupBuilderOpen, setLineupBuilderOpen] = useState(false)
   const [lineupFocusPills, setLineupFocusPills] = useState<string[]>([])
-  const [gameRunning, setGameRunning] = useState(false)
-  const [gameTime, setGameTime] = useState(0)
-  const [period, setPeriod] = useState(1)
   const [nextGame, setNextGame] = useState<any>(null)
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [selectedPlayer, setSelectedPlayer] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<'field' | 'list'>('field')
-  const timerRef = useRef<any>(null)
 
   const [playedPlayers, setPlayedPlayers] = useState<Set<string>>(new Set())
   const [snackData, setSnackData] = useState(() =>
@@ -118,7 +114,6 @@ export default function GamesScreen() {
 
   useEffect(() => {
     loadData()
-    return () => { if (timerRef.current) clearInterval(timerRef.current) }
   }, [])
 
   const loadData = async () => {
@@ -249,19 +244,13 @@ Slots: ${formationSlots}`
     setLineupLoading(false)
   }
 
-  const toggleTimer = () => {
-    if (gameRunning) {
-      clearInterval(timerRef.current)
-      setGameRunning(false)
-    } else {
-      timerRef.current = setInterval(() => {
-        setGameTime(t => t + 1)
-        setPlayers(prev => prev.map(p => ({
-          ...p, minutes: p.isOn ? p.minutes + (1/60) : p.minutes
-        })))
-      }, 1000)
-      setGameRunning(true)
-    }
+  const makeSub = (inPlayer: Player, outPlayer: Player) => {
+    setPlayers(prev => prev.map(p => {
+      if (p.id === inPlayer.id) return { ...p, isOn: true, fieldSlot: outPlayer.fieldSlot }
+      if (p.id === outPlayer.id) return { ...p, isOn: false, fieldSlot: null }
+      return p
+    }))
+    setPlayedPlayers(prev => { const n = new Set(prev); n.add(inPlayer.id); n.add(outPlayer.id); return n })
   }
 
   const handlePlayerTap = (playerId: string) => {
@@ -286,22 +275,6 @@ Slots: ${formationSlots}`
     setSelectedPlayer(null)
   }
 
-  const resetGame = () => {
-    Alert.alert('Reset game', 'Reset all minutes and the timer?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Reset', style: 'destructive', onPress: () => {
-          clearInterval(timerRef.current)
-          setGameRunning(false)
-          setGameTime(0)
-          setPeriod(1)
-          setPlayers(prev => prev.map(p => ({ ...p, minutes: 0 })))
-        }
-      }
-    ])
-  }
-
-  const formatTime = (s: number) => `${Math.floor(s/60)}:${(s%60).toString().padStart(2,'0')}`
   const formatMins = (m: number) => m < 1 ? '0m' : `${Math.floor(m)}m`
 
   const groupEventsByMonth = (evts: any[]) => {
@@ -318,12 +291,10 @@ Slots: ${formationSlots}`
     return groups
   }
 
-  const activeFormationSlots = FORMATIONS[activeFormation] ?? FORMATIONS['4-3-3']
+  const activeFormationSlots = FORMATIONS[activeFormation] ?? FORMATIONS['3-1-2']
   const onPlayers = players.filter(p => p.isOn).sort((a, b) => (a.fieldSlot ?? 0) - (b.fieldSlot ?? 0))
   const offPlayers = players.filter(p => !p.isOn)
   const tc = '#1A56DB'
-  const totalMins = players.reduce((sum, p) => sum + p.minutes, 0)
-  const fairShare = players.length > 0 ? totalMins / players.length : 0
 
   if (loading) return <View style={styles.loading}><ActivityIndicator color="#1A56DB" size="large" /></View>
 
@@ -373,13 +344,18 @@ Slots: ${formationSlots}`
                   const typeColor = isGame ? '#FF8C42' : isPictureDay ? '#9C27B0' : isParty ? '#7C3AED' : tc
                   const typeLabel = isGame ? '🏆 Game' : isPictureDay ? '📸 Picture Day' : isParty ? '🎉 Party' : '⚽ Practice'
                   return (
-                    <View
+                    <TouchableOpacity
                       key={event.id}
                       style={[
                         styles.scheduleRow,
                         i % 2 === 1 && styles.scheduleRowAlt,
                         i < monthEvents.length - 1 && styles.scheduleBorder,
                       ]}
+                      onPress={() => {
+                        if (event.type === 'practice') router.push('/practice')
+                        else if (event.type === 'game') setActiveTab('games')
+                      }}
+                      activeOpacity={0.7}
                     >
                       <View style={styles.scheduleDateCol}>
                         <Text style={styles.scheduleDay}>{d.getDate()}</Text>
@@ -400,8 +376,11 @@ Slots: ${formationSlots}`
                         {event.location ? (
                           <Text style={styles.scheduleLoc} numberOfLines={1}>{event.location}</Text>
                         ) : null}
+                        {(event.type === 'practice' || event.type === 'game') && (
+                          <Text style={{ fontSize: 10, color: '#9CA3AF', marginTop: 2 }}>Tap to open →</Text>
+                        )}
                       </View>
-                    </View>
+                    </TouchableOpacity>
                   )
                 })}
               </View>
@@ -625,33 +604,14 @@ Slots: ${formationSlots}`
             </View>
           )}
 
-          {/* Timer */}
-          <View style={[styles.timerCard, { backgroundColor: '#fff', borderWidth: 0.5, borderColor: '#eee', borderLeftWidth: 4, borderLeftColor: tc }]}>
-            <View style={styles.timerRow}>
-              <View>
-                <Text style={[styles.timerLabel, { color: '#6B7280' }]}>Half {period}</Text>
-                <Text style={[styles.timerTime, { color: '#111827' }]}>{formatTime(gameTime)}</Text>
-              </View>
-              <View style={styles.timerActions}>
-                <TouchableOpacity style={[styles.timerBtn, { backgroundColor: gameRunning ? '#E24B4A' : '#F3F4F6', borderRadius: 10 }]} onPress={toggleTimer}>
-                  <Text style={[styles.timerBtnText, { color: gameRunning ? '#fff' : '#111827', fontWeight: '600' }]}>{gameRunning ? 'Pause' : 'Start'}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.timerBtnOutline, { backgroundColor: '#F3F4F6', borderRadius: 10 }]} onPress={() => setPeriod(p => p === 1 ? 2 : 1)}>
-                  <Text style={[styles.timerBtnOutlineText, { color: '#111827', fontWeight: '600' }]}>2nd half →</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.timerBtnOutline, { backgroundColor: '#F3F4F6', borderRadius: 10 }]} onPress={resetGame}>
-                  <Text style={[styles.timerBtnOutlineText, { color: '#111827', fontWeight: '600' }]}>Reset</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-            <View style={styles.viewToggle}>
-              <TouchableOpacity onPress={() => setViewMode('field')} style={[styles.viewToggleBtn, viewMode === 'field' ? { backgroundColor: tc } : { backgroundColor: '#F3F4F6' }]}>
-                <Text style={[styles.viewToggleText, { color: viewMode === 'field' ? '#fff' : '#6B7280', fontWeight: viewMode === 'field' ? '700' : '500' }]}>Field</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => setViewMode('list')} style={[styles.viewToggleBtn, viewMode === 'list' ? { backgroundColor: tc } : { backgroundColor: '#F3F4F6' }]}>
-                <Text style={[styles.viewToggleText, { color: viewMode === 'list' ? '#fff' : '#6B7280', fontWeight: viewMode === 'list' ? '700' : '500' }]}>Roster</Text>
-              </TouchableOpacity>
-            </View>
+          {/* View toggle */}
+          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+            <TouchableOpacity onPress={() => setViewMode('field')} style={[styles.viewToggleBtn, viewMode === 'field' ? { backgroundColor: tc } : { backgroundColor: '#F3F4F6' }]}>
+              <Text style={[styles.viewToggleText, { color: viewMode === 'field' ? '#fff' : '#6B7280', fontWeight: viewMode === 'field' ? '700' : '500' }]}>Field view</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setViewMode('list')} style={[styles.viewToggleBtn, viewMode === 'list' ? { backgroundColor: tc } : { backgroundColor: '#F3F4F6' }]}>
+              <Text style={[styles.viewToggleText, { color: viewMode === 'list' ? '#fff' : '#6B7280', fontWeight: viewMode === 'list' ? '700' : '500' }]}>Roster</Text>
+            </TouchableOpacity>
           </View>
 
           {/* Formation pills */}
@@ -735,22 +695,20 @@ Slots: ${formationSlots}`
                   const slot = player.fieldSlot ?? 0
                   const pos = activeFormationSlots[slot] ?? activeFormationSlots[0]
                   const isSelected = selectedPlayer === player.id
-                  const isBehind = player.minutes < fairShare * 0.7 && gameTime > 120
                   return (
                     <TouchableOpacity
                       key={player.id}
                       style={[styles.fieldPlayer, {
                         left: `${pos.x}%`, top: `${pos.y}%`,
                         backgroundColor: isSelected ? '#FFD700' : '#fff',
-                        borderColor: isBehind ? '#E24B4A' : 'rgba(255,255,255,0.6)',
-                        borderWidth: isBehind ? 2.5 : 1.5,
+                        borderColor: isSelected ? '#FFD700' : 'rgba(255,255,255,0.6)',
+                        borderWidth: 1.5,
                       }]}
                       onPress={() => handlePlayerTap(player.id)}
                       activeOpacity={0.8}
                     >
                       <Text style={[styles.fieldPlayerNum, { color: '#1C1C1E' }]}>{player.number ?? '?'}</Text>
                       <Text style={[styles.fieldPlayerName, { color: 'rgba(28,28,30,0.8)' }]} numberOfLines={1}>{player.name.split(' ')[0]}</Text>
-                      <Text style={[styles.fieldPlayerMins, { color: 'rgba(28,28,30,0.6)' }]}>{formatMins(player.minutes)}</Text>
                     </TouchableOpacity>
                   )
                 })}
@@ -762,11 +720,10 @@ Slots: ${formationSlots}`
                   <View style={{ flexDirection: 'row', gap: 8, paddingVertical: 4 }}>
                     {offPlayers.map(player => {
                       const isSelected = selectedPlayer === player.id
-                      const needsTime = player.minutes < fairShare * 0.7 && gameTime > 120
                       return (
                         <TouchableOpacity
                           key={player.id}
-                          style={[styles.benchPlayer, isSelected && { borderColor: '#FFD700', borderWidth: 2 }, needsTime && { borderColor: '#E24B4A', borderWidth: 2 }]}
+                          style={[styles.benchPlayer, isSelected && { borderColor: '#FFD700', borderWidth: 2 }]}
                           onPress={() => handlePlayerTap(player.id)}
                           activeOpacity={0.8}
                         >
@@ -774,7 +731,6 @@ Slots: ${formationSlots}`
                             <Text style={[styles.benchPlayerNumText, { color: '#1C1C1E' }]}>{player.number ?? '?'}</Text>
                           </View>
                           <Text style={styles.benchPlayerName} numberOfLines={1}>{player.name.split(' ')[0]}</Text>
-                          <Text style={[styles.benchPlayerMins, { color: needsTime ? '#E24B4A' : '#aaa' }]}>{formatMins(player.minutes)}</Text>
                         </TouchableOpacity>
                       )
                     })}
@@ -785,9 +741,8 @@ Slots: ${formationSlots}`
           ) : (
             <>
               <View style={styles.section}>
-                <Text style={styles.sectionLabel}>On the field · {onPlayers.length}</Text>
+                <Text style={styles.sectionLabel}>Starting lineup · {onPlayers.length}</Text>
                 {onPlayers.map(player => {
-                  const isBehind = player.minutes < fairShare * 0.7 && gameTime > 120
                   const isSelected = selectedPlayer === player.id
                   return (
                     <TouchableOpacity
@@ -803,16 +758,14 @@ Slots: ${formationSlots}`
                         <Text style={styles.playerName}>{player.name}</Text>
                         <Text style={styles.playerPos}>{activeFormationSlots[player.fieldSlot ?? 0]?.position ?? ''}</Text>
                       </View>
-                      <Text style={[styles.playerMins, { color: isBehind ? '#E24B4A' : '#888' }]}>{formatMins(player.minutes)}</Text>
                     </TouchableOpacity>
                   )
                 })}
               </View>
               {offPlayers.length > 0 && (
                 <View style={styles.section}>
-                  <Text style={styles.sectionLabel}>Bench · {offPlayers.length}</Text>
+                  <Text style={styles.sectionLabel}>On the bench · {offPlayers.length}</Text>
                   {offPlayers.map(player => {
-                    const needsTime = player.minutes < fairShare * 0.7 && gameTime > 120
                     const isSelected = selectedPlayer === player.id
                     return (
                       <TouchableOpacity
@@ -825,7 +778,6 @@ Slots: ${formationSlots}`
                           <Text style={[styles.numText, { color: '#aaa' }]}>{player.number ?? '—'}</Text>
                         </View>
                         <Text style={[styles.playerName, { color: '#888', flex: 1 }]}>{player.name}</Text>
-                        <Text style={[styles.playerMins, { color: needsTime ? '#E24B4A' : '#bbb' }]}>{formatMins(player.minutes)}</Text>
                       </TouchableOpacity>
                     )
                   })}
@@ -834,53 +786,42 @@ Slots: ${formationSlots}`
             </>
           )}
 
-          {/* Substitution guide */}
-          {players.length > 0 && (() => {
-            const notPlayed = players.filter(p => !playedPlayers.has(p.id))
-            const suggestSub = notPlayed.find(p => !p.isOn)
+          {/* Sub window */}
+          {offPlayers.length > 0 && (() => {
+            const subIn = offPlayers[0]
+            const subOut = onPlayers.find(p => activeFormationSlots[p.fieldSlot ?? 0]?.position !== 'GK') ?? onPlayers[0]
             return (
               <View style={styles.subPlanCard}>
-                <Text style={styles.subPlanTitle}>Substitution guide</Text>
-                <Text style={{ fontSize: 12, color: '#9CA3AF', marginBottom: 10 }}>Tap a player to mark as played</Text>
-                {players.map((p, i) => {
-                  const hasPlayed = playedPlayers.has(p.id)
-                  return (
+                <Text style={styles.subPlanTitle}>Next sub window</Text>
+                <Text style={{ fontSize: 13, color: '#6B7280', marginBottom: 12 }}>
+                  Sub at ~8 min · ~16 min · ~24 min
+                </Text>
+                {subIn && subOut && (
+                  <>
+                    <View style={{ backgroundColor: '#F0F4FF', borderRadius: 10, padding: 12, marginBottom: 12 }}>
+                      <Text style={{ fontSize: 12, color: '#6B7280', marginBottom: 4, fontWeight: '600' }}>Suggested next sub</Text>
+                      <Text style={{ fontSize: 14, fontWeight: '700', color: '#1a1a1a' }}>
+                        <Text style={{ color: '#10B981' }}>↑ {subIn.name}</Text>
+                        {'  '}
+                        <Text style={{ color: '#E24B4A' }}>↓ {subOut.name}</Text>
+                      </Text>
+                    </View>
                     <TouchableOpacity
-                      key={p.id}
-                      style={[{ flexDirection: 'row', alignItems: 'center', paddingVertical: 9, gap: 12 }, i < players.length - 1 && { borderBottomWidth: 0.5, borderBottomColor: '#f5f5f5' }]}
-                      onPress={() => setPlayedPlayers(prev => {
-                        const next = new Set(prev)
-                        if (next.has(p.id)) next.delete(p.id)
-                        else next.add(p.id)
-                        return next
-                      })}
-                      activeOpacity={0.7}
+                      style={{ backgroundColor: tc, borderRadius: 12, paddingVertical: 13, alignItems: 'center' }}
+                      onPress={() => makeSub(subIn, subOut)}
+                      activeOpacity={0.8}
                     >
-                      <View style={{ width: 22, height: 22, borderRadius: 11, borderWidth: 1.5, borderColor: hasPlayed ? '#10B981' : '#ddd', backgroundColor: hasPlayed ? '#10B981' : '#fff', alignItems: 'center', justifyContent: 'center' }}>
-                        {hasPlayed && <Text style={{ color: '#fff', fontSize: 10, fontWeight: '700' }}>✓</Text>}
-                      </View>
-                      <Text style={{ fontSize: 14, fontWeight: '600', color: hasPlayed ? '#9CA3AF' : '#1a1a1a', flex: 1 }}>{p.name}</Text>
-                      {p.isOn && <Text style={{ fontSize: 11, color: '#10B981', fontWeight: '600' }}>On field</Text>}
+                      <Text style={{ fontSize: 14, fontWeight: '700', color: '#fff' }}>Make sub →</Text>
                     </TouchableOpacity>
-                  )
-                })}
-                {suggestSub && (
-                  <View style={{ backgroundColor: '#F0F4FF', borderRadius: 10, padding: 10, marginTop: 12 }}>
-                    <Text style={{ fontSize: 13, fontWeight: '600', color: '#1A56DB' }}>
-                      Consider subbing in: {suggestSub.name}
-                    </Text>
-                  </View>
+                  </>
                 )}
               </View>
             )
           })()}
 
           <TouchableOpacity style={[styles.resetLineupBtn, { borderColor: tc }]} onPress={() => {
-            clearInterval(timerRef.current)
-            setGameRunning(false)
-            setGameTime(0)
-            setPeriod(1)
             setLineupPrompt('')
+            setPlayedPlayers(new Set())
             setPlayers(prev => prev.map((p, i) => ({ ...p, isOn: i < 7, fieldSlot: i < 7 ? i : null, minutes: 0 })))
           }}>
             <Text style={[styles.resetLineupText, { color: tc }]}>Reset lineup</Text>
