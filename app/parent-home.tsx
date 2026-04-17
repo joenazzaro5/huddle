@@ -1,41 +1,32 @@
 import { useEffect, useState, useRef } from 'react'
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Linking, Animated } from 'react-native'
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Animated } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { AppHeader } from '../lib/header'
 import { useRole } from '../lib/roleStore'
 import { supabase } from '../lib/supabase'
-import { getScheduleEvents, SEASON_SCHEDULE } from '../lib/season'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
 const tc = '#1A56DB'
 
-const CHEETAHS_PLAYERS = [
-  { id: 'm1', number: 1,  name: 'Sofia',     position: 'GK'  },
-  { id: 'm2', number: 2,  name: 'Emma',      position: 'DEF' },
-  { id: 'm3', number: 5,  name: 'Olivia',    position: 'MID' },
-  { id: 'm4', number: 9,  name: 'Isabella',  position: 'FWD' },
-  { id: 'm5', number: 8,  name: 'Charlotte', position: 'MID' },
-  { id: 'm6', number: 4,  name: 'Mia',       position: 'DEF' },
-  { id: 'm7', number: 11, name: 'Ava',       position: 'FWD' },
-  { id: 'm8', number: 3,  name: 'Zoe',       position: 'DEF' },
-  { id: 'm9', number: 6,  name: 'Lily',      position: 'MID' },
-  { id: 'm10',number: 7,  name: 'Grace',     position: 'MID' },
-  { id: 'm11',number: 10, name: 'Ella',      position: 'FWD' },
-]
+const CONFETTI_COLORS_P = ['#F59E0B', '#1A56DB', '#10B981', '#EF4444', '#7C3AED', '#F97316', '#06B6D4', '#EC4899']
 
-const TIGERS_PLAYERS = [
-  { id: 't1', number: 1,  name: 'Luna Santos',     position: 'GK'  },
-  { id: 't2', number: 3,  name: 'Maya Johnson',    position: 'DEF' },
-  { id: 't3', number: 4,  name: 'Chloe Williams',  position: 'DEF' },
-  { id: 't4', number: 5,  name: 'Lily Brown',      position: 'DEF' },
-  { id: 't5', number: 7,  name: 'Zoe Davis',       position: 'MID' },
-  { id: 't6', number: 8,  name: 'Aria Miller',     position: 'MID' },
-  { id: 't7', number: 10, name: 'Emma',            position: 'MID' },
-  { id: 't8', number: 6,  name: 'Olivia',          position: 'MID' },
-  { id: 't9', number: 9,  name: 'Mia',             position: 'FWD' },
-  { id: 't10',number: 11, name: 'Ava',             position: 'FWD' },
-  { id: 't11',number: 2,  name: 'Bella',           position: 'DEF' },
+const FOCUS_COLORS_P: Record<string, { bg: string; text: string }> = {
+  Dribbling:   { bg: '#F0F4FF', text: '#1A56DB' },
+  Passing:     { bg: '#F0FDF4', text: '#059669' },
+  Shooting:    { bg: '#FFF7ED', text: '#D97706' },
+  Defending:   { bg: '#FEF2F2', text: '#DC2626' },
+  Goalkeeping: { bg: '#F5F3FF', text: '#7C3AED' },
+}
+
+const HOME_DRILLS_P = [
+  { id: 1, name: 'Cone Weaving',          focus: 'Dribbling', duration: '10 min', desc: 'Set up 6 cones in a line. Dribble through using both feet. Focus on soft touches.',    diagram: 'cone-weave' },
+  { id: 2, name: 'Wall Pass Combos',       focus: 'Passing',   duration: '10 min', desc: 'Find a wall. Pass and receive at varying distances. Focus on first touch.',            diagram: 'wall-pass' },
+  { id: 3, name: 'Shooting at Target',     focus: 'Shooting',  duration: '10 min', desc: 'Mark a target on the wall. Practice shooting from different angles.',                  diagram: 'shooting' },
+  { id: 4, name: '1v1 Shadow Dribbling',   focus: 'Dribbling', duration: '8 min',  desc: 'Set two cones 5m apart. Dribble back and forth, changing direction quickly.',         diagram: '1v1' },
+  { id: 5, name: 'Passing Triangle',       focus: 'Passing',   duration: '10 min', desc: 'Place 3 cones in a triangle. Pass around the triangle, sprinting to each cone.',      diagram: 'passing' },
+  { id: 6, name: 'Toe Taps & Sole Rolls',  focus: 'Dribbling', duration: '8 min',  desc: 'Alternate toe taps on the ball for 30s then sole rolls left/right for 30s.',         diagram: 'dribbling' },
+  { id: 7, name: 'Long Pass & Control',    focus: 'Passing',   duration: '12 min', desc: 'Pass long to a target, sprint to receive. Focus on chest and thigh control.',         diagram: 'passing' },
 ]
 
 function todayDateStr() {
@@ -59,51 +50,116 @@ function thisWeekDayIndices(dates: string[]): number[] {
 const FALLBACK_PLAN = {
   title: 'Passing & Movement',
   plan: [
-    { phase: 'Opening Play',   duration: '15 min', drill: 'Rondo 4v2',                    desc: '4 players keep ball away from 2 defenders in a small square. First touch only. High energy, competitive.' },
-    { phase: 'Practice Phase', duration: '30 min', drill: 'Triangle Passing + Overlap',   desc: 'Three players form a triangle. After each pass, the passer runs to a new position. Add a wall pass variation after 10 minutes.' },
-    { phase: 'Final Play',     duration: '15 min', drill: 'Possession Game 5v5',          desc: 'Keep the ball. Every 5 consecutive passes = 1 point. No long balls — short and sharp only.' },
+    { phase: 'Opening Play',   duration: '15 min', drill: 'Rondo 4v2',                  desc: '4 players keep ball away from 2 defenders in a small square. First touch only. High energy, competitive.' },
+    { phase: 'Practice Phase', duration: '30 min', drill: 'Triangle Passing + Overlap', desc: 'Three players form a triangle. After each pass, the passer runs to a new position. Add a wall pass variation after 10 minutes.' },
+    { phase: 'Final Play',     duration: '15 min', drill: 'Possession Game 5v5',        desc: 'Keep the ball. Every 5 consecutive passes = 1 point. No long balls — short and sharp only.' },
   ],
 }
 const PHASE_COLORS = ['#4CAF50', '#1A56DB', '#FF6B35']
 
+function ParentDrillDiagram({ type }: { type: string }) {
+  if (type === 'cone-weave') return (
+    <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center', height: 50, gap: 4, backgroundColor: '#F0F4FF', borderRadius: 10, paddingHorizontal: 12 }}>
+      {Array.from({ length: 7 }).map((_, i) => (
+        <View key={i} style={{ alignItems: 'center', marginBottom: i % 2 === 0 ? 0 : 16 }}>
+          <Text style={{ fontSize: 10 }}>🔵</Text>
+        </View>
+      ))}
+    </View>
+  )
+  if (type === 'wall-pass') return (
+    <View style={{ height: 50, backgroundColor: '#F0FDF4', borderRadius: 10, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 }}>
+      <Text style={{ fontSize: 12 }}>👤</Text>
+      <Text style={{ fontSize: 11, color: '#059669', fontWeight: '700' }}>↑</Text>
+      <View style={{ width: 28, height: 24, borderWidth: 2, borderColor: '#059669', borderRadius: 4, alignItems: 'center', justifyContent: 'center' }}>
+        <Text style={{ fontSize: 8, color: '#059669', fontWeight: '700' }}>WALL</Text>
+      </View>
+      <Text style={{ fontSize: 11, color: '#059669', fontWeight: '700' }}>↓</Text>
+    </View>
+  )
+  if (type === 'shooting') return (
+    <View style={{ height: 50, backgroundColor: '#FFF7ED', borderRadius: 10, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 }}>
+      <Text style={{ fontSize: 12 }}>👤</Text>
+      <Text style={{ fontSize: 11, color: '#D97706', fontWeight: '700' }}>→→→</Text>
+      <Text style={{ fontSize: 16 }}>⚽</Text>
+      <View style={{ width: 28, height: 28, borderWidth: 2, borderColor: '#D97706', borderBottomWidth: 0, borderRadius: 2 }} />
+    </View>
+  )
+  if (type === '1v1') return (
+    <View style={{ height: 50, backgroundColor: '#F5F3FF', borderRadius: 10, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 10 }}>
+      <Text style={{ fontSize: 12 }}>👤</Text>
+      <Text style={{ fontSize: 11, color: '#7C3AED', fontWeight: '700' }}>↔</Text>
+      <Text style={{ fontSize: 16 }}>⚽</Text>
+      <Text style={{ fontSize: 11, color: '#7C3AED', fontWeight: '700' }}>↔</Text>
+      <Text style={{ fontSize: 12 }}>👤</Text>
+    </View>
+  )
+  if (type === 'dribbling') return (
+    <View style={{ height: 50, backgroundColor: '#F0F4FF', borderRadius: 10, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 10 }}>
+      <Text style={{ fontSize: 12 }}>👤</Text>
+      <Text style={{ fontSize: 11, color: '#1A56DB', fontWeight: '700' }}>↙↗↙↗</Text>
+      <Text style={{ fontSize: 16 }}>⚽</Text>
+    </View>
+  )
+  return (
+    <View style={{ height: 50, backgroundColor: '#F0FDF4', borderRadius: 10, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 }}>
+      <Text style={{ fontSize: 12 }}>👤</Text>
+      <Text style={{ fontSize: 11, color: '#059669', fontWeight: '700' }}>→</Text>
+      <Text style={{ fontSize: 16 }}>⚽</Text>
+      <Text style={{ fontSize: 11, color: '#059669', fontWeight: '700' }}>→</Text>
+      <Text style={{ fontSize: 12 }}>👤</Text>
+    </View>
+  )
+}
 
 export default function ParentHomeScreen() {
   const router = useRouter()
-  const { setActiveTeamId, activeTeamId } = useRole()
+  const { setActiveTeamId } = useRole()
   const [team, setTeam] = useState<any>(null)
   const [allTeams, setAllTeams] = useState<any[]>([])
   const [nextEvent, setNextEvent] = useState<any>(null)
-  const [upcomingEvents, setUpcomingEvents] = useState<any[]>([])
   const [myRsvp, setMyRsvp] = useState<'yes' | 'no' | null>(null)
   const [rsvpCounts, setRsvpCounts] = useState({ yes: 0, no: 0, maybe: 0 })
-  const [eventRsvps, setEventRsvps] = useState<Record<string, 'yes' | 'no'>>({})
-  const [players, setPlayers] = useState<any[]>([])
   const [lastMessage, setLastMessage] = useState<any>(null)
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const chatSubRef = useRef<any>(null)
   const [practiceStreak, setPracticeStreak] = useState(0)
   const [practicedDays, setPracticedDays] = useState<number[]>([])
-  const [watchedToday, setWatchedToday] = useState(false)
   const [practicedToday, setPracticedToday] = useState(false)
   const [toastVisible, setToastVisible] = useState(false)
   const toastAnim = useRef(new Animated.Value(-60)).current
-  const [snacks, setSnacks] = useState(() => {
-    const now = new Date()
-    return SEASON_SCHEDULE
-      .filter(e => e.type === 'game' && new Date(e.starts_at) >= now)
-      .map(e => ({
-        date: new Date(e.starts_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        type: 'Game' as string,
-        name: null as string | null,
-        claimed: false,
-      }))
-  })
+  const [streakMilestone, setStreakMilestone] = useState<string | null>(null)
+  const confettiAnims = useRef(
+    Array.from({ length: 20 }, () => ({
+      opacity: new Animated.Value(0),
+      translateX: new Animated.Value(0),
+      translateY: new Animated.Value(0),
+    }))
+  ).current
+
+  const todayDrill = HOME_DRILLS_P[new Date().getDay() % HOME_DRILLS_P.length]
 
   useEffect(() => {
     loadData()
     return () => { if (chatSubRef.current) supabase.removeChannel(chatSubRef.current) }
   }, [])
+
+  const triggerConfetti = () => {
+    const anims = confettiAnims.map(a => {
+      const dx = (Math.random() - 0.5) * 160
+      const dy = -(Math.random() * 120 + 60)
+      a.opacity.setValue(1)
+      a.translateX.setValue(0)
+      a.translateY.setValue(0)
+      return Animated.parallel([
+        Animated.timing(a.opacity, { toValue: 0, duration: 1500, useNativeDriver: true }),
+        Animated.timing(a.translateX, { toValue: dx, duration: 1500, useNativeDriver: true }),
+        Animated.timing(a.translateY, { toValue: dy, duration: 1500, useNativeDriver: true }),
+      ])
+    })
+    Animated.stagger(30, anims).start()
+  }
 
   const loadData = async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -123,83 +179,42 @@ export default function ParentHomeScreen() {
     setTeam(teamData)
     setActiveTeamId(teamData.id)
     await loadTeamData(teamData.id, user.id)
+
     const storedStreak = await AsyncStorage.getItem('huddle_streak_data_parent')
     const streakData = storedStreak ? JSON.parse(storedStreak) : { count: 0, dates: [] }
     setPracticeStreak(streakData.count)
     setPracticedDays(thisWeekDayIndices(streakData.dates))
     setPracticedToday(streakData.dates.includes(todayDateStr()))
 
-    const snackKey = `huddle_snacks_${teamData.id}`
-    const storedSnacks = await AsyncStorage.getItem(snackKey)
-    if (storedSnacks) setSnacks(JSON.parse(storedSnacks))
-    else setSnacks(SEASON_SCHEDULE
-      .filter(e => e.type === 'game' && new Date(e.starts_at) >= new Date())
-      .map(e => ({
-        date: new Date(e.starts_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        type: 'Game' as string,
-        name: null as string | null,
-        claimed: false,
-      })))
-
     setLoading(false)
   }
 
   const loadTeamData = async (teamId: string, userId: string) => {
-    const [{ data: eventData }, { data: playerData }] = await Promise.all([
-      supabase
-        .from('events')
-        .select('*')
-        .eq('team_id', teamId)
-        .gte('starts_at', new Date().toISOString())
-        .order('starts_at', { ascending: true })
-        .limit(10),
-      supabase
-        .from('players')
-        .select('*')
-        .eq('team_id', teamId)
-        .eq('is_active', true)
-        .order('number', { ascending: true }),
-    ])
-    setPlayers(playerData ?? [])
+    const { data: eventData } = await supabase
+      .from('events')
+      .select('*')
+      .eq('team_id', teamId)
+      .gte('starts_at', new Date().toISOString())
+      .order('starts_at', { ascending: true })
+      .limit(1)
 
-    // Fall back to static schedule if Supabase has no events
-    const schedEvents = (eventData && eventData.length > 0)
-      ? eventData
-      : getScheduleEvents().map(e => ({ ...e, team_id: teamId }))
-
-    setNextEvent(schedEvents[0])
-    setUpcomingEvents(schedEvents.slice(1, 4))
-
-    // Only fetch RSVPs for real Supabase events (static schedule IDs start with 'ss-')
-    const firstEvent = schedEvents[0]
-    const isRealEvent = firstEvent?.id && !firstEvent.id.startsWith('ss-')
-    if (isRealEvent) {
-      const { data: myRsvpData } = await supabase
-        .from('rsvps')
-        .select('status')
-        .eq('event_id', firstEvent.id)
-        .eq('user_id', userId)
-        .maybeSingle()
-      setMyRsvp(myRsvpData?.status ?? null)
-
-      const [{ count: yes }, { count: no }, { count: maybe }] = await Promise.all([
-        supabase.from('rsvps').select('*', { count: 'exact', head: true }).eq('event_id', firstEvent.id).eq('status', 'yes'),
-        supabase.from('rsvps').select('*', { count: 'exact', head: true }).eq('event_id', firstEvent.id).eq('status', 'no'),
-        supabase.from('rsvps').select('*', { count: 'exact', head: true }).eq('event_id', firstEvent.id).eq('status', 'maybe'),
-      ])
-      setRsvpCounts({ yes: yes ?? 0, no: no ?? 0, maybe: maybe ?? 0 })
-
-      const upcomingIds = schedEvents.slice(1, 4).map(e => e.id).filter(id => !id.startsWith('ss-'))
-      if (upcomingIds.length > 0) {
-        const { data: upRsvps } = await supabase
-          .from('rsvps').select('event_id, status').eq('user_id', userId).in('event_id', upcomingIds)
-        const map: Record<string, 'yes' | 'no' | 'maybe'> = {}
-        upRsvps?.forEach(r => { map[r.event_id] = r.status })
-        setEventRsvps(map)
+    if (eventData && eventData.length > 0) {
+      const firstEvent = eventData[0]
+      setNextEvent(firstEvent)
+      const isRealEvent = firstEvent?.id && !firstEvent.id.startsWith('ss-')
+      if (isRealEvent) {
+        const { data: myRsvpData } = await supabase
+          .from('rsvps').select('status').eq('event_id', firstEvent.id).eq('user_id', userId).maybeSingle()
+        setMyRsvp(myRsvpData?.status ?? null)
+        const [{ count: yes }, { count: no }, { count: maybe }] = await Promise.all([
+          supabase.from('rsvps').select('*', { count: 'exact', head: true }).eq('event_id', firstEvent.id).eq('status', 'yes'),
+          supabase.from('rsvps').select('*', { count: 'exact', head: true }).eq('event_id', firstEvent.id).eq('status', 'no'),
+          supabase.from('rsvps').select('*', { count: 'exact', head: true }).eq('event_id', firstEvent.id).eq('status', 'maybe'),
+        ])
+        setRsvpCounts({ yes: yes ?? 0, no: no ?? 0, maybe: maybe ?? 0 })
       }
     }
 
-    // Last chat message — initial fetch then real-time subscription
     const { data: msgData } = await supabase
       .from('messages')
       .select('*, sender:users(display_name, email)')
@@ -219,12 +234,8 @@ export default function ParentHomeScreen() {
         async (payload) => {
           const msg = payload.new
           if (!msg?.id || msg.is_deleted) return
-          // Fetch with sender join so name resolves
           const { data: full } = await supabase
-            .from('messages')
-            .select('*, sender:users(display_name, email)')
-            .eq('id', msg.id)
-            .maybeSingle()
+            .from('messages').select('*, sender:users(display_name, email)').eq('id', msg.id).maybeSingle()
           if (full) setLastMessage(full)
         }
       )
@@ -236,9 +247,7 @@ export default function ParentHomeScreen() {
     setToastVisible(true)
     Animated.timing(toastAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start(() => {
       setTimeout(() => {
-        Animated.timing(toastAnim, { toValue: -60, duration: 300, useNativeDriver: true }).start(() => {
-          setToastVisible(false)
-        })
+        Animated.timing(toastAnim, { toValue: -60, duration: 300, useNativeDriver: true }).start(() => setToastVisible(false))
       }, 2000)
     })
   }
@@ -246,7 +255,6 @@ export default function ParentHomeScreen() {
   const submitRsvp = async (status: 'yes' | 'no') => {
     if (!currentUser || !nextEvent) return
     const prevRsvp = myRsvp
-    // Immediate optimistic update — always sticks
     setMyRsvp(status)
     setRsvpCounts(prev => {
       const next = { ...prev }
@@ -255,28 +263,12 @@ export default function ParentHomeScreen() {
       return next
     })
     showRsvpToast()
-    // Only persist to Supabase for real UUID events (mock IDs start with 'ss-' or 'mock-')
     const eventId = nextEvent.id
     if (!eventId || /^(ss-|mock-)/.test(eventId)) return
     await supabase.from('rsvps').upsert(
       { user_id: currentUser.id, event_id: eventId, status },
       { onConflict: 'event_id,user_id' }
     )
-  }
-
-  const claimSnack = async (index: number) => {
-    const snackKey = `huddle_snacks_${team?.id}`
-    const stored = await AsyncStorage.getItem(snackKey)
-    const freshSnacks = stored ? JSON.parse(stored) : snacks
-    const slot = freshSnacks[index]
-    if (!slot || slot.claimed) {
-      if (stored) setSnacks(freshSnacks)
-      return
-    }
-    const claimerName = currentUser?.email?.split('@')[0] ?? 'Parent'
-    const updated = freshSnacks.map((s: any, i: number) => i === index ? { ...s, name: claimerName, claimed: true } : s)
-    setSnacks(updated)
-    await AsyncStorage.setItem(snackKey, JSON.stringify(updated))
   }
 
   const formatDay = (dateStr: string) =>
@@ -304,14 +296,6 @@ export default function ParentHomeScreen() {
     return msg.sender.display_name || msg.sender.email?.split('@')[0] || 'Team'
   }
 
-  const rsvpDot = (status: 'yes' | 'no' | 'maybe' | undefined) => {
-    if (status === 'yes') return '#22C55E'
-    if (status === 'no') return '#EF4444'
-    return '#9CA3AF'
-  }
-
-  const todayDayIdx = (new Date().getDay() + 6) % 7
-
   if (loading) return <View style={styles.loading}><ActivityIndicator color={tc} size="large" /></View>
 
   return (
@@ -326,17 +310,6 @@ export default function ParentHomeScreen() {
           setTeam(t)
           setLastMessage(null)
           if (chatSubRef.current) { supabase.removeChannel(chatSubRef.current); chatSubRef.current = null }
-          const snackKey = `huddle_snacks_${t.id}`
-          const stored = await AsyncStorage.getItem(snackKey)
-          if (stored) setSnacks(JSON.parse(stored))
-          else setSnacks(SEASON_SCHEDULE
-            .filter(e => e.type === 'game' && new Date(e.starts_at) >= new Date())
-            .map(e => ({
-              date: new Date(e.starts_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-              type: 'Game' as string,
-              name: null as string | null,
-              claimed: false,
-            })))
           if (currentUser) loadTeamData(t.id, currentUser.id)
         }}
       />
@@ -358,15 +331,10 @@ export default function ParentHomeScreen() {
             </View>
             <Text style={styles.heroDay}>{formatDay(nextEvent.starts_at)}</Text>
             <Text style={styles.heroTitle}>
-              {nextEvent.type === 'practice'
-                ? `Focus: ${FALLBACK_PLAN.title}`
-                : `vs ${nextEvent.opponent}`}
+              {nextEvent.type === 'practice' ? `Focus: ${FALLBACK_PLAN.title}` : `vs ${nextEvent.opponent}`}
             </Text>
             <Text style={styles.heroTime}>{formatTimeRange(nextEvent.starts_at, nextEvent.duration_min ?? 60)}</Text>
-            {nextEvent.location && (
-              <Text style={styles.heroLocation}>{nextEvent.location}</Text>
-            )}
-
+            {nextEvent.location && <Text style={styles.heroLocation}>{nextEvent.location}</Text>}
             <View style={styles.rsvpRow}>
               <Text style={styles.rsvpText}>
                 {rsvpCounts.yes > 0 ? `${rsvpCounts.yes} confirmed` : 'No RSVPs yet'}
@@ -374,18 +342,10 @@ export default function ParentHomeScreen() {
               </Text>
             </View>
             <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
-              <TouchableOpacity
-                style={[styles.rsvpBtn, myRsvp === 'yes' && styles.rsvpBtnGoing]}
-                onPress={() => submitRsvp('yes')}
-                activeOpacity={0.8}
-              >
+              <TouchableOpacity style={[styles.rsvpBtn, myRsvp === 'yes' && styles.rsvpBtnGoing]} onPress={() => submitRsvp('yes')} activeOpacity={0.8}>
                 <Text style={styles.rsvpBtnText}>{myRsvp === 'yes' ? '✅ Going' : 'Going'}</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.rsvpBtn, myRsvp === 'no' && styles.rsvpBtnOut]}
-                onPress={() => submitRsvp('no')}
-                activeOpacity={0.8}
-              >
+              <TouchableOpacity style={[styles.rsvpBtn, myRsvp === 'no' && styles.rsvpBtnOut]} onPress={() => submitRsvp('no')} activeOpacity={0.8}>
                 <Text style={styles.rsvpBtnText}>{myRsvp === 'no' ? "❌ Can't make it" : "Can't make it"}</Text>
               </TouchableOpacity>
             </View>
@@ -397,27 +357,19 @@ export default function ParentHomeScreen() {
           </View>
         )}
 
-        {/* 2. Practice plan card — full plan with streak */}
+        {/* 2. This week's focus */}
         <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: tc, padding: 0, overflow: 'hidden' }]}>
           <View style={{ backgroundColor: '#F0F4FF', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <Text style={styles.cardLabel}>This week's focus</Text>
             <Text style={{ fontSize: 10, fontWeight: '600', color: '#9CA3AF' }}>✦ Personalized for your team</Text>
           </View>
-          <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8 }}>
+          <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4 }}>
             <Text style={styles.practiceFocus}>{FALLBACK_PLAN.title}</Text>
           </View>
-          <View style={{ paddingHorizontal: 16, paddingBottom: 4 }}>
+          <View style={{ paddingHorizontal: 16, paddingBottom: 14 }}>
             {FALLBACK_PLAN.plan.map((item, i) => (
-              <View
-                key={i}
-                style={[
-                  { paddingVertical: 10 },
-                  i < FALLBACK_PLAN.plan.length - 1 && styles.planPhaseBorder,
-                ]}
-              >
-                <Text style={[styles.planPhaseLabel, { color: PHASE_COLORS[i], marginBottom: 3 }]}>
-                  {item.phase} · {item.duration}
-                </Text>
+              <View key={i} style={[{ paddingVertical: 10 }, i < FALLBACK_PLAN.plan.length - 1 && styles.planPhaseBorder]}>
+                <Text style={[styles.planPhaseLabel, { color: PHASE_COLORS[i], marginBottom: 3 }]}>{item.phase} · {item.duration}</Text>
                 <Text style={styles.planPhaseDrill}>{item.drill}</Text>
                 <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 4, lineHeight: 20 }}>{item.desc}</Text>
               </View>
@@ -425,40 +377,42 @@ export default function ParentHomeScreen() {
           </View>
         </View>
 
-        {/* Drill of the day */}
+        {/* 3. Do this drill at home today */}
         <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#F59E0B', padding: 0, overflow: 'hidden' }]}>
           <View style={{ backgroundColor: '#FFFBEB', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 }}>
-            <Text style={styles.cardLabel}>Tonight's drill 🏠</Text>
+            <Text style={styles.cardLabel}>Do this drill at home today 🏠</Text>
           </View>
-          <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 14 }}>
-            <Text style={{ fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 2 }}>Cone Weaving</Text>
-            <Text style={{ fontSize: 12, color: '#9CA3AF', fontStyle: 'italic', marginBottom: 8 }}>🏠 Do this at home between practices</Text>
-            <View style={{ flexDirection: 'row', gap: 6, marginBottom: 8 }}>
-              <View style={{ backgroundColor: '#F0F4FF', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
-                <Text style={{ fontSize: 10, fontWeight: '700', color: tc }}>Dribbling</Text>
-              </View>
-              <View style={{ backgroundColor: '#F0FDF4', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
-                <Text style={{ fontSize: 10, fontWeight: '700', color: '#059669' }}>Beginner</Text>
-              </View>
+          <View style={{ paddingHorizontal: 16, paddingTop: 14, paddingBottom: 14 }}>
+            <Text style={{ fontSize: 20, fontWeight: '800', color: '#111827', marginBottom: 6 }}>{todayDrill.name}</Text>
+            <View style={{ flexDirection: 'row', gap: 6, marginBottom: 12 }}>
+              {(() => {
+                const fc = FOCUS_COLORS_P[todayDrill.focus] ?? { bg: '#F3F4F6', text: '#6B7280' }
+                return (
+                  <View style={{ backgroundColor: fc.bg, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
+                    <Text style={{ fontSize: 10, fontWeight: '700', color: fc.text }}>{todayDrill.focus}</Text>
+                  </View>
+                )
+              })()}
               <View style={{ backgroundColor: '#F5F3FF', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
-                <Text style={{ fontSize: 10, fontWeight: '700', color: '#7C3AED' }}>10 min</Text>
+                <Text style={{ fontSize: 10, fontWeight: '700', color: '#7C3AED' }}>{todayDrill.duration}</Text>
               </View>
             </View>
-            <Text style={{ fontSize: 13, color: '#6B7280', lineHeight: 20, marginBottom: 14 }}>
-              Set up 6 cones in a line. Dribble through using both feet. Focus on soft touches.
-            </Text>
-            {/* Practice streak */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
-              <Text style={{ fontSize: 14, fontWeight: '700', color: '#F59E0B', flex: 1 }}>
-                Practice streak 🔥
-              </Text>
-              <Text style={{ fontSize: 22, fontWeight: '800', color: '#F59E0B' }}>
-                {practiceStreak}
-              </Text>
-              <Text style={{ fontSize: 13, color: '#9CA3AF', marginLeft: 4 }}>
-                day{practiceStreak !== 1 ? 's' : ''}
-              </Text>
+            <Text style={{ fontSize: 14, color: '#374151', lineHeight: 21, marginBottom: 14 }}>{todayDrill.desc}</Text>
+            <ParentDrillDiagram type={todayDrill.diagram} />
+
+            {/* Streak header */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 16, marginBottom: 8 }}>
+              <Text style={{ fontSize: 14, fontWeight: '700', color: '#F59E0B', flex: 1 }}>Practice streak 🔥</Text>
+              <Text style={{ fontSize: 22, fontWeight: '800', color: '#F59E0B' }}>{practiceStreak}</Text>
+              <Text style={{ fontSize: 13, color: '#9CA3AF', marginLeft: 4 }}>day{practiceStreak !== 1 ? 's' : ''}</Text>
             </View>
+
+            {streakMilestone && (
+              <View style={{ backgroundColor: '#FFFBEB', borderRadius: 10, padding: 10, marginBottom: 8, alignItems: 'center', borderWidth: 1, borderColor: '#FDE68A' }}>
+                <Text style={{ fontSize: 14, fontWeight: '700', color: '#D97706' }}>{streakMilestone}</Text>
+              </View>
+            )}
+
             {/* 7-day dot tracker */}
             <View style={{ flexDirection: 'row', gap: 6, marginBottom: 14 }}>
               {['M','T','W','T','F','S','S'].map((d, i) => (
@@ -470,133 +424,68 @@ export default function ParentHomeScreen() {
                 </View>
               ))}
             </View>
-            <TouchableOpacity
-              style={{ backgroundColor: practicedToday ? '#F0FDF4' : '#F59E0B', borderRadius: 10, paddingVertical: 11, alignItems: 'center', borderWidth: practicedToday ? 1 : 0, borderColor: '#D97706' }}
-              onPress={async () => {
-                const today = todayDateStr()
-                const raw = await AsyncStorage.getItem('huddle_streak_data_parent')
-                const streakData = raw ? JSON.parse(raw) : { count: 0, dates: [] }
-                if (!streakData.dates.includes(today)) {
-                  const newDates = [...streakData.dates, today]
-                  const newData = { count: newDates.length, dates: newDates }
-                  await AsyncStorage.setItem('huddle_streak_data_parent', JSON.stringify(newData))
-                  setPracticeStreak(newData.count)
-                  setPracticedDays(thisWeekDayIndices(newDates))
-                }
-                setPracticedToday(true)
-              }}
-              disabled={practicedToday}
-              activeOpacity={practicedToday ? 1 : 0.8}
-            >
-              <Text style={{ fontSize: 13, fontWeight: '700', color: practicedToday ? '#059669' : '#fff' }}>
-                {practicedToday ? '✓ Practiced today!' : '✓ I practiced today'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
 
-        {/* 3. Upcoming events */}
-        {upcomingEvents.length > 0 && (
-          <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: tc, padding: 0, overflow: 'hidden' }]}>
-            <View style={{ backgroundColor: '#F0F4FF', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 }}>
-              <Text style={styles.cardLabel}>Upcoming</Text>
-            </View>
-            <View style={{ paddingHorizontal: 16, paddingBottom: 14, paddingTop: 10 }}>
-              {upcomingEvents.map((event, i) => {
-                const isGame = event.type === 'game'
-                const rsvpStatus = eventRsvps[event.id]
-                return (
-                  <View key={event.id} style={[styles.eventRow, i < upcomingEvents.length - 1 && styles.eventBorder]}>
-                    <View style={[styles.upcomingTypeDot, { backgroundColor: isGame ? '#F59E0B' : tc }]} />
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.eventTitle}>
-                        {isGame ? `Game vs ${event.opponent}` : `Practice · ${event.focus ?? 'General'}`}
-                      </Text>
-                      <Text style={styles.eventSub}>{formatDay(event.starts_at)}</Text>
-                      <Text style={styles.eventTime}>{formatTimeRange(event.starts_at, event.duration_min ?? 60)}</Text>
-                    </View>
-                    <View style={styles.eventRight}>
-                      <Text style={[styles.eventDays, { color: tc }]}>{daysUntil(event.starts_at)}</Text>
-                      <View style={[styles.rsvpDot, { backgroundColor: rsvpDot(rsvpStatus) }]} />
-                    </View>
-                  </View>
-                )
-              })}
-              <TouchableOpacity onPress={() => router.push({ pathname: '/parent-team', params: { tab: 'schedule' } })}>
-                <Text style={[styles.viewLink, { color: tc }]}>View schedule →</Text>
+            {/* Confetti + button */}
+            <View style={{ position: 'relative' }}>
+              {confettiAnims.map((a, i) => (
+                <Animated.View
+                  key={i}
+                  pointerEvents="none"
+                  style={{
+                    position: 'absolute',
+                    bottom: 18,
+                    alignSelf: 'center',
+                    width: 8,
+                    height: 8,
+                    borderRadius: 4,
+                    backgroundColor: CONFETTI_COLORS_P[i % CONFETTI_COLORS_P.length],
+                    opacity: a.opacity,
+                    transform: [{ translateX: a.translateX }, { translateY: a.translateY }],
+                  }}
+                />
+              ))}
+              <TouchableOpacity
+                style={{ backgroundColor: practicedToday ? '#F0FDF4' : '#F59E0B', borderRadius: 10, paddingVertical: 11, alignItems: 'center', borderWidth: practicedToday ? 1 : 0, borderColor: '#D97706' }}
+                onPress={async () => {
+                  const today = todayDateStr()
+                  const raw = await AsyncStorage.getItem('huddle_streak_data_parent')
+                  const streakData = raw ? JSON.parse(raw) : { count: 0, dates: [] }
+                  if (!streakData.dates.includes(today)) {
+                    const newDates = [...streakData.dates, today]
+                    const newCount = newDates.length
+                    await AsyncStorage.setItem('huddle_streak_data_parent', JSON.stringify({ count: newCount, dates: newDates }))
+                    setPracticeStreak(newCount)
+                    setPracticedDays(thisWeekDayIndices(newDates))
+                    if (newCount === 3) {
+                      setStreakMilestone('🎉 3-day streak!')
+                      triggerConfetti()
+                      setTimeout(() => setStreakMilestone(null), 3000)
+                    } else if (newCount === 7) {
+                      setStreakMilestone('🏆 One week streak!')
+                      triggerConfetti()
+                      setTimeout(() => setStreakMilestone(null), 3000)
+                    } else if (newCount === 14) {
+                      setStreakMilestone('🔥 14-day streak! Incredible!')
+                      triggerConfetti()
+                      setTimeout(() => setStreakMilestone(null), 3000)
+                    } else {
+                      triggerConfetti()
+                    }
+                  }
+                  setPracticedToday(true)
+                }}
+                disabled={practicedToday}
+                activeOpacity={practicedToday ? 1 : 0.8}
+              >
+                <Text style={{ fontSize: 13, fontWeight: '700', color: practicedToday ? '#059669' : '#fff' }}>
+                  {practicedToday ? '✓ Practiced today!' : '✓ I did it today'}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
-        )}
-
-        {/* Next Game card */}
-        {(() => {
-          const nextGame = [nextEvent, ...upcomingEvents].find(e => e?.type === 'game')
-          if (!nextGame) return null
-          return (
-            <TouchableOpacity
-              style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#F59E0B', padding: 0, overflow: 'hidden' }]}
-              onPress={() => router.push({ pathname: '/parent-team', params: { tab: 'games' } })}
-              activeOpacity={0.85}
-            >
-              <View style={{ backgroundColor: '#FFFBEB', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 }}>
-                <Text style={styles.cardLabel}>Next game ⚽</Text>
-              </View>
-              <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 14 }}>
-                <Text style={{ fontSize: 18, fontWeight: '800', color: '#111827', marginBottom: 4 }}>
-                  vs {nextGame.opponent ?? 'TBD'}
-                </Text>
-                <Text style={{ fontSize: 13, color: '#6B7280', marginBottom: 2 }}>{formatDay(nextGame.starts_at)}</Text>
-                <Text style={{ fontSize: 12, color: '#9CA3AF' }}>{formatTimeRange(nextGame.starts_at, nextGame.duration_min ?? 90)}</Text>
-                {nextGame.location && (
-                  <Text style={{ fontSize: 12, color: '#9CA3AF', marginTop: 2 }}>{nextGame.location}</Text>
-                )}
-                <Text style={[styles.viewLink, { color: '#F59E0B', marginTop: 8 }]}>View game details →</Text>
-              </View>
-            </TouchableOpacity>
-          )
-        })()}
-
-        {/* The squad */}
-        <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#1A56DB', padding: 0, overflow: 'hidden' }]}>
-          <View style={{ backgroundColor: '#F0F4FF', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 }}>
-            <Text style={styles.cardLabel}>The squad 👟</Text>
-          </View>
-          <View style={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: 12 }}>
-            {(() => {
-              const teamName = team?.name ?? ''
-              const mockPlayers = (teamName.includes('Tiger') || teamName.includes('San Rafael')) ? TIGERS_PLAYERS : CHEETAHS_PLAYERS
-              const displayPlayers = players.length > 0 ? players : mockPlayers
-              return displayPlayers.slice(0, 3).map((player, i) => {
-                const pos = (player.positions?.[0] ?? player.position ?? '').toUpperCase()
-                const posColor = pos === 'GK' ? '#F59E0B' : ['CB','LB','RB','DEF'].includes(pos) ? tc : pos === 'FWD' ? '#FF6B35' : '#10B981'
-                return (
-                  <View
-                    key={player.id ?? i}
-                    style={[styles.rosterRow, i < 2 && styles.rosterBorder]}
-                  >
-                    <View style={[styles.rosterNumBadge, { backgroundColor: tc + '18' }]}>
-                      <Text style={[styles.rosterNum, { color: tc }]}>{player.number ?? player.jersey_number ?? '—'}</Text>
-                    </View>
-                    <Text style={[styles.rosterName, { flex: 1 }]}>
-                      {player.name ?? `${player.first_name ?? ''} ${player.last_name ?? ''}`.trim()}
-                    </Text>
-                    {pos ? (
-                      <View style={{ backgroundColor: posColor + '22', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
-                        <Text style={{ fontSize: 10, fontWeight: '700', color: posColor }}>{pos}</Text>
-                      </View>
-                    ) : null}
-                  </View>
-                )
-              })
-            })()}
-            <TouchableOpacity onPress={() => router.push({ pathname: '/parent-team', params: { tab: 'roster' } })}>
-              <Text style={[styles.viewLink, { color: tc }]}>View full roster →</Text>
-            </TouchableOpacity>
-          </View>
         </View>
 
-        {/* Chat preview */}
+        {/* 4. Chat preview */}
         {lastMessage && lastMessage.team_id === team?.id && (
           <TouchableOpacity
             style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#10B981', padding: 0, overflow: 'hidden' }]}
@@ -618,43 +507,7 @@ export default function ParentHomeScreen() {
           </TouchableOpacity>
         )}
 
-        {/* Snack schedule card */}
-        <TouchableOpacity
-          style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#F59E0B', padding: 0, overflow: 'hidden' }]}
-          onPress={() => router.push('/parent-snacks')}
-          activeOpacity={0.85}
-        >
-          <View style={styles.snackCardHeader}>
-            <Text style={styles.cardLabel}>🍊 Snack schedule</Text>
-          </View>
-          <View style={styles.cardBody}>
-            {snacks.slice(0, 3).map((item, i, arr) => {
-              const originalIndex = snacks.indexOf(item)
-              return (
-                <TouchableOpacity
-                  key={i}
-                  style={[styles.snackRow, i < arr.length - 1 && styles.snackBorder]}
-                  onPress={() => !item.claimed && claimSnack(originalIndex)}
-                  activeOpacity={item.claimed ? 1 : 0.7}
-                  disabled={item.claimed}
-                >
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.snackDate}>{item.date} · {item.type}</Text>
-                    <Text style={[styles.snackName, { color: item.claimed ? '#1a1a1a' : '#888' }]}>
-                      {item.claimed ? `${item.name} ✓` : 'Tap to claim'}
-                    </Text>
-                  </View>
-                  {!item.claimed && <Text style={{ fontSize: 12, color: '#F59E0B', fontWeight: '700' }}>Claim →</Text>}
-                  {item.claimed && <Text style={{ fontSize: 11, color: '#22C55E', fontWeight: '700' }}>Claimed ✓</Text>}
-                </TouchableOpacity>
-              )
-            })}
-            <Text style={[styles.viewLink, { color: tc }]}>Snack me! 🍊 →</Text>
-          </View>
-        </TouchableOpacity>
-
       </ScrollView>
-
     </SafeAreaView>
   )
 }
@@ -681,50 +534,15 @@ const styles = StyleSheet.create({
   emptySub: { fontSize: 13, color: '#6B7280', textAlign: 'center' },
   card: { backgroundColor: '#fff', borderRadius: 18, padding: 16, marginBottom: 12, borderWidth: 0.5, borderColor: '#eee' },
   cardLabel: { fontSize: 10, fontWeight: '700', color: '#9CA3AF', letterSpacing: 0.3, marginBottom: 8 },
-  practicePreviewHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
-  bellIcon: { fontSize: 16 },
   practiceFocus: { fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 4 },
-  practiceDate: { fontSize: 13, color: '#888', marginBottom: 6 },
-  practicePlanNote: { fontSize: 12, color: '#aaa', fontStyle: 'italic' },
-  eventRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingVertical: 10 },
-  eventBorder: { borderBottomWidth: 0.5, borderBottomColor: '#f5f5f5' },
-  upcomingTypeDot: { width: 10, height: 10, borderRadius: 5, marginTop: 4 },
-  eventTitle: { fontSize: 14, fontWeight: '600', color: '#111827' },
-  eventSub: { fontSize: 13, color: '#6B7280', marginTop: 1 },
-  eventTime: { fontSize: 11, color: '#bbb', marginTop: 1 },
-  eventRight: { alignItems: 'flex-end', gap: 6 },
-  eventDays: { fontSize: 11, fontWeight: '700' },
-  rsvpDot: { width: 8, height: 8, borderRadius: 4 },
+  planPhaseBorder: { borderBottomWidth: 0.5, borderBottomColor: '#f5f5f5' },
+  planPhaseLabel: { fontSize: 10, fontWeight: '700', letterSpacing: 0.3, marginBottom: 2 },
+  planPhaseDrill: { fontSize: 14, fontWeight: '700', color: '#1a1a1a' },
   viewLink: { fontSize: 13, fontWeight: '700', marginTop: 8 },
-  cardBody: { paddingHorizontal: 16, paddingBottom: 14, paddingTop: 10 },
-  snackCardHeader: { backgroundColor: '#FFFBEB', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 },
-  snackRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10 },
-  snackBorder: { borderBottomWidth: 0.5, borderBottomColor: '#f5f5f5' },
-  snackDate: { fontSize: 11, color: '#aaa', fontWeight: '600', marginBottom: 2 },
-  snackName: { fontSize: 14, fontWeight: '600' },
   chatPreviewRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginTop: 6, marginBottom: 6 },
   chatSender: { fontSize: 12, fontWeight: '700', color: '#1a1a1a', marginBottom: 2 },
   chatPreviewBody: { fontSize: 13, color: '#6B7280', lineHeight: 20 },
   chatPreviewTime: { fontSize: 11, color: '#bbb', marginTop: 2 },
-
-  // Practice plan card
-  planPhaseRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10 },
-  planPhaseBorder: { borderBottomWidth: 0.5, borderBottomColor: '#f5f5f5' },
-  phaseAccent: { width: 4, height: 40, borderRadius: 2 },
-  planPhaseLabel: { fontSize: 10, fontWeight: '700', letterSpacing: 0.3, marginBottom: 2 },
-  planPhaseDrill: { fontSize: 14, fontWeight: '700', color: '#1a1a1a' },
-  planPhaseDur: { fontSize: 12, fontWeight: '600', color: '#888' },
-  practiceStreakNote: { backgroundColor: '#FFF7ED', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 },
-  practiceStreakText: { fontSize: 12, fontWeight: '600', color: '#D97706' },
-
-  // Roster card
-  rosterRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 9 },
-  rosterBorder: { borderBottomWidth: 0.5, borderBottomColor: '#f5f5f5' },
-  rosterNumBadge: { width: 30, height: 30, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  rosterNum: { fontSize: 13, fontWeight: '700' },
-  rosterName: { flex: 1, fontSize: 14, fontWeight: '600', color: '#111827' },
-  rosterPos: { fontSize: 12, color: '#888', fontWeight: '500' },
   toast: { position: 'absolute', top: 50, left: 0, right: 0, zIndex: 100, backgroundColor: '#059669', paddingVertical: 12, paddingHorizontal: 16, alignItems: 'center' },
   toastText: { fontSize: 14, fontWeight: '700', color: '#fff' },
-
 })

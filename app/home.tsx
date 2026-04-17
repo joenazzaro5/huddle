@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Linking, Animated } from 'react-native'
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, Linking, Animated, Alert } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter, useFocusEffect } from 'expo-router'
 import { AppHeader } from '../lib/header'
@@ -8,6 +8,26 @@ import { supabase } from '../lib/supabase'
 import { generatePracticePlan } from '../lib/ai'
 import { getScheduleEvents } from '../lib/season'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+
+const CONFETTI_COLORS_HOME = ['#F59E0B', '#1A56DB', '#10B981', '#EF4444', '#7C3AED', '#F97316', '#06B6D4', '#EC4899']
+
+const FOCUS_COLORS_HOME: Record<string, { bg: string; text: string }> = {
+  Dribbling:   { bg: '#F0F4FF', text: '#1A56DB' },
+  Passing:     { bg: '#F0FDF4', text: '#059669' },
+  Shooting:    { bg: '#FFF7ED', text: '#D97706' },
+  Defending:   { bg: '#FEF2F2', text: '#DC2626' },
+  Goalkeeping: { bg: '#F5F3FF', text: '#7C3AED' },
+}
+
+const HOME_DRILLS = [
+  { id: 1, name: 'Cone Weaving',         focus: 'Dribbling', duration: '10 min', desc: 'Set up 6 cones in a line. Dribble through using both feet. Focus on soft touches.',    diagram: 'cone-weave' },
+  { id: 2, name: 'Wall Pass Combos',      focus: 'Passing',   duration: '10 min', desc: 'Find a wall. Pass and receive at varying distances. Focus on first touch.',            diagram: 'wall-pass' },
+  { id: 3, name: 'Shooting at Target',    focus: 'Shooting',  duration: '10 min', desc: 'Mark a target on the wall. Practice shooting from different angles.',                  diagram: 'shooting' },
+  { id: 4, name: '1v1 Shadow Dribbling',  focus: 'Dribbling', duration: '8 min',  desc: 'Set two cones 5m apart. Dribble back and forth, changing direction quickly.',         diagram: '1v1' },
+  { id: 5, name: 'Passing Triangle',      focus: 'Passing',   duration: '10 min', desc: 'Place 3 cones in a triangle. Pass around the triangle, sprinting to each cone.',      diagram: 'passing' },
+  { id: 6, name: 'Toe Taps & Sole Rolls', focus: 'Dribbling', duration: '8 min',  desc: 'Alternate toe taps on the ball for 30s then sole rolls left/right for 30s.',         diagram: 'dribbling' },
+  { id: 7, name: 'Long Pass & Control',   focus: 'Passing',   duration: '12 min', desc: 'Pass long to a target, sprint to receive. Focus on chest and thigh control.',         diagram: 'passing' },
+]
 
 const FALLBACK_PLAN = {
   title: 'Passing & Movement',
@@ -65,6 +85,61 @@ function getChatPreviewText(body: string | null | undefined): string {
   return body
 }
 
+function HomeDrillDiagram({ type }: { type: string }) {
+  if (type === 'cone-weave') return (
+    <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center', height: 50, gap: 4, backgroundColor: '#F0F4FF', borderRadius: 10, paddingHorizontal: 12 }}>
+      {Array.from({ length: 7 }).map((_, i) => (
+        <View key={i} style={{ alignItems: 'center', marginBottom: i % 2 === 0 ? 0 : 16 }}>
+          <Text style={{ fontSize: 10 }}>🔵</Text>
+        </View>
+      ))}
+    </View>
+  )
+  if (type === 'wall-pass') return (
+    <View style={{ height: 50, backgroundColor: '#F0FDF4', borderRadius: 10, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 }}>
+      <Text style={{ fontSize: 12 }}>👤</Text>
+      <Text style={{ fontSize: 11, color: '#059669', fontWeight: '700' }}>↑</Text>
+      <View style={{ width: 28, height: 24, borderWidth: 2, borderColor: '#059669', borderRadius: 4, alignItems: 'center', justifyContent: 'center' }}>
+        <Text style={{ fontSize: 8, color: '#059669', fontWeight: '700' }}>WALL</Text>
+      </View>
+      <Text style={{ fontSize: 11, color: '#059669', fontWeight: '700' }}>↓</Text>
+    </View>
+  )
+  if (type === 'shooting') return (
+    <View style={{ height: 50, backgroundColor: '#FFF7ED', borderRadius: 10, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 }}>
+      <Text style={{ fontSize: 12 }}>👤</Text>
+      <Text style={{ fontSize: 11, color: '#D97706', fontWeight: '700' }}>→→→</Text>
+      <Text style={{ fontSize: 16 }}>⚽</Text>
+      <View style={{ width: 28, height: 28, borderWidth: 2, borderColor: '#D97706', borderBottomWidth: 0, borderRadius: 2 }} />
+    </View>
+  )
+  if (type === '1v1') return (
+    <View style={{ height: 50, backgroundColor: '#F5F3FF', borderRadius: 10, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 10 }}>
+      <Text style={{ fontSize: 12 }}>👤</Text>
+      <Text style={{ fontSize: 11, color: '#7C3AED', fontWeight: '700' }}>↔</Text>
+      <Text style={{ fontSize: 16 }}>⚽</Text>
+      <Text style={{ fontSize: 11, color: '#7C3AED', fontWeight: '700' }}>↔</Text>
+      <Text style={{ fontSize: 12 }}>👤</Text>
+    </View>
+  )
+  if (type === 'dribbling') return (
+    <View style={{ height: 50, backgroundColor: '#F0F4FF', borderRadius: 10, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 10 }}>
+      <Text style={{ fontSize: 12 }}>👤</Text>
+      <Text style={{ fontSize: 11, color: '#1A56DB', fontWeight: '700' }}>↙↗↙↗</Text>
+      <Text style={{ fontSize: 16 }}>⚽</Text>
+    </View>
+  )
+  return (
+    <View style={{ height: 50, backgroundColor: '#F0FDF4', borderRadius: 10, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 }}>
+      <Text style={{ fontSize: 12 }}>👤</Text>
+      <Text style={{ fontSize: 11, color: '#059669', fontWeight: '700' }}>→</Text>
+      <Text style={{ fontSize: 16 }}>⚽</Text>
+      <Text style={{ fontSize: 11, color: '#059669', fontWeight: '700' }}>→</Text>
+      <Text style={{ fontSize: 12 }}>👤</Text>
+    </View>
+  )
+}
+
 export default function HomeScreen() {
   const router = useRouter()
   const { setActiveTeamId, activeTeamId } = useRole()
@@ -90,6 +165,16 @@ export default function HomeScreen() {
   const [practicedToday, setPracticedToday] = useState(false)
   const [practiceStreak, setPracticeStreak] = useState(0)
   const [practicedDays, setPracticedDays] = useState<number[]>([])
+  const [streakMilestone, setStreakMilestone] = useState<string | null>(null)
+  const confettiAnims = useRef(
+    Array.from({ length: 20 }, () => ({
+      opacity: new Animated.Value(0),
+      translateX: new Animated.Value(0),
+      translateY: new Animated.Value(0),
+    }))
+  ).current
+
+  const todayDrill = HOME_DRILLS[new Date().getDay() % HOME_DRILLS.length]
 
   useEffect(() => { loadData() }, [])
 
@@ -294,6 +379,34 @@ export default function HomeScreen() {
     })
   }
 
+  const triggerConfetti = () => {
+    const anims = confettiAnims.map(a => {
+      const dx = (Math.random() - 0.5) * 160
+      const dy = -(Math.random() * 120 + 60)
+      a.opacity.setValue(1)
+      a.translateX.setValue(0)
+      a.translateY.setValue(0)
+      return Animated.parallel([
+        Animated.timing(a.opacity, { toValue: 0, duration: 1500, useNativeDriver: true }),
+        Animated.timing(a.translateX, { toValue: dx, duration: 1500, useNativeDriver: true }),
+        Animated.timing(a.translateY, { toValue: dy, duration: 1500, useNativeDriver: true }),
+      ])
+    })
+    Animated.stagger(30, anims).start()
+  }
+
+  const shareDrill = async () => {
+    if (!team || !currentUser) return
+    const body = `🏠 Home drill of the day: ${todayDrill.name} (${todayDrill.duration})\n${todayDrill.desc}`
+    const { error } = await supabase.from('messages').insert({
+      team_id: team.id,
+      user_id: currentUser.id,
+      body,
+      type: 'user',
+    })
+    if (!error) Alert.alert('Shared!', `"${todayDrill.name}" sent to team chat.`)
+  }
+
   const handleRsvp = async (status: 'yes' | 'no') => {
     if (!nextEvent || !currentUser || !team) return
     const prev = myRsvp
@@ -460,15 +573,49 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* 3. Streak */}
+        {/* 3. Drill of the day + streak */}
         <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: '#F59E0B', padding: 0, overflow: 'hidden' }]}>
           <View style={{ backgroundColor: '#FFFBEB', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 }}>
-            <Text style={styles.cardLabel}>Practice at home 🏠</Text>
+            <Text style={styles.cardLabel}>Do this drill at home today 🏠</Text>
           </View>
-          <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 14 }}>
-            <Text style={styles.streakLine}>
-              🔥 {practiceStreak}-day streak · Practice at home 🏠
-            </Text>
+          <View style={{ paddingHorizontal: 16, paddingTop: 14, paddingBottom: 14 }}>
+            <Text style={{ fontSize: 20, fontWeight: '800', color: '#111827', marginBottom: 6 }}>{todayDrill.name}</Text>
+            <View style={{ flexDirection: 'row', gap: 6, marginBottom: 12 }}>
+              {(() => {
+                const fc = FOCUS_COLORS_HOME[todayDrill.focus] ?? { bg: '#F3F4F6', text: '#6B7280' }
+                return (
+                  <View style={{ backgroundColor: fc.bg, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
+                    <Text style={{ fontSize: 10, fontWeight: '700', color: fc.text }}>{todayDrill.focus}</Text>
+                  </View>
+                )
+              })()}
+              <View style={{ backgroundColor: '#F5F3FF', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
+                <Text style={{ fontSize: 10, fontWeight: '700', color: '#7C3AED' }}>{todayDrill.duration}</Text>
+              </View>
+            </View>
+            <Text style={{ fontSize: 14, color: '#374151', lineHeight: 21, marginBottom: 14 }}>{todayDrill.desc}</Text>
+            <HomeDrillDiagram type={todayDrill.diagram} />
+
+            <TouchableOpacity
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F0F4FF', borderRadius: 10, paddingVertical: 10, marginTop: 12 }}
+              onPress={shareDrill}
+              activeOpacity={0.8}
+            >
+              <Text style={{ fontSize: 13, fontWeight: '700', color: tc }}>Share with players →</Text>
+            </TouchableOpacity>
+
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 16, marginBottom: 8 }}>
+              <Text style={[styles.streakLine, { flex: 1, marginBottom: 0 }]}>Practice streak 🔥</Text>
+              <Text style={{ fontSize: 22, fontWeight: '800', color: '#F59E0B' }}>{practiceStreak}</Text>
+              <Text style={{ fontSize: 13, color: '#9CA3AF', marginLeft: 4 }}>day{practiceStreak !== 1 ? 's' : ''}</Text>
+            </View>
+
+            {streakMilestone && (
+              <View style={{ backgroundColor: '#FFFBEB', borderRadius: 10, padding: 10, marginBottom: 8, alignItems: 'center', borderWidth: 1, borderColor: '#FDE68A' }}>
+                <Text style={{ fontSize: 14, fontWeight: '700', color: '#D97706' }}>{streakMilestone}</Text>
+              </View>
+            )}
+
             <View style={{ flexDirection: 'row', gap: 6, marginBottom: 12 }}>
               {['M','T','W','T','F','S','S'].map((d, i) => (
                 <View key={i} style={{ alignItems: 'center', flex: 1 }}>
@@ -479,30 +626,68 @@ export default function HomeScreen() {
                 </View>
               ))}
             </View>
-            <TouchableOpacity
-              style={[styles.practicedBtn, practicedToday && styles.practicedBtnDone]}
-              onPress={async () => {
-                const today = todayDateStr()
-                const todayIdx = (new Date().getDay() + 6) % 7
-                setPracticedToday(true)
-                if (!practicedDays.includes(todayIdx)) {
-                  setPracticedDays(prev => [...prev, todayIdx])
-                  setPracticeStreak(prev => prev + 1)
-                }
-                const raw = await AsyncStorage.getItem('huddle_streak_data_coach')
-                const streakData = raw ? JSON.parse(raw) : { count: 0, dates: [] }
-                if (!streakData.dates.includes(today)) {
-                  const newDates = [...streakData.dates, today]
-                  await AsyncStorage.setItem('huddle_streak_data_coach', JSON.stringify({ count: newDates.length, dates: newDates }))
-                }
-              }}
-              disabled={practicedToday}
-              activeOpacity={practicedToday ? 1 : 0.8}
-            >
-              <Text style={[styles.practicedBtnText, practicedToday && styles.practicedBtnTextDone]}>
-                {practicedToday ? '✓ Practiced today!' : '✓ I practiced today'}
-              </Text>
-            </TouchableOpacity>
+
+            <View style={{ position: 'relative' }}>
+              {confettiAnims.map((a, i) => (
+                <Animated.View
+                  key={i}
+                  pointerEvents="none"
+                  style={{
+                    position: 'absolute',
+                    bottom: 18,
+                    alignSelf: 'center',
+                    width: 8,
+                    height: 8,
+                    borderRadius: 4,
+                    backgroundColor: CONFETTI_COLORS_HOME[i % CONFETTI_COLORS_HOME.length],
+                    opacity: a.opacity,
+                    transform: [{ translateX: a.translateX }, { translateY: a.translateY }],
+                  }}
+                />
+              ))}
+              <TouchableOpacity
+                style={[styles.practicedBtn, practicedToday && styles.practicedBtnDone]}
+                onPress={async () => {
+                  const today = todayDateStr()
+                  const todayIdx = (new Date().getDay() + 6) % 7
+                  setPracticedToday(true)
+                  if (!practicedDays.includes(todayIdx)) {
+                    setPracticedDays(prev => [...prev, todayIdx])
+                    setPracticeStreak(prev => {
+                      const next = prev + 1
+                      if (next === 3) {
+                        setStreakMilestone('🎉 3-day streak!')
+                        triggerConfetti()
+                        setTimeout(() => setStreakMilestone(null), 3000)
+                      } else if (next === 7) {
+                        setStreakMilestone('🏆 One week streak!')
+                        triggerConfetti()
+                        setTimeout(() => setStreakMilestone(null), 3000)
+                      } else if (next === 14) {
+                        setStreakMilestone('🔥 14-day streak! Incredible!')
+                        triggerConfetti()
+                        setTimeout(() => setStreakMilestone(null), 3000)
+                      } else {
+                        triggerConfetti()
+                      }
+                      return next
+                    })
+                  }
+                  const raw = await AsyncStorage.getItem('huddle_streak_data_coach')
+                  const streakData = raw ? JSON.parse(raw) : { count: 0, dates: [] }
+                  if (!streakData.dates.includes(today)) {
+                    const newDates = [...streakData.dates, today]
+                    await AsyncStorage.setItem('huddle_streak_data_coach', JSON.stringify({ count: newDates.length, dates: newDates }))
+                  }
+                }}
+                disabled={practicedToday}
+                activeOpacity={practicedToday ? 1 : 0.8}
+              >
+                <Text style={[styles.practicedBtnText, practicedToday && styles.practicedBtnTextDone]}>
+                  {practicedToday ? '✓ Practiced today!' : '✓ I practiced today'}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
 

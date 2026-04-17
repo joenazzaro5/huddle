@@ -34,6 +34,7 @@ export default function ChatScreen() {
   const [pollOpts, setPollOpts] = useState(['', '', ''])
   const [pollVotes, setPollVotes] = useState<Record<string, number>>({})
   const [reactions, setReactions] = useState<Record<string, Record<string, number>>>({})
+  const [myReactions, setMyReactions] = useState<Record<string, Set<string>>>({})
   const [replyingTo, setReplyingTo] = useState<any | null>(null)
   const [pinnedMessages, setPinnedMessages] = useState<any[]>([])
   const [actionMsg, setActionMsg] = useState<any | null>(null)
@@ -224,10 +225,22 @@ export default function ChatScreen() {
   }
 
   const addReaction = (msgId: string, emoji: string) => {
+    const hasReacted = myReactions[msgId]?.has(emoji)
     setReactions(prev => {
       const msgReactions = { ...(prev[msgId] ?? {}) }
-      msgReactions[emoji] = (msgReactions[emoji] ?? 0) + 1
+      if (hasReacted) {
+        msgReactions[emoji] = Math.max(0, (msgReactions[emoji] ?? 1) - 1)
+        if (msgReactions[emoji] === 0) delete msgReactions[emoji]
+      } else {
+        msgReactions[emoji] = (msgReactions[emoji] ?? 0) + 1
+      }
       return { ...prev, [msgId]: msgReactions }
+    })
+    setMyReactions(prev => {
+      const set = new Set(prev[msgId] ?? [])
+      if (hasReacted) set.delete(emoji)
+      else set.add(emoji)
+      return { ...prev, [msgId]: set }
     })
     setActionMsg(null)
   }
@@ -248,18 +261,7 @@ export default function ChatScreen() {
   }, [])
 
   const handleLongPress = (msg: any) => {
-    Alert.alert(
-      'Message options',
-      undefined,
-      [
-        {
-          text: 'Delete message',
-          style: 'destructive',
-          onPress: () => deleteMessage(msg.id),
-        },
-        { text: 'Cancel', style: 'cancel' },
-      ]
-    )
+    setActionMsg(msg)
   }
 
   const parseReply = (body: string): { quote: string; text: string } | null => {
@@ -468,16 +470,24 @@ export default function ChatScreen() {
                     {!isMe && <View style={styles.avatarSpacer} />}
                     <Text style={[styles.msgTime, isMe && styles.msgTimeMe]}>{formatTime(msg.created_at)}</Text>
                   </View>
-                  {msgReactions && Object.keys(msgReactions).length > 0 && (
+                  {msgReactions && Object.keys(msgReactions).filter(e => (msgReactions[e] ?? 0) > 0).length > 0 && (
                     <View style={[styles.reactionsRow, isMe && styles.reactionsRowMe]}>
                       {!isMe && <View style={styles.avatarSpacer} />}
                       <View style={styles.reactionsList}>
-                        {Object.entries(msgReactions).map(([emoji, count]) => (
-                          <View key={emoji} style={styles.reactionPill}>
-                            <Text style={styles.reactionEmoji}>{emoji}</Text>
-                            <Text style={styles.reactionCount}>{count}</Text>
-                          </View>
-                        ))}
+                        {Object.entries(msgReactions).filter(([, count]) => count > 0).map(([emoji, count]) => {
+                          const iReacted = myReactions[msg.id]?.has(emoji)
+                          return (
+                            <TouchableOpacity
+                              key={emoji}
+                              style={[styles.reactionPill, iReacted && { backgroundColor: '#DBEAFE', borderColor: '#93C5FD' }]}
+                              onPress={() => addReaction(msg.id, emoji)}
+                              activeOpacity={0.7}
+                            >
+                              <Text style={styles.reactionEmoji}>{emoji}</Text>
+                              <Text style={[styles.reactionCount, iReacted && { color: '#1D4ED8' }]}>{count}</Text>
+                            </TouchableOpacity>
+                          )
+                        })}
                       </View>
                     </View>
                   )}
@@ -594,7 +604,7 @@ export default function ChatScreen() {
         <TouchableOpacity style={styles.actionOverlay} activeOpacity={1} onPress={() => setActionMsg(null)}>
           <View style={styles.actionSheet}>
             <View style={styles.emojiRow}>
-              {['👍', '❤️', '😂', '🎉', '⚽'].map(emoji => (
+              {['👍', '❤️', '😂', '🎉', '⚽', '🔥'].map(emoji => (
                 <TouchableOpacity key={emoji} style={styles.emojiBtn} onPress={() => addReaction(actionMsg!.id, emoji)}>
                   <Text style={styles.emojiText}>{emoji}</Text>
                 </TouchableOpacity>
@@ -607,6 +617,11 @@ export default function ChatScreen() {
             <TouchableOpacity style={styles.actionItem} onPress={() => pinMessage(actionMsg!)}>
               <Text style={styles.actionItemText}>📌 Pin</Text>
             </TouchableOpacity>
+            {actionMsg?.user_id === currentUser?.id && (
+              <TouchableOpacity style={[styles.actionItem, { borderTopWidth: 0.5, borderTopColor: '#f0f0f0' }]} onPress={() => { deleteMessage(actionMsg!.id); setActionMsg(null) }}>
+                <Text style={[styles.actionItemText, { color: '#EF4444' }]}>🗑 Delete message</Text>
+              </TouchableOpacity>
+            )}
             <TouchableOpacity style={[styles.actionItem, { borderTopWidth: 0.5, borderTopColor: '#f0f0f0', marginTop: 4 }]} onPress={() => setActionMsg(null)}>
               <Text style={[styles.actionItemText, { color: '#9CA3AF' }]}>Cancel</Text>
             </TouchableOpacity>
