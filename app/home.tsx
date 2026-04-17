@@ -380,8 +380,14 @@ export default function HomeScreen() {
           </View>
           <View style={styles.practicePlanBody}>
             <Text style={styles.cardTitle}>{plan?.title ?? 'Building your plan...'}</Text>
-            <Text style={styles.planMeta}>
-              {`${plan?.plan?.length ?? 3} drills · ${nextEvent?.duration_min ?? 60} min · Built for your ${team?.age_group ?? 'team'}`}
+            {!planLoading && plan?.plan?.map((item: any, i: number) => (
+              <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 5 }}>
+                <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#9CA3AF' }} />
+                <Text style={{ fontSize: 13, fontWeight: '600', color: '#374151' }}>{item.drill}</Text>
+              </View>
+            ))}
+            <Text style={[styles.planMeta, { marginTop: 10 }]}>
+              {`${nextEvent?.duration_min ?? 60} min · ${team?.age_group ?? 'your team'}`}
             </Text>
             <TouchableOpacity onPress={() => router.push('/practice')}>
               <Text style={[styles.viewLink, { color: tc }]}>See the full plan →</Text>

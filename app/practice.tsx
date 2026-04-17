@@ -119,6 +119,82 @@ const SOCCER_RULES = [
   },
 ]
 
+function getDiagramType(drillName: string): 'passing' | 'dribbling' | 'game' {
+  const n = (drillName ?? '').toLowerCase()
+  if (n.includes('possession') || n.includes('5v5') || n.includes('4v4') || n.includes('scrimmage') || n.includes('game')) return 'game'
+  if (n.includes('dribbl') || n.includes('cone') || n.includes('shark') || n.includes('mastery') || n.includes('weave')) return 'dribbling'
+  return 'passing'
+}
+
+const PDB = () => (
+  <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: '#1A56DB', alignItems: 'center', justifyContent: 'center' }}>
+    <Text style={{ fontSize: 8, color: '#fff', fontWeight: '800' }}>P</Text>
+  </View>
+)
+const PDR = () => (
+  <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: '#FF6B35', alignItems: 'center', justifyContent: 'center' }}>
+    <Text style={{ fontSize: 8, color: '#fff', fontWeight: '800' }}>P</Text>
+  </View>
+)
+const Cone = () => (
+  <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: '#F59E0B' }} />
+)
+
+function DrillDiagram({ drillName }: { drillName: string }) {
+  const type = getDiagramType(drillName)
+  const wrap = { backgroundColor: '#F0F4FF', borderRadius: 10, padding: 12, marginTop: 10, alignItems: 'center' as const }
+
+  if (type === 'dribbling') {
+    return (
+      <View style={wrap}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
+          <PDB />
+          <Text style={{ fontSize: 11, color: '#6B7280' }}>→</Text>
+          <Cone /><Text style={{ fontSize: 11, color: '#6B7280' }}>→</Text>
+          <Cone /><Text style={{ fontSize: 11, color: '#6B7280' }}>→</Text>
+          <Cone /><Text style={{ fontSize: 11, color: '#6B7280' }}>→</Text>
+          <Cone /><Text style={{ fontSize: 11, color: '#6B7280' }}>→</Text>
+          <Cone />
+        </View>
+        <Text style={{ fontSize: 9, color: '#9CA3AF', marginTop: 5, fontWeight: '500' }}>Player dribbles through cones</Text>
+      </View>
+    )
+  }
+  if (type === 'game') {
+    return (
+      <View style={wrap}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+          <View style={{ gap: 6 }}>
+            <View style={{ flexDirection: 'row', gap: 5 }}><PDB /><PDB /></View>
+            <View style={{ flexDirection: 'row', gap: 5 }}><PDB /><PDB /></View>
+          </View>
+          <View style={{ width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: '#9CA3AF', alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff' }}>
+            <Text style={{ fontSize: 8 }}>⚽</Text>
+          </View>
+          <View style={{ gap: 6 }}>
+            <View style={{ flexDirection: 'row', gap: 5 }}><PDR /><PDR /></View>
+            <View style={{ flexDirection: 'row', gap: 5 }}><PDR /><PDR /></View>
+          </View>
+        </View>
+        <Text style={{ fontSize: 9, color: '#9CA3AF', marginTop: 5, fontWeight: '500' }}>Small-sided game — keep possession</Text>
+      </View>
+    )
+  }
+  return (
+    <View style={wrap}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <View style={{ gap: 8 }}><PDB /><PDB /></View>
+        <View style={{ gap: 10, alignItems: 'center' }}>
+          <Text style={{ fontSize: 13, color: '#10B981', fontWeight: '700' }}>→ →</Text>
+          <Text style={{ fontSize: 13, color: '#FF6B35', fontWeight: '700' }}>← ←</Text>
+        </View>
+        <View style={{ gap: 8 }}><PDB /><PDB /></View>
+      </View>
+      <Text style={{ fontSize: 9, color: '#9CA3AF', marginTop: 5, fontWeight: '500' }}>Pass and move — quick combinations</Text>
+    </View>
+  )
+}
+
 export default function PracticeScreen() {
   const params = useLocalSearchParams()
   const [team, setTeam] = useState<any>(null)
@@ -407,18 +483,25 @@ export default function PracticeScreen() {
                       <Text style={styles.phaseDrill}>{item.drill}</Text>
                       <Text style={styles.expandHint}>{expandedDrill === i ? '▲' : '▼'}</Text>
                     </View>
-                    {expandedDrill === i && <Text style={styles.phaseDesc}>{item.desc}</Text>}
+                    {expandedDrill === i && (
+                      <>
+                        <Text style={styles.phaseDesc}>{item.desc}</Text>
+                        <DrillDiagram drillName={item.drill} />
+                      </>
+                    )}
                   </View>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={async () => { await AsyncStorage.removeItem('huddle_active_plan'); autoGenerate(nextEvent, team) }}
-                  style={{ paddingHorizontal: 4, paddingBottom: 4, alignSelf: 'flex-start' }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={{ fontSize: 12, color: '#9CA3AF', fontWeight: '500' }}>Try a different drill →</Text>
                 </TouchableOpacity>
               </View>
             ))}
+            {!planLoading && (
+              <TouchableOpacity
+                onPress={async () => { await AsyncStorage.removeItem('huddle_active_plan'); autoGenerate(nextEvent, team) }}
+                style={{ paddingHorizontal: 4, paddingBottom: 2, paddingTop: 6, alignSelf: 'flex-start' }}
+                activeOpacity={0.7}
+              >
+                <Text style={{ fontSize: 12, color: '#9CA3AF', fontWeight: '500' }}>Not feeling a drill? Swap it out →</Text>
+              </TouchableOpacity>
+            )}
             {!planLoading && plan?.coachTip && (
               <View style={styles.tipBox}>
                 <Text style={styles.tipLabel}>Before you start 💡</Text>
@@ -431,7 +514,7 @@ export default function PracticeScreen() {
                 onPress={() => setShowFeedbackModal(true)}
                 activeOpacity={0.85}
               >
-                <Text style={{ fontSize: 15, fontWeight: '700', color: '#1A56DB' }}>How did it go?</Text>
+                <Text style={{ fontSize: 15, fontWeight: '700', color: '#1A56DB' }}>Practice done ✓</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -681,7 +764,6 @@ export default function PracticeScreen() {
       {/* Post-practice feedback modal */}
       <Modal visible={showFeedbackModal} transparent animationType="slide" onRequestClose={() => setShowFeedbackModal(false)}>
         <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-          <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.3)' }} activeOpacity={1} onPress={() => setShowFeedbackModal(false)} />
           <View style={{ backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 36 }}>
             <Text style={{ fontSize: 20, fontWeight: '800', color: '#1a1a1a', marginBottom: 4 }}>How did practice go? 🏆</Text>
             <Text style={{ fontSize: 13, color: '#888', marginBottom: 20 }}>Rate each drill so your next plan is even better.</Text>

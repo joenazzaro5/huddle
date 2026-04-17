@@ -401,7 +401,7 @@ export default function ParentHomeScreen() {
         <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: tc, padding: 0, overflow: 'hidden' }]}>
           <View style={{ backgroundColor: '#F0F4FF', paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <Text style={styles.cardLabel}>This week's focus</Text>
-            <Text style={{ fontSize: 11, fontWeight: '600', color: tc + 'aa' }}>Read only</Text>
+            <Text style={{ fontSize: 10, fontWeight: '600', color: '#9CA3AF' }}>✦ Personalized for your team</Text>
           </View>
           <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8 }}>
             <Text style={styles.practiceFocus}>{FALLBACK_PLAN.title}</Text>
@@ -420,7 +420,6 @@ export default function ParentHomeScreen() {
                 </Text>
                 <Text style={styles.planPhaseDrill}>{item.drill}</Text>
                 <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 4, lineHeight: 20 }}>{item.desc}</Text>
-                <Text style={{ fontSize: 13, color: '#6B7280', marginTop: 6 }}>Practice at home 🏠</Text>
               </View>
             ))}
           </View>
